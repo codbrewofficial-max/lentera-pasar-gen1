@@ -15,6 +15,17 @@ export class AppError extends Error {
 export const ok = (reply: FastifyReply, data: unknown, message = "OK", statusCode = 200) =>
   reply.code(statusCode).send({ data, message });
 
+export const created = (reply: FastifyReply, data: unknown, message = "Created") =>
+  ok(reply, data, message, 201);
+
+export const fail = (
+  reply: FastifyReply,
+  statusCode: number,
+  code: string,
+  message: string,
+  details: unknown = {}
+) => reply.code(statusCode).send({ error: { code, message, details } });
+
 export const toErrorPayload = (error: unknown) => {
   if (error instanceof AppError) {
     return {
@@ -38,7 +49,7 @@ export const toErrorPayload = (error: unknown) => {
     statusCode: 500,
     body: {
       error: {
-        code: "INTERNAL_SERVER_ERROR",
+        code: "INTERNAL_ERROR",
         message: process.env.NODE_ENV === "production" ? "Internal server error" : String(error),
         details: {}
       }
