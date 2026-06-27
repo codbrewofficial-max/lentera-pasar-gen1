@@ -1,0 +1,17 @@
+{
+  "name": "lentera-pasar",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev:api": "corepack pnpm --filter @lentera-pasar/api dev",
+    "build:api": "corepack pnpm --filter @lentera-pasar/api build",
+    "prisma:generate": "corepack pnpm --filter @lentera-pasar/api prisma:generate",
+    "prisma:validate": "corepack pnpm --filter @lentera-pasar/api prisma:validate",
+    "prisma:migrate": "corepack pnpm --filter @lentera-pasar/api prisma:migrate",
+    "prisma:seed": "corepack pnpm --filter @lentera-pasar/api prisma:seed",
+    "smoke:api": "corepack pnpm --filter @lentera-pasar/api smoke"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

@@ -1,0 +1,246 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  internal_admin
+  owner_admin
+}
+
+enum WebsiteStatus {
+  draft
+  published
+}
+
+enum LeadStatus {
+  new
+  contacted
+  closed
+  lost
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         UserRole
+  websites     Website[] @relation("OwnerWebsites")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Website {
+  id              String            @id @default(cuid())
+  ownerId         String
+  owner           User              @relation("OwnerWebsites", fields: [ownerId], references: [id])
+  websiteType     String
+  name            String
+  slug            String            @unique
+  status          WebsiteStatus     @default(draft)
+  trackingKey     String            @unique
+  themeJson       Json?
+  pages           WebsitePage[]
+  sections        PageSection[]
+  businessProfile BusinessProfile?
+  services        Service[]
+  portfolios      Portfolio[]
+  testimonials    Testimonial[]
+  brandPartners   BrandPartner[]
+  leads           Lead[]
+  trackingEvents  TrackingEvent[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([ownerId])
+  @@index([websiteType])
+  @@index([status])
+}
+
+model WebsitePage {
+  id        String        @id @default(cuid())
+  websiteId String
+  website   Website       @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  pageKey   String
+  title     String
+  slug      String
+  sortOrder Int
+  isActive  Boolean       @default(true)
+  sections  PageSection[]
+
+  @@unique([websiteId, pageKey])
+  @@unique([websiteId, slug])
+  @@index([websiteId, sortOrder])
+}
+
+model PageSection {
+  id                String           @id @default(cuid())
+  websiteId         String
+  website           Website          @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  pageId            String
+  page              WebsitePage      @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  slotKey           String
+  templateSectionId String?
+  templateSection   TemplateSection? @relation(fields: [templateSectionId], references: [id], onDelete: SetNull)
+  contentJson       Json?
+  sourceMode        String           @default("manual")
+  sortOrder         Int
+  isVisible         Boolean          @default(true)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([websiteId, slotKey])
+  @@index([websiteId, pageId])
+}
+
+model TemplateSection {
+  id                 String        @id @default(cuid())
+  sectionKey         String        @unique
+  websiteType        String
+  slotKey            String
+  name               String
+  component          String
+  variant            String?
+  schemaJson         Json
+  defaultContentJson Json
+  isActive           Boolean       @default(true)
+  pageSections       PageSection[]
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@index([websiteType, slotKey])
+  @@index([isActive])
+}
+
+model BusinessProfile {
+  id           String   @id @default(cuid())
+  websiteId    String   @unique
+  website      Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  name         String
+  tagline      String?
+  description  String?
+  vision       String?
+  mission      String?
+  timelineJson Json?
+  contactEmail String?
+  phone        String?
+  whatsapp     String?
+  address      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  websiteId   String
+  website     Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  imageUrl    String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([websiteId, sortOrder])
+}
+
+model Portfolio {
+  id          String   @id @default(cuid())
+  websiteId   String
+  website     Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  imageUrl    String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([websiteId, sortOrder])
+}
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  websiteId String
+  website   Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  name      String
+  role      String?
+  company   String?
+  quote     String
+  avatarUrl String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([websiteId, sortOrder])
+}
+
+model BrandPartner {
+  id        String   @id @default(cuid())
+  websiteId String
+  website   Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  name      String
+  logoUrl   String?
+  url       String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([websiteId, sortOrder])
+}
+
+model Lead {
+  id            String     @id @default(cuid())
+  websiteId     String
+  website       Website    @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  name          String
+  email         String?
+  phone         String?
+  message       String?
+  interest      String?
+  sourcePage    String?
+  sourceSection String?
+  status        LeadStatus @default(new)
+  metadataJson  Json?
+  createdAt     DateTime   @default(now())
+
+  @@index([websiteId, status, createdAt])
+}
+
+model TrackingEvent {
+  id           String   @id @default(cuid())
+  websiteId    String
+  website      Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  trackingKey  String
+  visitorId    String?
+  sessionId    String?
+  eventName    String
+  pageKey      String?
+  pageSlug     String?
+  slotKey      String?
+  sectionKey   String?
+  objectType   String?
+  objectId     String?
+  ctaKey       String?
+  referrer     String?
+  utmJson      Json?
+  metadataJson Json?
+  ipHash       String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+
+  @@index([trackingKey])
+  @@index([websiteId, eventName, createdAt])
+  @@index([websiteId, pageKey, createdAt])
+  @@index([websiteId, slotKey, createdAt])
+  @@index([websiteId, objectType, objectId, createdAt])
+  @@index([websiteId, visitorId])
+}
