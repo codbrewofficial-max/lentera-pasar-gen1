@@ -1,0 +1,108 @@
+import "dotenv/config";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+type CountSummary = {
+  users: number;
+  websites: number;
+  templatePacks: number;
+  templateSections: number;
+  articles: number;
+  leads: number;
+  trackingEvents: number;
+};
+
+const delegate = (modelName: string) => (prisma as any)[modelName];
+
+async function countModel(modelName: string) {
+  const model = delegate(modelName);
+  if (!model?.count) return 0;
+  return model.count();
+}
+
+async function deleteModel(modelName: string) {
+  const model = delegate(modelName);
+  if (!model?.deleteMany) return 0;
+  const result = await model.deleteMany({});
+  return result.count || 0;
+}
+
+async function getSummary(): Promise<CountSummary> {
+  return {
+    users: await countModel("user"),
+    websites: await countModel("website"),
+    templatePacks: await countModel("templatePack"),
+    templateSections: await countModel("templateSection"),
+    articles: await countModel("article"),
+    leads:
+      (await countModel("lead")) +
+      (await countModel("contactLead")) +
+      (await countModel("contactMessage")),
+    trackingEvents: await countModel("trackingEvent")
+  };
+}
+
+async function nullPrimaryWebsite() {
+  const user = delegate("user");
+  if (!user?.updateMany) return 0;
+  const result = await user.updateMany({
+    where: { primaryWebsiteId: { not: null } },
+    data: { primaryWebsiteId: null }
+  });
+  return result.count || 0;
+}
+
+async function main() {
+  const before = await getSummary();
+
+  const usersUpdated = await nullPrimaryWebsite();
+
+  const deleteOrder = [
+    "trackingEvent",
+    "contactMessage",
+    "contactLead",
+    "lead",
+    "article",
+    "service",
+    "portfolio",
+    "testimonial",
+    "brandPartner",
+    "businessProfile",
+    "pageSection",
+    "websitePage",
+    "website",
+    "templateSection",
+    "templatePack"
+  ];
+
+  const deleted: Record<string, number> = {};
+  for (const modelName of deleteOrder) {
+    deleted[modelName] = await deleteModel(modelName);
+  }
+
+  const after = await getSummary();
+
+  console.log(
+    JSON.stringify(
+      {
+        message: "Database reset completed. User records were preserved.",
+        usersUpdatedPrimaryWebsiteIdToNull: usersUpdated,
+        before,
+        deleted,
+        after
+      },
+      null,
+      2
+    )
+  );
+}
+
+main()
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
