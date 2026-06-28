@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
-import { COMPANY_PROFILE_SECTION_SLOTS } from "@lentera-pasar/shared";
+import { COMPANY_PROFILE_PAGES, COMPANY_PROFILE_SECTION_SLOTS, getSlotLabel } from "@lentera-pasar/shared";
 import { createCompanyProfileDefaults } from "../src/defaults.js";
 import { hashPassword, prismaJson, randomToken } from "../src/security.js";
 
@@ -8,22 +8,20 @@ const prisma = new PrismaClient();
 
 const field = (key: string, label: string, type = "text") => ({ key, label, type });
 
-const templates = [
-  ["hero-clean", "home.hero", "Hero Clean", "HeroSection", "clean"],
-  ["about-simple", "home.about_preview", "About Simple", "AboutPreviewSection", "simple"],
-  ["services-grid-clean", "home.services_preview", "Services Grid Clean", "ServicesPreviewSection", "clean"],
-  ["portfolio-grid-simple", "home.portfolio_preview", "Portfolio Grid Simple", "PortfolioPreviewSection", "simple"],
-  ["testimonial-card-soft", "home.testimonial_preview", "Testimonial Card Soft", "TestimonialPreviewSection", "soft"],
-  ["cta-basic", "home.cta", "CTA Basic", "CtaSection", "basic"],
-  ["business-profile-basic", "about.business_profile", "Business Profile Basic", "BusinessProfileSection", "basic"],
-  ["vision-mission-basic", "about.vision_mission", "Vision Mission Basic", "VisionMissionSection", "basic"],
-  ["timeline-basic", "about.timeline", "Timeline Basic", "TimelineSection", "basic"],
-  ["service-list-clean", "services.service_list", "Service List Clean", "ServiceListSection", "clean"],
-  ["portfolio-grid-clean", "portfolio.portfolio_grid", "Portfolio Grid Clean", "PortfolioGridSection", "clean"],
-  ["testimonial-list-clean", "testimonials.testimonial_list", "Testimonial List Clean", "TestimonialListSection", "clean"],
-  ["contact-info-basic", "contact.contact_info", "Contact Info Basic", "ContactInfoSection", "basic"],
-  ["contact-form-basic", "contact.contact_form", "Contact Form Basic", "ContactFormSection", "basic"]
-] as const;
+const pascal = (value: string) =>
+  value
+    .split(/[_\-.]/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join("");
+
+const templates = COMPANY_PROFILE_SECTION_SLOTS.map((slot) => [
+  `${slot.slotKey.replace(".", "-")}-default`,
+  slot.slotKey,
+  `${getSlotLabel(slot.slotKey)} Default`,
+  `${pascal(slot.slotKey)}Section`,
+  "default"
+] as const);
 
 async function main() {
   const passwordHash = await hashPassword("password123");
@@ -34,8 +32,8 @@ async function main() {
   });
   const owner = await prisma.user.upsert({
     where: { email: "owner@lenterapasar.test" },
-    update: { name: "Owner Demo", passwordHash, role: "owner_admin" },
-    create: { name: "Owner Demo", email: "owner@lenterapasar.test", passwordHash, role: "owner_admin" }
+    update: { name: "Owner Demo", passwordHash, role: "owner_admin", whatsapp: "6281234567890" },
+    create: { name: "Owner Demo", email: "owner@lenterapasar.test", passwordHash, role: "owner_admin", whatsapp: "6281234567890" }
   });
 
   const website = await prisma.website.upsert({
@@ -51,9 +49,11 @@ async function main() {
     }
   });
 
-  if ((await prisma.websitePage.count({ where: { websiteId: website.id } })) === 0) {
-    await createCompanyProfileDefaults(prisma, website.id, website.name);
-  }
+  const validPageKeys = COMPANY_PROFILE_PAGES.map((page) => page.pageKey);
+  const validSlotKeys = COMPANY_PROFILE_SECTION_SLOTS.map((slot) => slot.slotKey);
+  await prisma.pageSection.deleteMany({ where: { websiteId: website.id, slotKey: { notIn: validSlotKeys } } });
+  await prisma.websitePage.deleteMany({ where: { websiteId: website.id, pageKey: { notIn: validPageKeys } } });
+  await createCompanyProfileDefaults(prisma, website.id, website.name);
 
   for (const [sectionKey, slotKey, name, component, variant] of templates) {
     await prisma.templateSection.upsert({
@@ -69,6 +69,7 @@ async function main() {
           title: name,
           subtitle: "Konten demo siap diganti dari dashboard owner."
         },
+        status: "active",
         isActive: true
       },
       create: {
@@ -82,7 +83,9 @@ async function main() {
         defaultContentJson: {
           title: name,
           subtitle: "Konten demo siap diganti dari dashboard owner."
-        }
+        },
+        status: "active",
+        isActive: true
       }
     });
   }
@@ -133,6 +136,7 @@ async function main() {
   await prisma.portfolio.deleteMany({ where: { websiteId: website.id } });
   await prisma.testimonial.deleteMany({ where: { websiteId: website.id } });
   await prisma.brandPartner.deleteMany({ where: { websiteId: website.id } });
+  await prisma.article.deleteMany({ where: { websiteId: website.id } });
   const services = await Promise.all([
     prisma.service.create({ data: { websiteId: website.id, title: "Company Profile Website", description: "Website profil bisnis siap publish.", sortOrder: 1 } }),
     prisma.service.create({ data: { websiteId: website.id, title: "Landing Page Campaign", description: "Halaman promosi untuk layanan utama.", sortOrder: 2 } }),
@@ -157,21 +161,79 @@ async function main() {
       { websiteId: website.id, name: "Partner C", url: "https://example.com/c", sortOrder: 3 }
     ]
   });
+  const now = new Date();
+  const articles = await Promise.all([
+    prisma.article.create({
+      data: {
+        websiteId: website.id,
+        title: "Cara Membuat Company Profile Lebih Dipercaya",
+        slug: "cara-membuat-company-profile-lebih-dipercaya",
+        excerpt: "Panduan singkat menata profil bisnis agar mudah dipercaya calon pelanggan.",
+        content: "Company profile yang baik menjelaskan siapa Anda, layanan utama, bukti kerja, dan cara menghubungi bisnis.",
+        coverImageUrl: "https://picsum.photos/seed/article-1/900/500",
+        seoTitle: "Cara Membuat Company Profile Lebih Dipercaya",
+        seoDescription: "Pelajari elemen dasar company profile yang dipercaya calon pelanggan.",
+        status: "published",
+        sortOrder: 1,
+        publishedAt: now
+      }
+    }),
+    prisma.article.create({
+      data: {
+        websiteId: website.id,
+        title: "Mengapa Portfolio Penting untuk Bisnis Jasa",
+        slug: "mengapa-portfolio-penting-untuk-bisnis-jasa",
+        excerpt: "Portfolio membantu calon pelanggan melihat kualitas hasil kerja sebelum menghubungi Anda.",
+        content: "Portfolio yang rapi membuat bukti kerja lebih mudah dipahami dan meningkatkan keyakinan calon pelanggan.",
+        coverImageUrl: "https://picsum.photos/seed/article-2/900/500",
+        status: "published",
+        sortOrder: 2,
+        publishedAt: now
+      }
+    }),
+    prisma.article.create({
+      data: {
+        websiteId: website.id,
+        title: "Tips Mengubah Pengunjung Website Menjadi Lead",
+        slug: "tips-mengubah-pengunjung-website-menjadi-lead",
+        excerpt: "CTA, kontak, dan pesan layanan yang jelas membantu pengunjung mengambil langkah berikutnya.",
+        content: "Lead lebih mudah masuk ketika pengunjung menemukan informasi yang jelas dan tombol kontak yang mudah dijangkau.",
+        coverImageUrl: "https://picsum.photos/seed/article-3/900/500",
+        status: "published",
+        sortOrder: 3,
+        publishedAt: now
+      }
+    }),
+    prisma.article.create({
+      data: {
+        websiteId: website.id,
+        title: "Draft Strategi Konten Website",
+        slug: "draft-strategi-konten-website",
+        excerpt: "Draft artikel internal untuk rencana konten berikutnya.",
+        content: "Artikel ini masih draft dan tidak tampil di public API.",
+        status: "draft",
+        sortOrder: 4
+      }
+    })
+  ]);
 
   await prisma.trackingEvent.deleteMany({ where: { websiteId: website.id } });
   const events = [
     ["page_view", "home", null, null, null],
     ["page_view", "services", null, null, null],
     ["page_view", "portfolio", null, null, null],
-    ["section_view", "home", "home.services_preview", null, null],
-    ["cta_click", "home", "home.cta", null, null],
-    ["whatsapp_click", "contact", "contact.contact_info", null, null],
-    ["service_view", "services", "services.service_list", "service", services[0].id],
-    ["service_view", "services", "services.service_list", "service", services[0].id],
-    ["service_view", "services", "services.service_list", "service", services[1].id],
+    ["section_view", "home", "home.service_preview", null, null],
+    ["cta_click", "home", "home.cta_contact", null, null],
+    ["whatsapp_click", "contact", "contact.contact_information", null, null],
+    ["service_view", "services", "services.service_grid", "service", services[0].id],
+    ["service_view", "services", "services.service_grid", "service", services[0].id],
+    ["service_view", "services", "services.service_grid", "service", services[1].id],
     ["portfolio_view", "portfolio", "portfolio.portfolio_grid", "portfolio", portfolios[0].id],
     ["portfolio_view", "portfolio", "portfolio.portfolio_grid", "portfolio", portfolios[0].id],
-    ["contact_submit", "contact", "contact.contact_form", null, null]
+    ["contact_submit", "contact", "contact.contact_information", null, null],
+    ["article_view", "articles", null, "article", articles[0].id],
+    ["article_view", "articles", null, "article", articles[0].id],
+    ["article_view", "articles", null, "article", articles[1].id]
   ] as const;
   for (let i = 0; i < events.length; i += 1) {
     const [eventName, pageKey, slotKey, objectType, objectId] = events[i];
@@ -194,6 +256,7 @@ async function main() {
       }
     });
   }
+  await prisma.user.update({ where: { id: owner.id }, data: { primaryWebsiteId: website.id } });
   await prisma.lead.create({
     data: {
       websiteId: website.id,
@@ -203,7 +266,7 @@ async function main() {
       message: "Saya tertarik dengan layanan company profile.",
       interest: "Company Profile",
       sourcePage: "contact",
-      sourceSection: "contact.contact_form"
+      sourceSection: "contact.contact_information"
     }
   });
 

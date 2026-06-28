@@ -10,9 +10,29 @@ export const createCompanyProfileDefaults = async (
   websiteId: string,
   websiteName: string
 ) => {
+  await ensureCompanyProfileStructure(tx, websiteId);
+
+  await tx.businessProfile.upsert({
+    where: { websiteId },
+    update: {},
+    create: {
+      websiteId,
+      name: websiteName
+    }
+  });
+};
+
+export const ensureCompanyProfileStructure = async (
+  tx: Prisma.TransactionClient,
+  websiteId: string
+) => {
   const pageByKey = new Map<string, { id: string }>();
   for (const page of COMPANY_PROFILE_PAGES) {
-    const created = await tx.websitePage.create({
+    const existing = await tx.websitePage.findUnique({
+      where: { websiteId_pageKey: { websiteId, pageKey: page.pageKey } },
+      select: { id: true, pageKey: true }
+    });
+    const saved = existing || await tx.websitePage.create({
       data: {
         websiteId,
         pageKey: page.pageKey,
@@ -22,14 +42,22 @@ export const createCompanyProfileDefaults = async (
       },
       select: { id: true, pageKey: true }
     });
-    pageByKey.set(created.pageKey, created);
+    if (existing) {
+      await tx.websitePage.update({
+        where: { id: existing.id },
+        data: { title: page.title, slug: page.slug, sortOrder: page.sortOrder }
+      });
+    }
+    pageByKey.set(saved.pageKey, saved);
   }
 
   for (const slot of COMPANY_PROFILE_SECTION_SLOTS) {
     const page = pageByKey.get(slot.pageKey);
     if (!page) continue;
-    await tx.pageSection.create({
-      data: {
+    await tx.pageSection.upsert({
+      where: { websiteId_slotKey: { websiteId, slotKey: slot.slotKey } },
+      update: { pageId: page.id, sortOrder: slot.sortOrder },
+      create: {
         websiteId,
         pageId: page.id,
         slotKey: slot.slotKey,
@@ -37,14 +65,10 @@ export const createCompanyProfileDefaults = async (
       }
     });
   }
-
-  await tx.businessProfile.create({
-    data: {
-      websiteId,
-      name: websiteName
-    }
-  });
 };
 
 export const pageLabel = (pageKey: PageKey) =>
   COMPANY_PROFILE_PAGES.find((page) => page.pageKey === pageKey)?.title || pageKey;
+
+export const isDynamicDetailPage = (pageKey: string) =>
+  COMPANY_PROFILE_PAGES.find((page) => page.pageKey === pageKey)?.isDynamicDetailPage || false;

@@ -89,12 +89,19 @@ POST /api/v1/websites
 GET /api/v1/websites/:websiteId/pages
 ```
 
+Company Profile sekarang memakai 7 halaman dan 33 section slots sebagai source of truth:
+
+- `home`, `about`, `services`, `portfolio`, `articles`, `article_detail`, `contact`
+- `article_detail` adalah dynamic detail page dan response page list menyertakan `isDynamicDetailPage: true`.
+- `slotKey` selalu format `page.section`, contoh `home.hero`, `articles.article_hero`, `article_detail.article_content`, `contact.contact_cta`.
+
 ```json
 {
   "pageKey": "home",
   "title": "Home",
   "slug": "",
   "pageLabel": "Home",
+  "isDynamicDetailPage": false,
   "sectionCount": 6,
   "filledSectionCount": 2,
   "isActive": true
@@ -212,6 +219,34 @@ Lead item:
 }
 ```
 
+## Articles
+
+```http
+GET /api/v1/websites/:websiteId/articles
+POST /api/v1/websites/:websiteId/articles
+GET /api/v1/websites/:websiteId/articles/:articleId
+PATCH /api/v1/websites/:websiteId/articles/:articleId
+DELETE /api/v1/websites/:websiteId/articles/:articleId
+```
+
+Create/update payload:
+
+```json
+{
+  "title": "Judul Artikel",
+  "slug": "judul-artikel",
+  "excerpt": "Ringkasan artikel",
+  "content": "Isi artikel",
+  "coverImageUrl": "https://example.com/cover.jpg",
+  "seoTitle": "SEO Title",
+  "seoDescription": "SEO description",
+  "status": "draft",
+  "sortOrder": 1
+}
+```
+
+`status` valid: `draft`, `published`. Saat status berubah ke `published`, `publishedAt` otomatis diisi jika masih kosong.
+
 ## Insight Pengunjung
 
 ```http
@@ -221,6 +256,7 @@ GET /api/v1/websites/:websiteId/insights/top-sections
 GET /api/v1/websites/:websiteId/insights/top-ctas
 GET /api/v1/websites/:websiteId/insights/top-services
 GET /api/v1/websites/:websiteId/insights/top-portfolios
+GET /api/v1/websites/:websiteId/insights/top-articles
 GET /api/v1/websites/:websiteId/insights/traffic-sources
 ```
 
@@ -241,10 +277,54 @@ Summary:
       "label": "Halaman Paling Sering Dilihat",
       "value": "Services",
       "total": 86
+    },
+    "topArticle": {
+      "label": "Artikel Paling Sering Dibaca",
+      "value": "Judul Artikel",
+      "total": 12
     }
   }
 }
 ```
+
+## Internal Owner
+
+Internal admin dapat membuat owner dengan kontak WhatsApp:
+
+```http
+POST /api/v1/internal/owners
+PATCH /api/v1/internal/owners/:ownerId
+```
+
+```json
+{
+  "name": "Owner Demo",
+  "email": "owner@example.com",
+  "password": "password123",
+  "whatsapp": "6281234567890",
+  "primaryWebsiteId": "website_id"
+}
+```
+
+Response owner menyertakan `whatsapp`, `primaryWebsiteId`, `primaryWebsite`, `websitesCount`, dan `createdAt`.
+
+Internal admin juga dapat membuat website untuk owner dan set primary website:
+
+```http
+POST /api/v1/internal/owners/:ownerId/websites
+PATCH /api/v1/internal/owners/:ownerId/primary-website
+```
+
+## Template Section Status
+
+Template section punya status `draft`, `active`, atau `invalid`. Owner selection hanya melihat template `active`.
+
+```http
+GET /api/v1/template-sections?websiteType=company_profile&slotKey=home.hero
+GET /api/v1/template-sections?websiteType=company_profile&includeDraft=true
+```
+
+`includeDraft=true` hanya berlaku untuk `internal_admin`. Response item menyertakan `pageKey`, `pageLabel`, `status`, `statusLabel`, dan `validationErrors`.
 
 ## Istilah UI Owner
 

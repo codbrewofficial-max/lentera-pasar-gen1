@@ -15,16 +15,18 @@ import {
   SECTION_FIELD_TYPES,
   TRACKING_EVENT_NAMES,
   WEBSITE_TYPES,
+  getArticleStatusLabel,
   getLeadStatusLabel,
   getPageLabel,
   getSlotDescription,
   getSlotLabel,
+  getTemplateSectionStatusLabel,
   getWebsiteStatusLabel,
   getWebsiteTypeLabel,
   isCompanyProfileSlot
 } from "@lentera-pasar/shared";
 import { prisma } from "./prisma.js";
-import { createCompanyProfileDefaults } from "./defaults.js";
+import { createCompanyProfileDefaults, isDynamicDetailPage } from "./defaults.js";
 import { AppError, created, ok, publicUser, toErrorPayload } from "./http.js";
 import { hashIp, hashPassword, limitJson, prismaJson, randomToken, verifyPassword } from "./security.js";
 
@@ -85,6 +87,8 @@ const templateSummary = (template: any) =>
 const templateContract = (template: any) => ({
   id: template.id,
   sectionKey: template.sectionKey,
+  pageKey: template.slotKey?.split(".")[0] || null,
+  pageLabel: template.slotKey ? getPageLabel(template.slotKey.split(".")[0]) : null,
   slotKey: template.slotKey,
   slotLabel: getSlotLabel(template.slotKey),
   websiteType: template.websiteType,
@@ -92,8 +96,23 @@ const templateContract = (template: any) => ({
   name: template.name,
   component: template.component,
   variant: template.variant,
+  status: template.status || (template.isActive ? "active" : "draft"),
+  statusLabel: getTemplateSectionStatusLabel(template.status || (template.isActive ? "active" : "draft")),
+  validationErrors: template.validationErrors || null,
   schema: normalizeSectionSchema(template.schemaJson),
   defaultContent: template.defaultContentJson || {}
+});
+
+const ownerContract = (owner: any) => ({
+  id: owner.id,
+  name: owner.name,
+  email: owner.email,
+  role: owner.role,
+  whatsapp: owner.whatsapp || null,
+  primaryWebsiteId: owner.primaryWebsiteId || null,
+  primaryWebsite: owner.primaryWebsite ? websiteSummary(owner.primaryWebsite) : null,
+  websitesCount: owner._count?.websites ?? owner.websites?.length ?? 0,
+  createdAt: owner.createdAt
 });
 
 const mergeContent = (template: any, contentJson: unknown) => ({
@@ -133,6 +152,7 @@ const pageDashboardSummary = (page: any) => {
     title: page.title,
     slug: page.slug,
     pageLabel: getPageLabel(page.pageKey),
+    isDynamicDetailPage: isDynamicDetailPage(page.pageKey),
     sectionCount: sections.length,
     filledSectionCount: sections.filter((section: any) => section.templateSectionId || section.contentJson).length,
     sortOrder: page.sortOrder,
@@ -156,6 +176,35 @@ const leadContract = (lead: any) => ({
   createdAt: lead.createdAt
 });
 
+const articleContract = (article: any) => ({
+  id: article.id,
+  websiteId: article.websiteId,
+  title: article.title,
+  slug: article.slug,
+  excerpt: article.excerpt,
+  content: article.content,
+  coverImageUrl: article.coverImageUrl,
+  seoTitle: article.seoTitle,
+  seoDescription: article.seoDescription,
+  status: article.status,
+  statusLabel: getArticleStatusLabel(article.status),
+  sortOrder: article.sortOrder,
+  publishedAt: article.publishedAt,
+  createdAt: article.createdAt,
+  updatedAt: article.updatedAt
+});
+
+const publicArticleSummary = (article: any) => ({
+  id: article.id,
+  title: article.title,
+  slug: article.slug,
+  excerpt: article.excerpt,
+  coverImageUrl: article.coverImageUrl,
+  seoTitle: article.seoTitle,
+  seoDescription: article.seoDescription,
+  publishedAt: article.publishedAt
+});
+
 const ctaLabel = (ctaKey: string | null) => {
   if (!ctaKey) return null;
   const labels: Record<string, string> = {
@@ -174,12 +223,16 @@ const authBody = z.object({
 const createOwnerBody = z.object({
   name: z.string().min(2),
   email: z.string().email(),
-  password: z.string().min(8)
+  password: z.string().min(8),
+  whatsapp: z.string().nullable().optional(),
+  primaryWebsiteId: z.string().nullable().optional()
 });
 const patchOwnerBody = z.object({
   name: z.string().min(2).optional(),
   email: z.string().email().optional(),
-  password: z.string().min(8).optional()
+  password: z.string().min(8).optional(),
+  whatsapp: z.string().nullable().optional(),
+  primaryWebsiteId: z.string().nullable().optional()
 });
 const websiteBody = z.object({
   name: z.string().min(2),
@@ -226,6 +279,19 @@ const brandBody = z.object({
   sortOrder: z.number().int().optional(),
   isActive: z.boolean().optional()
 });
+const articleBody = z.object({
+  title: z.string().min(1),
+  slug: z.string().min(1).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  excerpt: z.string().nullable().optional(),
+  content: z.string().min(1),
+  coverImageUrl: z.string().nullable().optional(),
+  seoTitle: z.string().nullable().optional(),
+  seoDescription: z.string().nullable().optional(),
+  status: z.enum(["draft", "published"]).optional(),
+  sortOrder: z.number().int().optional()
+});
+const createOwnerWebsiteBody = websiteBody;
+const primaryWebsiteBody = z.object({ websiteId: z.string().min(1) });
 const sectionTemplateBody = z.object({ templateSectionId: z.string().min(1) });
 const sectionContentBody = z.object({ contentJson: z.record(z.unknown()) });
 const visibilityBody = z.object({ isVisible: z.boolean() });
@@ -315,16 +381,19 @@ const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string;
     }
   });
   if (!page) throw new AppError(404, "PAGE_NOT_FOUND", "Page not found");
-  const [services, portfolios, testimonials, brands] = await Promise.all([
+  const [services, portfolios, testimonials, brands, articles] = await Promise.all([
     prisma.service.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
     prisma.portfolio.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
     prisma.testimonial.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
-    prisma.brandPartner.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } })
+    prisma.brandPartner.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.article.findMany({ where: { websiteId, status: "published" }, orderBy: [{ sortOrder: "asc" }, { publishedAt: "desc" }] })
   ]);
-  const navigation = COMPANY_PROFILE_PAGES.map((navPage) => ({
-    label: navPage.title,
-    href: navPage.slug ? `/${website.slug}/${navPage.slug}` : `/${website.slug}`
-  }));
+  const navigation = COMPANY_PROFILE_PAGES
+    .filter((navPage) => !navPage.isDynamicDetailPage)
+    .map((navPage) => ({
+      label: navPage.title,
+      href: navPage.slug ? `/${website.slug}/${navPage.slug}` : `/${website.slug}`
+    }));
   return {
     website: {
       id: website.id,
@@ -360,7 +429,7 @@ const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string;
             slotKey: section.slotKey,
             sectionKey: section.templateSection?.sectionKey || null
           },
-          data: { services, portfolios, testimonials, brands }
+          data: { services, portfolios, testimonials, brands, articles: articles.map(publicArticleSummary) }
         }))
     }
   };
@@ -432,35 +501,91 @@ const registerCoreRoutes = () => {
 const registerInternalRoutes = () => {
   app.get("/api/v1/internal/owners", async (request, reply) => {
     await requireRole(request, ["internal_admin"]);
-    const owners = await prisma.user.findMany({ where: { role: "owner_admin" }, orderBy: { createdAt: "desc" } });
-    return ok(reply, owners.map(publicUser), "Owners loaded");
+    const owners = await prisma.user.findMany({
+      where: { role: "owner_admin" },
+      include: { primaryWebsite: true, _count: { select: { websites: true } } },
+      orderBy: { createdAt: "desc" }
+    });
+    return ok(reply, owners.map(ownerContract), "Owners loaded");
   });
   app.post("/api/v1/internal/owners", async (request, reply) => {
     await requireRole(request, ["internal_admin"]);
     const body = createOwnerBody.parse(request.body);
     const owner = await prisma.user.create({
-      data: { name: body.name, email: body.email.toLowerCase(), passwordHash: await hashPassword(body.password), role: "owner_admin" }
+      data: {
+        name: body.name,
+        email: body.email.toLowerCase(),
+        passwordHash: await hashPassword(body.password),
+        role: "owner_admin",
+        whatsapp: body.whatsapp || null,
+        primaryWebsiteId: body.primaryWebsiteId || null
+      },
+      include: { primaryWebsite: true, _count: { select: { websites: true } } }
     });
-    return created(reply, publicUser(owner), "Owner created");
+    return created(reply, ownerContract(owner), "Owner created");
   });
   app.get("/api/v1/internal/owners/:ownerId", async (request: Req, reply) => {
     await requireRole(request, ["internal_admin"]);
-    const owner = await prisma.user.findUnique({ where: { id: request.params?.ownerId }, include: { websites: true } });
+    const owner = await prisma.user.findUnique({
+      where: { id: request.params?.ownerId },
+      include: { primaryWebsite: true, websites: true, _count: { select: { websites: true } } }
+    });
     if (!owner || owner.role !== "owner_admin") throw new AppError(404, "OWNER_NOT_FOUND", "Owner not found");
-    return ok(reply, publicUser(owner), "Owner loaded");
+    return ok(reply, ownerContract(owner), "Owner loaded");
   });
   app.patch("/api/v1/internal/owners/:ownerId", async (request: Req, reply) => {
     await requireRole(request, ["internal_admin"]);
     const body = patchOwnerBody.parse(request.body);
+    if (body.primaryWebsiteId) {
+      const website = await prisma.website.findFirst({ where: { id: body.primaryWebsiteId, ownerId: request.params?.ownerId } });
+      if (!website) throw new AppError(422, "INVALID_PRIMARY_WEBSITE", "Primary website must belong to owner");
+    }
     const owner = await prisma.user.update({
       where: { id: request.params?.ownerId },
       data: {
         name: body.name,
         email: body.email?.toLowerCase(),
-        passwordHash: body.password ? await hashPassword(body.password) : undefined
-      }
+        passwordHash: body.password ? await hashPassword(body.password) : undefined,
+        whatsapp: body.whatsapp,
+        primaryWebsiteId: body.primaryWebsiteId
+      },
+      include: { primaryWebsite: true, _count: { select: { websites: true } } }
     });
-    return ok(reply, publicUser(owner), "Owner updated");
+    return ok(reply, ownerContract(owner), "Owner updated");
+  });
+  app.post("/api/v1/internal/owners/:ownerId/websites", async (request: Req, reply) => {
+    await requireRole(request, ["internal_admin"]);
+    const body = createOwnerWebsiteBody.parse(request.body);
+    const owner = await prisma.user.findUnique({ where: { id: request.params?.ownerId } });
+    if (!owner || owner.role !== "owner_admin") throw new AppError(404, "OWNER_NOT_FOUND", "Owner not found");
+    const website = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const createdWebsite = await tx.website.create({
+        data: {
+          ownerId: owner.id,
+          websiteType: body.websiteType,
+          name: body.name,
+          slug: body.slug,
+          trackingKey: randomToken("trk")
+        }
+      });
+      await createCompanyProfileDefaults(tx, createdWebsite.id, createdWebsite.name);
+      return createdWebsite;
+    });
+    return created(reply, websiteSummary(website), "Owner website created");
+  });
+  app.patch("/api/v1/internal/owners/:ownerId/primary-website", async (request: Req, reply) => {
+    await requireRole(request, ["internal_admin"]);
+    const body = primaryWebsiteBody.parse(request.body);
+    const owner = await prisma.user.findUnique({ where: { id: request.params?.ownerId } });
+    if (!owner || owner.role !== "owner_admin") throw new AppError(404, "OWNER_NOT_FOUND", "Owner not found");
+    const website = await prisma.website.findFirst({ where: { id: body.websiteId, ownerId: owner.id } });
+    if (!website) throw new AppError(422, "INVALID_PRIMARY_WEBSITE", "Primary website must belong to owner");
+    const updated = await prisma.user.update({
+      where: { id: owner.id },
+      data: { primaryWebsiteId: website.id },
+      include: { primaryWebsite: true, _count: { select: { websites: true } } }
+    });
+    return ok(reply, ownerContract(updated), "Primary website updated");
   });
   app.get("/api/v1/internal/websites", async (request, reply) => {
     await requireRole(request, ["internal_admin"]);
@@ -568,6 +693,7 @@ const registerWebsiteRoutes = () => {
       title: page.title,
       slug: page.slug,
       pageLabel: getPageLabel(page.pageKey),
+      isDynamicDetailPage: isDynamicDetailPage(page.pageKey),
       isActive: page.isActive,
       sections: page.sections.map((section: any) => sectionDetailContract(section, website.id))
     }, "Page loaded");
@@ -591,7 +717,7 @@ const registerSectionRoutes = () => {
     const body = sectionTemplateBody.parse(request.body);
     const section = await prisma.pageSection.findUnique({ where: { websiteId_slotKey: { websiteId: website.id, slotKey: request.params?.slotKey || "" } } });
     const template = await prisma.templateSection.findUnique({ where: { id: body.templateSectionId } });
-    if (!section || !template || template.slotKey !== section.slotKey || template.websiteType !== "company_profile") {
+    if (!section || !template || template.slotKey !== section.slotKey || template.websiteType !== "company_profile" || template.status !== "active" || !template.isActive) {
       throw new AppError(400, "INVALID_TEMPLATE_SECTION", "Template section does not match this slot");
     }
     const updated = await prisma.pageSection.update({ where: { id: section.id }, data: { templateSectionId: template.id }, include: { templateSection: true } });
@@ -668,6 +794,7 @@ const registerTemplateRoutes = () => {
             variant: parsed.variant || null,
             schemaJson: schemaJson as any,
             defaultContentJson: parsed.defaultContent as any,
+            status: "active",
             isActive: true
           },
           create: {
@@ -678,7 +805,9 @@ const registerTemplateRoutes = () => {
             component: parsed.component,
             variant: parsed.variant || null,
             schemaJson: schemaJson as any,
-            defaultContentJson: parsed.defaultContent as any
+            defaultContentJson: parsed.defaultContent as any,
+            status: "active",
+            isActive: true
           }
         })
       );
@@ -686,12 +815,13 @@ const registerTemplateRoutes = () => {
     return ok(reply, { importedCount: imported.length, sections: imported.map(templateContract) }, "Template sections imported");
   });
   app.get("/api/v1/template-sections", async (request: Req, reply) => {
-    await requireAuth(request);
+    const user = await requireAuth(request);
+    const includeDraft = request.query?.includeDraft === "true" && user.role === "internal_admin";
     const sections = await prisma.templateSection.findMany({
       where: {
         websiteType: request.query?.websiteType,
         slotKey: request.query?.slotKey,
-        isActive: true
+        ...(includeDraft ? {} : { status: "active", isActive: true })
       },
       orderBy: { name: "asc" }
     });
@@ -705,7 +835,7 @@ const registerTemplateRoutes = () => {
   });
   app.get("/api/v1/template-sections/by-slot/:slotKey", async (request: Req, reply) => {
     await requireAuth(request);
-    const sections = await prisma.templateSection.findMany({ where: { slotKey: request.params?.slotKey, isActive: true }, orderBy: { name: "asc" } });
+    const sections = await prisma.templateSection.findMany({ where: { slotKey: request.params?.slotKey, status: "active", isActive: true }, orderBy: { name: "asc" } });
     return ok(reply, sections.map(templateContract), "Template sections loaded");
   });
 };
@@ -764,6 +894,75 @@ const registerCrud = (
   });
 };
 
+const articleData = (body: z.infer<typeof articleBody>, existing?: { publishedAt: Date | null }) => ({
+  title: body.title,
+  slug: body.slug,
+  excerpt: body.excerpt || null,
+  content: body.content,
+  coverImageUrl: body.coverImageUrl || null,
+  seoTitle: body.seoTitle || null,
+  seoDescription: body.seoDescription || null,
+  status: body.status || "draft",
+  sortOrder: body.sortOrder ?? 0,
+  publishedAt: body.status === "published" ? existing?.publishedAt || new Date() : null
+});
+
+const registerArticleRoutes = () => {
+  app.get("/api/v1/websites/:websiteId/articles", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    const articles = await prisma.article.findMany({ where: { websiteId: website.id }, orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }] });
+    return ok(reply, articles.map(articleContract), "Articles loaded");
+  });
+  app.post("/api/v1/websites/:websiteId/articles", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    const body = articleBody.parse(request.body);
+    const existingSlug = await prisma.article.findUnique({ where: { websiteId_slug: { websiteId: website.id, slug: body.slug } } });
+    if (existingSlug) throw new AppError(409, "ARTICLE_SLUG_EXISTS", "Article slug already exists for this website");
+    const article = await prisma.article.create({ data: { ...articleData(body), websiteId: website.id } });
+    return created(reply, articleContract(article), "Article created");
+  });
+  app.get("/api/v1/websites/:websiteId/articles/:articleId", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    const article = await prisma.article.findFirst({ where: { id: request.params?.articleId, websiteId: website.id } });
+    if (!article) throw new AppError(404, "ARTICLE_NOT_FOUND", "Article not found");
+    return ok(reply, articleContract(article), "Article loaded");
+  });
+  app.patch("/api/v1/websites/:websiteId/articles/:articleId", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    const body = articleBody.partial().parse(request.body);
+    const article = await prisma.article.findFirst({ where: { id: request.params?.articleId, websiteId: website.id } });
+    if (!article) throw new AppError(404, "ARTICLE_NOT_FOUND", "Article not found");
+    if (body.slug && body.slug !== article.slug) {
+      const existingSlug = await prisma.article.findUnique({ where: { websiteId_slug: { websiteId: website.id, slug: body.slug } } });
+      if (existingSlug) throw new AppError(409, "ARTICLE_SLUG_EXISTS", "Article slug already exists for this website");
+    }
+    const status = body.status || article.status;
+    const updated = await prisma.article.update({
+      where: { id: article.id },
+      data: {
+        title: body.title,
+        slug: body.slug,
+        excerpt: body.excerpt,
+        content: body.content,
+        coverImageUrl: body.coverImageUrl,
+        seoTitle: body.seoTitle,
+        seoDescription: body.seoDescription,
+        status,
+        sortOrder: body.sortOrder,
+        publishedAt: status === "published" ? article.publishedAt || new Date() : null
+      }
+    });
+    return ok(reply, articleContract(updated), "Article updated");
+  });
+  app.delete("/api/v1/websites/:websiteId/articles/:articleId", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    const article = await prisma.article.findFirst({ where: { id: request.params?.articleId, websiteId: website.id } });
+    if (!article) throw new AppError(404, "ARTICLE_NOT_FOUND", "Article not found");
+    await prisma.article.delete({ where: { id: article.id } });
+    return ok(reply, true, "Article deleted");
+  });
+};
+
 const registerPublicRoutes = () => {
   app.get("/api/v1/public/sites/:slug", async (request: Req, reply) => {
     const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" } });
@@ -774,6 +973,39 @@ const registerPublicRoutes = () => {
     const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" } });
     if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
     return ok(reply, await buildPublicPage(website.id, { slug: request.params?.pageSlug || "" }), "Public page loaded");
+  });
+  app.get("/api/v1/public/sites/:slug/articles", async (request: Req, reply) => {
+    const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" }, include: { businessProfile: true } });
+    if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
+    const articles = await prisma.article.findMany({
+      where: { websiteId: website.id, status: "published" },
+      orderBy: [{ sortOrder: "asc" }, { publishedAt: "desc" }]
+    });
+    return ok(reply, articles.map(publicArticleSummary), "Public articles loaded");
+  });
+  app.get("/api/v1/public/sites/:slug/articles/:articleSlug", async (request: Req, reply) => {
+    const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" }, include: { businessProfile: true } });
+    if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
+    const article = await prisma.article.findFirst({
+      where: { websiteId: website.id, slug: request.params?.articleSlug, status: "published" }
+    });
+    if (!article) throw new AppError(404, "ARTICLE_NOT_FOUND", "Published article not found");
+    const relatedArticles = await prisma.article.findMany({
+      where: { websiteId: website.id, status: "published", id: { not: article.id } },
+      orderBy: [{ sortOrder: "asc" }, { publishedAt: "desc" }],
+      take: 3
+    });
+    return ok(reply, {
+      article: articleContract(article),
+      relatedArticles: relatedArticles.map(publicArticleSummary),
+      website: websiteSummary(website),
+      businessProfile: website.businessProfile,
+      seo: {
+        title: article.seoTitle || article.title,
+        description: article.seoDescription || article.excerpt || website.businessProfile?.description || website.name
+      },
+      trackingKey: website.trackingKey
+    }, "Public article loaded");
   });
   app.get("/api/v1/websites/:websiteId/preview/pages/:pageKey", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
@@ -928,9 +1160,30 @@ const registerLeadAndInsightRoutes = () => {
       total: row._count._all
     }));
   };
+  const topArticles = async (websiteId: string) => {
+    const rows = await prisma.trackingEvent.groupBy({
+      by: ["objectId"],
+      where: { websiteId, eventName: "article_view", objectId: { not: null } },
+      _count: { _all: true },
+      orderBy: { _count: { objectId: "desc" } },
+      take: 10
+    });
+    const ids = rows.map((row) => row.objectId).filter(Boolean) as string[];
+    const articles = await prisma.article.findMany({ where: { id: { in: ids } }, select: { id: true, title: true, slug: true } });
+    const articleById = new Map(articles.map((article) => [article.id, article]));
+    return rows.map((row) => {
+      const article = row.objectId ? articleById.get(row.objectId) : null;
+      return {
+        articleId: row.objectId,
+        title: article?.title || null,
+        slug: article?.slug || null,
+        total: row._count._all
+      };
+    });
+  };
   app.get("/api/v1/websites/:websiteId/insights/summary", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
-    const [visitors, totalPageViews, totalCtaClicks, totalWhatsappClicks, totalContactSubmits, topPageRows, topServiceRows, topPortfolioRows] = await Promise.all([
+    const [visitors, totalPageViews, totalCtaClicks, totalWhatsappClicks, totalContactSubmits, topPageRows, topServiceRows, topPortfolioRows, topArticleRows] = await Promise.all([
       prisma.trackingEvent.findMany({ where: { websiteId: website.id, visitorId: { not: null } }, distinct: ["visitorId"], select: { visitorId: true } }),
       prisma.trackingEvent.count({ where: { websiteId: website.id, eventName: "page_view" } }),
       prisma.trackingEvent.count({ where: { websiteId: website.id, eventName: "cta_click" } }),
@@ -938,7 +1191,8 @@ const registerLeadAndInsightRoutes = () => {
       prisma.trackingEvent.count({ where: { websiteId: website.id, eventName: "contact_submit" } }),
       topBy(website.id, "pageKey", { eventName: "page_view" }),
       topBy(website.id, "objectId", { eventName: "service_view", objectType: "service" }),
-      topBy(website.id, "objectId", { eventName: "portfolio_view", objectType: "portfolio" })
+      topBy(website.id, "objectId", { eventName: "portfolio_view", objectType: "portfolio" }),
+      topArticles(website.id)
     ]);
     const topServiceId = topServiceRows[0]?.objectId;
     const topPortfolioId = topPortfolioRows[0]?.objectId;
@@ -988,6 +1242,9 @@ const registerLeadAndInsightRoutes = () => {
           : null,
         topPortfolio: topPortfolio
           ? { label: "Portfolio Paling Sering Dilihat", value: topPortfolio.title, total: topPortfolioRows[0].total }
+          : null,
+        topArticle: topArticleRows[0]
+          ? { label: "Artikel Paling Sering Dibaca", value: topArticleRows[0].title, total: topArticleRows[0].total }
           : null
       }
     }, "Insight summary loaded");
@@ -997,6 +1254,7 @@ const registerLeadAndInsightRoutes = () => {
   app.get("/api/v1/websites/:websiteId/insights/top-ctas", async (request: Req, reply) => ok(reply, await topCtas((await getWebsiteForAccess(request)).website.id), "Top CTAs loaded"));
   app.get("/api/v1/websites/:websiteId/insights/top-services", async (request: Req, reply) => ok(reply, await topObjects((await getWebsiteForAccess(request)).website.id, "service"), "Top services loaded"));
   app.get("/api/v1/websites/:websiteId/insights/top-portfolios", async (request: Req, reply) => ok(reply, await topObjects((await getWebsiteForAccess(request)).website.id, "portfolio"), "Top portfolios loaded"));
+  app.get("/api/v1/websites/:websiteId/insights/top-articles", async (request: Req, reply) => ok(reply, await topArticles((await getWebsiteForAccess(request)).website.id), "Top articles loaded"));
   app.get("/api/v1/websites/:websiteId/insights/traffic-sources", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
     const rows = await prisma.trackingEvent.findMany({ where: { websiteId: website.id, eventName: "page_view" }, select: { referrer: true, utmJson: true } });
@@ -1031,6 +1289,7 @@ export const buildApp = async () => {
   registerCrud("portfolios", listItemBody);
   registerCrud("testimonials", testimonialBody);
   registerCrud("brand-partners", brandBody);
+  registerArticleRoutes();
   registerPublicRoutes();
   registerLeadAndInsightRoutes();
   return app;

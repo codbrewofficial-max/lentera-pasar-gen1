@@ -24,15 +24,30 @@ enum LeadStatus {
   lost
 }
 
+enum ArticleStatus {
+  draft
+  published
+}
+
+enum TemplateSectionStatus {
+  draft
+  active
+  invalid
+}
+
 model User {
-  id           String    @id @default(cuid())
-  name         String
-  email        String    @unique
-  passwordHash String
-  role         UserRole
-  websites     Website[] @relation("OwnerWebsites")
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id               String    @id @default(cuid())
+  name             String
+  email            String    @unique
+  passwordHash     String
+  role             UserRole
+  whatsapp         String?
+  phone            String?
+  primaryWebsiteId String?
+  primaryWebsite   Website?  @relation("PrimaryWebsite", fields: [primaryWebsiteId], references: [id], onDelete: SetNull)
+  websites         Website[] @relation("OwnerWebsites")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }
 
 model Website {
@@ -52,8 +67,10 @@ model Website {
   portfolios      Portfolio[]
   testimonials    Testimonial[]
   brandPartners   BrandPartner[]
+  articles        Article[]
   leads           Lead[]
   trackingEvents  TrackingEvent[]
+  primaryForUsers User[]            @relation("PrimaryWebsite")
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
@@ -108,6 +125,8 @@ model TemplateSection {
   variant            String?
   schemaJson         Json
   defaultContentJson Json
+  status             TemplateSectionStatus @default(draft)
+  validationErrors   Json?
   isActive           Boolean       @default(true)
   pageSections       PageSection[]
   createdAt          DateTime      @default(now())
@@ -115,6 +134,27 @@ model TemplateSection {
 
   @@index([websiteType, slotKey])
   @@index([isActive])
+}
+
+model Article {
+  id             String        @id @default(cuid())
+  websiteId      String
+  website        Website       @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  title          String
+  slug           String
+  excerpt        String?
+  content        String
+  coverImageUrl  String?
+  seoTitle       String?
+  seoDescription String?
+  status         ArticleStatus @default(draft)
+  sortOrder      Int           @default(0)
+  publishedAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([websiteId, slug])
+  @@index([websiteId, status, sortOrder])
 }
 
 model BusinessProfile {
