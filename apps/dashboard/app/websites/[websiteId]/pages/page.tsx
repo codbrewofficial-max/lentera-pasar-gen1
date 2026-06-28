@@ -19,6 +19,7 @@ interface PageItem {
   pageLabel: string;
   sectionCount: number;
   filledSectionCount: number;
+  isDynamicDetailPage?: boolean;
   isActive: boolean;
 }
 
@@ -71,7 +72,7 @@ export default function WebsitePagesPage() {
 
         <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm text-xs text-slate-500 leading-normal">
           <p>
-            Website tipe <strong>Company Profile</strong> memiliki 6 halaman default: Home, About, Services, Portfolio, Testimonials, dan Contact. Setiap halaman dibentuk oleh kumpulan <strong>Bagian Website (Section)</strong> yang tumpukannya disusun berurutan dari atas ke bawah. Klik tombol kelola untuk memilih tampilan visual dan mengisi teks di setiap bagian halaman tersebut.
+            Website tipe <strong>Company Profile</strong> memiliki 7 halaman default: Home, About Us, Service, Portfolio, Blog / Artikel, Article Detail, dan Contact. Setiap halaman dibentuk oleh kumpulan <strong>Bagian Website (Section)</strong> yang tumpukannya disusun berurutan dari atas ke bawah. Klik tombol kelola untuk memilih tampilan visual dan mengisi teks di setiap bagian halaman tersebut.
           </p>
         </div>
 
@@ -111,6 +112,11 @@ export default function WebsitePagesPage() {
                           <span>Penuh Terisi</span>
                         </span>
                       )}
+                      {p.isDynamicDetailPage && (
+                        <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 bg-sky-50 text-sky-700 text-[10px] font-bold rounded-full border border-sky-100">
+                          <span>Template Detail Artikel</span>
+                        </span>
+                      )}
                       {hasDraft && p.filledSectionCount > 0 && (
                         <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-full border border-amber-100">
                           <Clock className="h-3 w-3 shrink-0" />
@@ -132,6 +138,11 @@ export default function WebsitePagesPage() {
                     <div className="text-xs text-slate-600 font-semibold pt-1">
                       Progres: <span className="text-slate-900">{p.filledSectionCount}</span> dari <span className="text-slate-900">{p.sectionCount}</span> bagian terisi template & konten
                     </div>
+                    {p.isDynamicDetailPage && (
+                      <p className="text-xs text-slate-500 leading-normal">
+                        Halaman ini mengatur tampilan detail artikel, bukan artikel tertentu.
+                      </p>
+                    )}
                   </div>
 
                   <div className="shrink-0 flex items-center justify-end">

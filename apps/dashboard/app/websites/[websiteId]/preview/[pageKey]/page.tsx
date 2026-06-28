@@ -76,12 +76,13 @@ export default function WebsitePreviewPage() {
   const [deviceMode, setDeviceMode] = useState<"desktop" | "mobile">("desktop");
 
   const availablePages = [
-    { key: "home", label: "Beranda" },
-    { key: "about", label: "Tentang Kami" },
-    { key: "services", label: "Layanan" },
+    { key: "home", label: "Home" },
+    { key: "about", label: "About Us" },
+    { key: "services", label: "Service" },
     { key: "portfolio", label: "Portfolio" },
-    { key: "testimonials", label: "Testimoni" },
-    { key: "contact", label: "Kontak" }
+    { key: "articles", label: "Blog / Artikel" },
+    { key: "article_detail", label: "Article Detail" },
+    { key: "contact", label: "Contact" }
   ];
 
   const fetchPreviewData = async () => {

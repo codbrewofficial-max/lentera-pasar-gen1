@@ -21,7 +21,8 @@ import {
   HeartHandshake,
   FolderKanban,
   MessageSquare,
-  Award
+  Award,
+  FileText
 } from "lucide-react";
 
 function getRoleLabel(role: string) {
@@ -139,6 +140,12 @@ export default function DashboardLayout({
       icon: MessageSquare,
       href: `/websites/${websiteId}/content/testimonials`,
       active: pathname?.includes(`/websites/${websiteId}/content/testimonials`)
+    },
+    {
+      label: "Artikel",
+      icon: FileText,
+      href: `/websites/${websiteId}/content/articles`,
+      active: pathname?.includes(`/websites/${websiteId}/content/articles`)
     },
     {
       label: "Brand / Partner",

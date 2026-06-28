@@ -34,6 +34,7 @@ interface PageDetail {
   title: string;
   slug: string;
   pageLabel?: string;
+  isDynamicDetailPage?: boolean;
   sections: Section[];
 }
 
@@ -44,26 +45,19 @@ export default function PageSectionsPage() {
   const pageKey = params?.pageKey as string;
 
   const [sections, setSections] = useState<Section[]>([]);
+  const [pageDetail, setPageDetail] = useState<PageDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
-  const pageLabels: Record<string, string> = {
-    home: "Beranda",
-    about: "Tentang Kami",
-    services: "Layanan",
-    portfolio: "Portfolio",
-    testimonials: "Testimoni",
-    contact: "Hubungi Kami"
-  };
-
-  const currentPageLabel = pageLabels[pageKey] ? `Halaman ${pageLabels[pageKey]}` : `Halaman ${pageKey}`;
+  const currentPageLabel = pageDetail?.pageLabel ? `Halaman ${pageDetail.pageLabel}` : `Halaman ${pageKey}`;
 
   const fetchSections = async () => {
     setLoading(true);
     setErrorMsg("");
     try {
       const res = await apiCall<PageDetail>("GET", `websites/${websiteId}/pages/${pageKey}`);
+      setPageDetail(res.data || null);
       setSections(res.data?.sections || []);
     } catch (err: any) {
       console.error("Fetch sections error:", err);
@@ -129,6 +123,14 @@ export default function PageSectionsPage() {
           <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-sm flex items-start space-x-3 animate-fadeIn">
             <AlertCircle className="h-5 w-5 shrink-0 text-rose-600 mt-0.5" />
             <span>{errorMsg}</span>
+          </div>
+        )}
+
+        {/* Dynamic Section Builder Tip */}
+        {pageDetail?.isDynamicDetailPage && (
+          <div className="p-4 bg-sky-50 border border-sky-200 rounded-2xl text-sky-800 text-sm flex items-start space-x-3 animate-fadeIn">
+            <AlertCircle className="h-5 w-5 shrink-0 text-sky-600 mt-0.5" />
+            <span>Halaman ini mengatur tampilan detail artikel, bukan artikel tertentu.</span>
           </div>
         )}
 

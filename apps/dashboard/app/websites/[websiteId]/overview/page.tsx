@@ -21,7 +21,8 @@ import {
   HeartHandshake,
   FolderKanban,
   MessageSquare,
-  Award
+  Award,
+  FileText
 } from "lucide-react";
 
 interface Website {
@@ -346,7 +347,7 @@ export default function WebsiteOverviewPage() {
             Isi database konten bisnis Anda di bawah ini agar data dapat ditampilkan secara rapi pada template bagian halaman yang memiliki elemen daftar layanan, galeri portfolio, testimoni pelanggan, maupun logo rekanan/brand partner.
           </p>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="overview-content-grid">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6" id="overview-content-grid">
             
             {/* 1. Layanan */}
             <div 
@@ -409,6 +410,26 @@ export default function WebsiteOverviewPage() {
             </div>
 
             {/* 4. Brand / Partner */}
+            <div
+              onClick={() => router.push(`/websites/${website.id}/content/articles`)}
+              className="bg-white border border-slate-200 hover:border-emerald-300 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between h-44 group"
+            >
+              <div className="space-y-2">
+                <div className="h-10 w-10 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center transition-colors group-hover:bg-sky-600 group-hover:text-white">
+                  <FileText className="h-5 w-5" />
+                </div>
+                <h4 className="font-bold text-slate-900 text-sm group-hover:text-emerald-700 transition-colors">Artikel</h4>
+                <p className="text-xs text-slate-500 leading-normal">
+                  Kelola artikel blog, SEO title, ringkasan, dan status publikasi.
+                </p>
+              </div>
+              <div className="flex items-center text-xs font-semibold text-sky-600 pt-2 border-t border-slate-50">
+                <span>Kelola Artikel</span>
+                <ChevronRight className="h-3.5 w-3.5 ml-1 transition-transform group-hover:translate-x-0.5" />
+              </div>
+            </div>
+
+            {/* 5. Brand / Partner */}
             <div 
               onClick={() => router.push(`/websites/${website.id}/content/brands`)}
               className="bg-white border border-slate-200 hover:border-emerald-300 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between h-44 group"

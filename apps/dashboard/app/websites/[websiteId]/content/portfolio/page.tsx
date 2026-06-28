@@ -494,7 +494,7 @@ export default function PortfolioCrudPage() {
                     className="inline-flex items-center space-x-1 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white text-xs font-bold rounded-xl shadow-md transition"
                   >
                     <Save className="h-4 w-4" />
-                    <span>{saving ? "Menyimpan..." : "Simpan Item"}</span>
+                    <span>{saving ? (editingItem ? "Memperbarui..." : "Menyimpan...") : "Simpan Item"}</span>
                   </button>
                 </div>
               </form>

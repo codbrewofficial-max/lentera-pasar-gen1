@@ -17,22 +17,35 @@ import {
   PlusCircle,
   Mail,
   Phone,
-  Briefcase
+  Briefcase,
+  Globe
 } from "lucide-react";
 
 interface OwnerUser {
   id: string | number;
   name: string;
   email: string;
-  phone?: string;
-  businessName?: string;
+  whatsapp?: string;
+  primaryWebsiteId?: string | null;
+  primaryWebsite?: WebsiteItem | null;
+  websitesCount?: number;
   role: string;
+}
+
+interface WebsiteItem {
+  id: string | number;
+  name: string;
+  slug: string;
+  ownerId?: string | number;
+  owner?: { id?: string | number };
+  websiteType: string;
 }
 
 export default function InternalOwnersPage() {
   const router = useRouter();
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [owners, setOwners] = useState<OwnerUser[]>([]);
+  const [websites, setWebsites] = useState<WebsiteItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -46,11 +59,14 @@ export default function InternalOwnersPage() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    phone: "",
-    businessName: "",
+    whatsapp: "",
     password: "" // optional for edit, required for add
   });
   const [saving, setSaving] = useState(false);
+  const [websiteModalOwner, setWebsiteModalOwner] = useState<OwnerUser | null>(null);
+  const [websiteFormData, setWebsiteFormData] = useState({ name: "", slug: "" });
+  const [creatingWebsite, setCreatingWebsite] = useState(false);
+  const [primarySavingId, setPrimarySavingId] = useState<string | number | null>(null);
 
   // Delete State
   const [deletingOwner, setDeletingOwner] = useState<OwnerUser | null>(null);
@@ -62,6 +78,8 @@ export default function InternalOwnersPage() {
     try {
       const res = await apiCall<OwnerUser[]>("GET", "internal/owners");
       setOwners(res.data || []);
+      const webRes = await apiCall<WebsiteItem[]>("GET", "internal/websites").catch(() => ({ data: [] as WebsiteItem[] }));
+      setWebsites(webRes.data || []);
     } catch (err: any) {
       console.error("Fetch owners error:", err);
       setErrorMsg(err.error?.message || "Gagal memuat daftar owner bisnis.");
@@ -107,8 +125,7 @@ export default function InternalOwnersPage() {
     setFormData({
       name: "",
       email: "",
-      phone: "",
-      businessName: "",
+      whatsapp: "",
       password: ""
     });
     setIsFormOpen(true);
@@ -119,8 +136,7 @@ export default function InternalOwnersPage() {
     setFormData({
       name: owner.name,
       email: owner.email,
-      phone: owner.phone || "",
-      businessName: owner.businessName || "",
+      whatsapp: owner.whatsapp || "",
       password: ""
     });
     setIsFormOpen(true);
@@ -138,10 +154,11 @@ export default function InternalOwnersPage() {
     try {
       const payload: any = {
         name: formData.name,
-        email: formData.email
+        email: formData.email,
+        whatsapp: formData.whatsapp || null
       };
 
-      if (formData.password) {
+      if (!editingOwner && formData.password) {
         payload.password = formData.password;
       }
 
@@ -185,8 +202,54 @@ export default function InternalOwnersPage() {
   const filteredOwners = owners.filter((owner) =>
     owner.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     owner.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    owner.businessName?.toLowerCase().includes(searchQuery.toLowerCase())
+    owner.whatsapp?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const ownerWebsites = (owner: OwnerUser) =>
+    websites.filter((web) => String(web.ownerId || web.owner?.id || "") === String(owner.id));
+
+  const handleOpenCreateWebsite = (owner: OwnerUser) => {
+    setWebsiteModalOwner(owner);
+    setWebsiteFormData({ name: "", slug: "" });
+  };
+
+  const handleCreateWebsite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!websiteModalOwner || !websiteFormData.name || !websiteFormData.slug) {
+      setErrorMsg("Nama website dan slug wajib diisi.");
+      return;
+    }
+    setCreatingWebsite(true);
+    setErrorMsg("");
+    try {
+      await apiCall("POST", `internal/owners/${websiteModalOwner.id}/websites`, {
+        name: websiteFormData.name,
+        slug: websiteFormData.slug,
+        websiteType: "company_profile"
+      });
+      setWebsiteModalOwner(null);
+      showSuccess("Website untuk owner berhasil dibuat.");
+      fetchOwners();
+    } catch (err: any) {
+      setErrorMsg(err.error?.message || err.message || "Gagal membuat website untuk owner.");
+    } finally {
+      setCreatingWebsite(false);
+    }
+  };
+
+  const handleSetPrimaryWebsite = async (owner: OwnerUser, websiteId: string) => {
+    setPrimarySavingId(owner.id);
+    setErrorMsg("");
+    try {
+      await apiCall("PATCH", `internal/owners/${owner.id}/primary-website`, { websiteId });
+      showSuccess("Website utama berhasil diperbarui.");
+      fetchOwners();
+    } catch (err: any) {
+      setErrorMsg(err.error?.message || err.message || "Gagal mengatur website utama.");
+    } finally {
+      setPrimarySavingId(null);
+    }
+  };
 
   if (authorized === false) {
     return (
@@ -272,7 +335,9 @@ export default function InternalOwnersPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6" id="owners-grid-list">
-            {filteredOwners.map((owner) => (
+              {filteredOwners.map((owner) => {
+                const relatedWebsites = ownerWebsites(owner);
+                return (
               <div
                 key={owner.id}
                 className="bg-white rounded-3xl border border-slate-200 p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-all gap-4"
@@ -297,18 +362,49 @@ export default function InternalOwnersPage() {
                       <Mail className="h-4 w-4 text-slate-400 shrink-0" />
                       <span className="truncate">{owner.email}</span>
                     </div>
-                    {owner.phone && (
+                    {owner.whatsapp && (
                       <div className="flex items-center space-x-2">
                         <Phone className="h-4 w-4 text-slate-400 shrink-0" />
-                        <span>{owner.phone}</span>
+                        <span>{owner.whatsapp}</span>
                       </div>
                     )}
-                    {owner.businessName && (
-                      <div className="flex items-center space-x-2">
-                        <Briefcase className="h-4 w-4 text-slate-400 shrink-0" />
-                        <span className="font-semibold text-slate-800">{owner.businessName}</span>
+                    <div className="space-y-2 pt-2 border-t border-slate-100">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center space-x-2">
+                          <Globe className="h-4 w-4 text-slate-400 shrink-0" />
+                          <span>{owner.websitesCount ?? relatedWebsites.length} website</span>
+                        </div>
+                        <button
+                          onClick={() => handleOpenCreateWebsite(owner)}
+                          className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100 text-[10px] font-bold rounded-xl transition"
+                        >
+                          Buat Website
+                        </button>
                       </div>
-                    )}
+                      {relatedWebsites.length > 0 && (
+                        <div className="space-y-1">
+                          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide">Website Utama</label>
+                          <select
+                            value={owner.primaryWebsiteId || ""}
+                            disabled={primarySavingId === owner.id}
+                            onChange={(e) => handleSetPrimaryWebsite(owner, e.target.value)}
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                          >
+                            <option value="">Pilih Website Utama</option>
+                            {relatedWebsites.map((web) => (
+                              <option key={web.id} value={web.id}>{web.name}</option>
+                            ))}
+                          </select>
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            {relatedWebsites.map((web) => (
+                              <span key={web.id} className="inline-flex px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-mono">
+                                {web.slug}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -329,7 +425,8 @@ export default function InternalOwnersPage() {
                   </button>
                 </div>
               </div>
-            ))}
+                );
+              })}
           </div>
         )}
 
@@ -382,34 +479,21 @@ export default function InternalOwnersPage() {
                   />
                 </div>
 
-                {/* Phone */}
                 <div className="space-y-1">
                   <label htmlFor="owner-phone" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
-                    Nomor WhatsApp / HP
+                    Nomor WhatsApp Owner
                   </label>
                   <input
                     id="owner-phone"
                     type="tel"
-                    placeholder="Contoh: 0812345678"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="Contoh: 6281234567890"
+                    value={formData.whatsapp}
+                    onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
                   />
-                </div>
-
-                {/* Business Name */}
-                <div className="space-y-1">
-                  <label htmlFor="owner-biz" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
-                    Nama Usaha Utama
-                  </label>
-                  <input
-                    id="owner-biz"
-                    type="text"
-                    placeholder="Contoh: Keripik Tempe Jaya"
-                    value={formData.businessName}
-                    onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
-                  />
+                  <p className="text-[10px] text-slate-400 leading-relaxed">
+                    Nomor ini dipakai tim Labkerkomit untuk menghubungi owner, bukan otomatis ditampilkan di website publik.
+                  </p>
                 </div>
 
                 {/* Password */}
@@ -443,7 +527,47 @@ export default function InternalOwnersPage() {
                     className="inline-flex items-center space-x-1 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white text-xs font-bold rounded-xl shadow-md transition"
                   >
                     <Save className="h-4 w-4" />
-                    <span>{saving ? "Menyimpan..." : "Simpan Akun"}</span>
+                    <span>{saving ? (editingOwner ? "Memperbarui..." : "Menyimpan...") : "Simpan Akun"}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {websiteModalOwner && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl shadow-xl w-full max-w-md border border-slate-100 overflow-hidden animate-slideUp">
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                <h3 className="font-bold text-slate-800 text-base">Buat Website untuk Owner</h3>
+                <button onClick={() => setWebsiteModalOwner(null)} className="p-2 hover:bg-slate-50 text-slate-400 hover:text-slate-600 rounded-xl transition">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <form onSubmit={handleCreateWebsite} className="p-6 space-y-4">
+                <div className="text-xs text-slate-500">Owner: <strong className="text-slate-800">{websiteModalOwner.name}</strong></div>
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Nama Website</label>
+                  <input
+                    required
+                    value={websiteFormData.name}
+                    onChange={(e) => setWebsiteFormData({ ...websiteFormData, name: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Slug</label>
+                  <input
+                    required
+                    value={websiteFormData.slug}
+                    onChange={(e) => setWebsiteFormData({ ...websiteFormData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                  />
+                </div>
+                <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+                  <button type="button" onClick={() => setWebsiteModalOwner(null)} className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition">Batal</button>
+                  <button type="submit" disabled={creatingWebsite} className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white text-xs font-bold rounded-xl shadow-md transition">
+                    {creatingWebsite ? "Menyimpan..." : "Buat Website"}
                   </button>
                 </div>
               </form>
