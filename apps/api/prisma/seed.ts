@@ -55,11 +55,54 @@ async function main() {
   await prisma.websitePage.deleteMany({ where: { websiteId: website.id, pageKey: { notIn: validPageKeys } } });
   await createCompanyProfileDefaults(prisma, website.id, website.name);
 
+  const demoTemplatePack = await prisma.templatePack.upsert({
+    where: { templatePackKey: "company-profile-demo-default" },
+    update: {
+      websiteType: "company_profile",
+      name: "Company Profile Demo Default",
+      theme: "formal",
+      version: "1.0.0",
+      description: "Template pack demo bawaan untuk Company Profile.",
+      status: "active",
+      validationSummaryJson: {
+        expectedPages: COMPANY_PROFILE_PAGES.length,
+        expectedSlots: COMPANY_PROFILE_SECTION_SLOTS.length,
+        foundSections: COMPANY_PROFILE_SECTION_SLOTS.length,
+        validSections: COMPANY_PROFILE_SECTION_SLOTS.length,
+        draftSections: 0,
+        invalidSections: 0,
+        errors: [],
+        warnings: []
+      }
+    },
+    create: {
+      templatePackKey: "company-profile-demo-default",
+      websiteType: "company_profile",
+      name: "Company Profile Demo Default",
+      theme: "formal",
+      version: "1.0.0",
+      description: "Template pack demo bawaan untuk Company Profile.",
+      status: "active",
+      validationSummaryJson: {
+        expectedPages: COMPANY_PROFILE_PAGES.length,
+        expectedSlots: COMPANY_PROFILE_SECTION_SLOTS.length,
+        foundSections: COMPANY_PROFILE_SECTION_SLOTS.length,
+        validSections: COMPANY_PROFILE_SECTION_SLOTS.length,
+        draftSections: 0,
+        invalidSections: 0,
+        errors: [],
+        warnings: []
+      }
+    }
+  });
+
   for (const [sectionKey, slotKey, name, component, variant] of templates) {
     await prisma.templateSection.upsert({
       where: { sectionKey },
       update: {
+        templatePackId: demoTemplatePack.id,
         slotKey,
+        pageKey: slotKey.split(".")[0],
         name,
         component,
         variant,
@@ -73,8 +116,10 @@ async function main() {
         isActive: true
       },
       create: {
+        templatePackId: demoTemplatePack.id,
         sectionKey,
         websiteType: "company_profile",
+        pageKey: slotKey.split(".")[0],
         slotKey,
         name,
         component,

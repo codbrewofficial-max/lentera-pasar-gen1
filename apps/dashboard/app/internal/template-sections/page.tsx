@@ -18,6 +18,12 @@ interface TemplateSection {
   status?: "draft" | "active" | "invalid";
   statusLabel?: string;
   validationErrors?: any;
+  templatePack?: {
+    id: string | number;
+    templatePackKey: string;
+    name: string;
+    status: string;
+  } | null;
 }
 
 const pageOrder = ["home", "about", "services", "portfolio", "articles", "article_detail", "contact"];
@@ -184,6 +190,11 @@ export default function InternalTemplateSectionsPage() {
                               <div>
                                 <h5 className="text-sm font-bold text-slate-900">{tpl.name || tpl.component}</h5>
                                 <p className="text-[10px] text-slate-400 font-mono">{tpl.component} / {tpl.variant || "default"}</p>
+                                {tpl.templatePack && (
+                                  <p className="text-[10px] text-slate-500 mt-1">
+                                    Template Pack: <span className="font-semibold text-slate-700">{tpl.templatePack.name}</span>
+                                  </p>
+                                )}
                               </div>
                               <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${statusClass(tpl.status)}`}>
                                 {tpl.statusLabel || tpl.status || "Draft"}

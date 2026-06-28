@@ -13,7 +13,8 @@ import {
   TrendingUp,
   Award,
   ChevronRight,
-  UserCheck
+  UserCheck,
+  Package
 } from "lucide-react";
 
 interface InternalStats {
@@ -216,6 +217,22 @@ export default function InternalDashboardPage() {
               </div>
               <div className="flex items-center text-xs font-semibold text-emerald-600 pt-2 border-t border-slate-50">
                 <span>Atur Pustaka Komponen</span>
+                <ChevronRight className="h-4 w-4 ml-1 transition-transform group-hover:translate-x-0.5" />
+              </div>
+            </div>
+
+            <div
+              onClick={() => router.push("/internal/template-packs")}
+              className="bg-white border border-slate-200 hover:border-emerald-300 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between h-40 group"
+            >
+              <div className="space-y-2">
+                <h5 className="font-bold text-slate-900 text-sm group-hover:text-emerald-700 transition-colors">Template Pack</h5>
+                <p className="text-xs text-slate-500 leading-normal">
+                  Upload ZIP template pack dan lihat hasil validasi struktur website.
+                </p>
+              </div>
+              <div className="flex items-center text-xs font-semibold text-emerald-600 pt-2 border-t border-slate-50">
+                <span>Import Template Pack</span>
                 <ChevronRight className="h-4 w-4 ml-1 transition-transform group-hover:translate-x-0.5" />
               </div>
             </div>

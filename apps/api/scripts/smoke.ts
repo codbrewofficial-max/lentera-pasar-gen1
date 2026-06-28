@@ -1,4 +1,6 @@
 import "dotenv/config";
+import AdmZip from "adm-zip";
+import { COMPANY_PROFILE_SECTION_SLOTS, WEBSITE_TYPE_PAGES, getSlotLabel } from "@lentera-pasar/shared";
 
 const baseUrl = process.env.API_BASE_URL || `http://localhost:${process.env.API_PORT || process.env.PORT || 4000}`;
 
@@ -20,6 +22,22 @@ async function request(path: string, options: RequestInit = {}) {
   }
   if (!json || !("data" in json) || typeof json.message !== "string") {
     throw new Error(`${method} ${path} returned invalid success contract: ${JSON.stringify(json)}`);
+  }
+  return json;
+}
+
+async function requestMultipart(path: string, formData: FormData, token: string) {
+  const response = await fetch(`${baseUrl}${path}`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${token}` },
+    body: formData
+  });
+  const json = (await response.json().catch(() => null)) as Json | null;
+  if (!response.ok) {
+    throw new Error(`POST ${path} failed: ${response.status} ${JSON.stringify(json)}`);
+  }
+  if (!json || !("data" in json) || typeof json.message !== "string") {
+    throw new Error(`POST ${path} returned invalid success contract: ${JSON.stringify(json)}`);
   }
   return json;
 }
@@ -48,6 +66,68 @@ const auth = (token: string) => ({ authorization: `Bearer ${token}` });
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
+}
+
+function pascal(value: string) {
+  return value
+    .split(/[_\-.]/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join("");
+}
+
+function buildTemplatePackZip(templatePackKey: string, options: { full: boolean; invalidSlot?: boolean }) {
+  const zip = new AdmZip();
+  zip.addFile(
+    "manifest.json",
+    Buffer.from(
+      JSON.stringify({
+        templatePackKey,
+        websiteType: "company_profile",
+        name: `Smoke Template Pack ${templatePackKey}`,
+        theme: "formal",
+        version: "1.0.0",
+        description: "Smoke test template pack.",
+        pages: WEBSITE_TYPE_PAGES.company_profile
+      }),
+      "utf8"
+    )
+  );
+  const slots = options.full ? COMPANY_PROFILE_SECTION_SLOTS : COMPANY_PROFILE_SECTION_SLOTS.slice(0, 1);
+  for (const slot of slots) {
+    const slotKey = options.invalidSlot ? "home.invalid_slot" : slot.slotKey;
+    zip.addFile(
+      `sections/${slotKey}.smoke.json`,
+      Buffer.from(
+        JSON.stringify({
+          sectionKey: `${templatePackKey}.${slotKey}.smoke`,
+          slotKey,
+          websiteType: "company_profile",
+          pageKey: slot.pageKey,
+          name: `${getSlotLabel(slot.slotKey)} Smoke`,
+          component: `${pascal(slot.slotKey)}Section`,
+          variant: "smoke",
+          schema: [
+            { key: "title", label: "Judul Utama", type: "text", required: true },
+            { key: "subtitle", label: "Deskripsi Singkat", type: "textarea", required: false }
+          ],
+          defaultContent: {
+            title: `${getSlotLabel(slot.slotKey)} Smoke`,
+            subtitle: "Konten smoke template pack."
+          }
+        }),
+        "utf8"
+      )
+    );
+  }
+  return zip.toBuffer();
+}
+
+async function importTemplatePack(templatePackKey: string, token: string, options: { full: boolean; invalidSlot?: boolean }) {
+  const form = new FormData();
+  const buffer = buildTemplatePackZip(templatePackKey, options);
+  form.append("file", new Blob([buffer], { type: "application/zip" }), `${templatePackKey}.zip`);
+  return requestMultipart("/api/v1/internal/template-packs/import-zip", form, token);
 }
 
 async function main() {
@@ -142,6 +222,31 @@ async function main() {
   const activeTemplates = await request("/api/v1/template-sections?websiteType=company_profile&slotKey=home.hero", { headers: auth(smokeOwnerToken) });
   assert(activeTemplates.data[0].status, "Template section missing status");
   await request("/api/v1/template-sections?websiteType=company_profile&includeDraft=true", { headers: auth(internalToken) });
+
+  const activePackKey = `smoke-company-profile-full-${unique}`;
+  const importedPack = await importTemplatePack(activePackKey, internalToken, { full: true });
+  assert(importedPack.data.templatePack.status === "active", "Valid template pack did not become active");
+  assert(importedPack.data.summary.expectedSlots === 33, "Template pack summary expectedSlots must be 33");
+  assert(importedPack.data.summary.validSections === 33, "Valid template pack should import 33 valid sections");
+  const importedPackDetail = await request(`/api/v1/internal/template-packs/${importedPack.data.templatePack.id}`, { headers: auth(internalToken) });
+  assert(importedPackDetail.data.sections.length === 33, "Template pack detail missing sections");
+  const ownerHeroTemplatesAfterPack = await request("/api/v1/template-sections?websiteType=company_profile&slotKey=home.hero", { headers: auth(smokeOwnerToken) });
+  assert(ownerHeroTemplatesAfterPack.data.some((template: any) => template.sectionKey === `${activePackKey}.home.hero.smoke`), "Active imported template not visible to owner selection");
+
+  const draftPackKey = `smoke-company-profile-draft-${unique}`;
+  const draftPack = await importTemplatePack(draftPackKey, internalToken, { full: false });
+  assert(draftPack.data.templatePack.status === "draft", "Incomplete template pack did not become draft");
+  assert(draftPack.data.summary.expectedSlots === 33, "Draft pack summary expectedSlots must be 33");
+  assert(draftPack.data.warnings.length > 0, "Draft pack should include missing slot warnings");
+  const ownerHeroTemplatesAfterDraft = await request("/api/v1/template-sections?websiteType=company_profile&slotKey=home.hero", { headers: auth(smokeOwnerToken) });
+  assert(!ownerHeroTemplatesAfterDraft.data.some((template: any) => template.sectionKey === `${draftPackKey}.home.hero.smoke`), "Draft imported template should not be visible to owner selection");
+
+  const invalidPackKey = `smoke-company-profile-invalid-${unique}`;
+  const invalidPack = await importTemplatePack(invalidPackKey, internalToken, { full: false, invalidSlot: true });
+  assert(invalidPack.data.templatePack.status === "invalid", "Wrong slot template pack did not become invalid");
+  assert(invalidPack.data.errors.length > 0, "Invalid pack should include validation errors");
+  const invalidOwnerTemplates = await request("/api/v1/template-sections?websiteType=company_profile&slotKey=home.invalid_slot", { headers: auth(smokeOwnerToken) });
+  assert(invalidOwnerTemplates.data.length === 0, "Invalid imported template should not be visible to owner selection");
 
   await request(`/api/v1/websites/${websiteId}/sections/home.hero/template`, {
     method: "PATCH",

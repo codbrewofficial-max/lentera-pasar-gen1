@@ -35,6 +35,12 @@ enum TemplateSectionStatus {
   invalid
 }
 
+enum TemplatePackStatus {
+  draft
+  active
+  invalid
+}
+
 model User {
   id               String    @id @default(cuid())
   name             String
@@ -117,8 +123,11 @@ model PageSection {
 
 model TemplateSection {
   id                 String        @id @default(cuid())
+  templatePackId     String?
+  templatePack       TemplatePack? @relation(fields: [templatePackId], references: [id], onDelete: SetNull)
   sectionKey         String        @unique
   websiteType        String
+  pageKey            String?
   slotKey            String
   name               String
   component          String
@@ -134,6 +143,24 @@ model TemplateSection {
 
   @@index([websiteType, slotKey])
   @@index([isActive])
+  @@index([templatePackId])
+}
+
+model TemplatePack {
+  id                    String             @id @default(cuid())
+  templatePackKey       String             @unique
+  websiteType           String
+  name                  String
+  theme                 String
+  version               String
+  description           String?
+  status                TemplatePackStatus @default(draft)
+  validationSummaryJson Json?
+  sections              TemplateSection[]
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@index([websiteType, status])
 }
 
 model Article {

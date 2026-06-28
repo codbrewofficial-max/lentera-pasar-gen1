@@ -22,7 +22,8 @@ import {
   FolderKanban,
   MessageSquare,
   Award,
-  FileText
+  FileText,
+  Package
 } from "lucide-react";
 
 function getRoleLabel(role: string) {
@@ -192,6 +193,12 @@ export default function DashboardLayout({
       icon: Layers,
       href: "/internal/template-sections",
       active: pathname === "/internal/template-sections"
+    },
+    {
+      label: "Template Pack",
+      icon: Package,
+      href: "/internal/template-packs",
+      active: pathname === "/internal/template-packs"
     }
   ] : [];
 

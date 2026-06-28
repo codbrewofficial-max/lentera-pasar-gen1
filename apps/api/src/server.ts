@@ -13,7 +13,9 @@ import {
   COMPANY_PROFILE_SECTION_SLOTS,
   LEAD_STATUS,
   SECTION_FIELD_TYPES,
+  THEMES,
   TRACKING_EVENT_NAMES,
+  WEBSITE_TYPE_PAGES,
   WEBSITE_TYPES,
   getArticleStatusLabel,
   getLeadStatusLabel,
@@ -22,8 +24,7 @@ import {
   getSlotLabel,
   getTemplateSectionStatusLabel,
   getWebsiteStatusLabel,
-  getWebsiteTypeLabel,
-  isCompanyProfileSlot
+  getWebsiteTypeLabel
 } from "@lentera-pasar/shared";
 import { prisma } from "./prisma.js";
 import { createCompanyProfileDefaults, isDynamicDetailPage } from "./defaults.js";
@@ -84,11 +85,30 @@ const templateSummary = (template: any) =>
       }
     : null;
 
+const templatePackContract = (pack: any) => ({
+  id: pack.id,
+  templatePackKey: pack.templatePackKey,
+  websiteType: pack.websiteType,
+  websiteTypeLabel: getWebsiteTypeLabel(pack.websiteType),
+  name: pack.name,
+  theme: pack.theme,
+  version: pack.version,
+  description: pack.description,
+  status: pack.status,
+  statusLabel: getTemplateSectionStatusLabel(pack.status),
+  validationSummary: pack.validationSummaryJson || null,
+  sectionsCount: pack._count?.sections ?? pack.sections?.length ?? 0,
+  createdAt: pack.createdAt,
+  updatedAt: pack.updatedAt
+});
+
 const templateContract = (template: any) => ({
   id: template.id,
   sectionKey: template.sectionKey,
-  pageKey: template.slotKey?.split(".")[0] || null,
-  pageLabel: template.slotKey ? getPageLabel(template.slotKey.split(".")[0]) : null,
+  templatePackId: template.templatePackId || null,
+  templatePack: template.templatePack ? templatePackContract(template.templatePack) : null,
+  pageKey: template.pageKey || template.slotKey?.split(".")[0] || null,
+  pageLabel: template.pageKey || template.slotKey ? getPageLabel(template.pageKey || template.slotKey.split(".")[0]) : null,
   slotKey: template.slotKey,
   slotLabel: getSlotLabel(template.slotKey),
   websiteType: template.websiteType,
@@ -760,6 +780,7 @@ const templateImportSchema = z.object({
   sectionKey: z.string().min(1),
   slotKey: z.string().min(1),
   websiteType: z.literal("company_profile"),
+  pageKey: z.string().min(1),
   name: z.string().min(1),
   component: z.string().min(1),
   variant: z.string().nullable().optional(),
@@ -767,52 +788,282 @@ const templateImportSchema = z.object({
   defaultContent: z.record(z.unknown())
 });
 
+const templatePackManifestSchema = z.object({
+  templatePackKey: z.string().min(1),
+  websiteType: z.literal("company_profile"),
+  name: z.string().min(1),
+  theme: z.enum(["formal", "casual", "abstract"]),
+  version: z.string().min(1),
+  description: z.string().nullable().optional(),
+  pages: z.array(z.string().min(1))
+});
+
+type ValidationItem = { level: "error" | "warning"; file?: string; slotKey?: string; message: string };
+
+const expectedPagesFor = (websiteType: string) =>
+  websiteType === "company_profile" ? [...WEBSITE_TYPE_PAGES.company_profile] : [];
+
+const expectedSlotsFor = (websiteType: string) =>
+  websiteType === "company_profile" ? COMPANY_PROFILE_SECTION_SLOTS.map((slot) => slot.slotKey) : [];
+
+const sameStringSet = (a: string[], b: string[]) =>
+  a.length === b.length && a.every((item) => b.includes(item)) && b.every((item) => a.includes(item));
+
+const isSafeZipEntryName = (name: string) =>
+  !name.includes("..") && !name.startsWith("/") && !name.startsWith("\\") && !name.includes(":") && !name.includes("\\");
+
+const validationSummary = (summary: Record<string, unknown>, errors: ValidationItem[], warnings: ValidationItem[]) => ({
+  ...summary,
+  errors,
+  warnings
+});
+
+const importTemplatePackZip = async (buffer: Buffer) => {
+  if (buffer.byteLength > 5 * 1024 * 1024) {
+    throw new AppError(413, "ZIP_TOO_LARGE", "Template pack ZIP is too large");
+  }
+
+  const zip = new AdmZip(buffer);
+  const allEntries = zip.getEntries();
+  for (const entry of allEntries) {
+    if (!isSafeZipEntryName(entry.entryName)) {
+      throw new AppError(400, "UNSAFE_ZIP_ENTRY", `Unsafe ZIP entry path: ${entry.entryName}`);
+    }
+  }
+
+  const manifestEntry = zip.getEntry("manifest.json");
+  if (!manifestEntry) throw new AppError(400, "MANIFEST_REQUIRED", "manifest.json is required");
+
+  let manifestRaw: unknown;
+  try {
+    manifestRaw = JSON.parse(manifestEntry.getData().toString("utf8"));
+  } catch {
+    throw new AppError(400, "INVALID_MANIFEST_JSON", "manifest.json must be valid JSON");
+  }
+
+  const manifestResult = templatePackManifestSchema.safeParse(manifestRaw);
+  if (!manifestResult.success) {
+    throw new AppError(422, "INVALID_MANIFEST", "Template pack manifest is invalid", manifestResult.error.flatten());
+  }
+  const manifest = manifestResult.data;
+  const expectedPages = expectedPagesFor(manifest.websiteType);
+  const expectedSlots = expectedSlotsFor(manifest.websiteType);
+  const errors: ValidationItem[] = [];
+  const warnings: ValidationItem[] = [];
+
+  if (!WEBSITE_TYPES.some((type) => type.key === manifest.websiteType)) {
+    errors.push({ level: "error", file: "manifest.json", message: "websiteType tidak dikenal." });
+  }
+  if (manifest.websiteType !== "company_profile") {
+    errors.push({ level: "error", file: "manifest.json", message: "Untuk MVP, websiteType harus company_profile." });
+  }
+  if (!Object.keys(THEMES).includes(manifest.theme)) {
+    errors.push({ level: "error", file: "manifest.json", message: "theme tidak valid." });
+  }
+  if (!sameStringSet(manifest.pages, expectedPages)) {
+    errors.push({ level: "error", file: "manifest.json", message: "pages tidak cocok dengan struktur websiteType." });
+  }
+
+  const sectionEntries = allEntries.filter((entry) => !entry.isDirectory && entry.entryName.startsWith("sections/") && entry.entryName.endsWith(".json"));
+  if (sectionEntries.length === 0) {
+    errors.push({ level: "error", file: "sections/", message: "Folder sections harus berisi minimal satu JSON section." });
+  }
+
+  const seenSectionKeys = new Set<string>();
+  const validSectionRows: Array<{ parsed: z.infer<typeof templateImportSchema>; file: string; status: "draft" | "active" | "invalid"; validationErrors: ValidationItem[] }> = [];
+  const foundValidSlots = new Set<string>();
+
+  for (const entry of sectionEntries) {
+    const file = entry.entryName;
+    const sectionErrors: ValidationItem[] = [];
+    let raw: any;
+    try {
+      raw = JSON.parse(entry.getData().toString("utf8"));
+    } catch {
+      errors.push({ level: "error", file, message: "File section bukan JSON valid." });
+      continue;
+    }
+
+    const parsedResult = templateImportSchema.safeParse(raw);
+    if (!parsedResult.success) {
+      sectionErrors.push({ level: "error", file, slotKey: raw?.slotKey, message: "Format section tidak valid." });
+    }
+
+    const parsed = parsedResult.success
+      ? parsedResult.data
+      : {
+          sectionKey: String(raw?.sectionKey || ""),
+          slotKey: String(raw?.slotKey || ""),
+          websiteType: raw?.websiteType,
+          pageKey: String(raw?.pageKey || ""),
+          name: String(raw?.name || raw?.sectionKey || file),
+          component: String(raw?.component || ""),
+          variant: raw?.variant || null,
+          schema: Array.isArray(raw?.schema) ? raw.schema : [],
+          defaultContent: raw?.defaultContent && typeof raw.defaultContent === "object" ? raw.defaultContent : {}
+        };
+
+    if (!parsed.sectionKey) sectionErrors.push({ level: "error", file, slotKey: parsed.slotKey, message: "sectionKey wajib diisi." });
+    if (parsed.sectionKey && seenSectionKeys.has(parsed.sectionKey)) {
+      sectionErrors.push({ level: "error", file, slotKey: parsed.slotKey, message: "sectionKey duplikat dalam pack." });
+    }
+    if (parsed.sectionKey) seenSectionKeys.add(parsed.sectionKey);
+    if (parsed.websiteType !== manifest.websiteType) {
+      sectionErrors.push({ level: "error", file, slotKey: parsed.slotKey, message: "websiteType section tidak sama dengan manifest." });
+    }
+    if (!expectedPages.includes(parsed.pageKey as any)) {
+      sectionErrors.push({ level: "error", file, slotKey: parsed.slotKey, message: "pageKey tidak valid untuk websiteType." });
+    }
+    if (!parsed.slotKey.includes(".") || parsed.slotKey.split(".")[0] !== parsed.pageKey) {
+      sectionErrors.push({ level: "error", file, slotKey: parsed.slotKey, message: "slotKey tidak cocok dengan pageKey." });
+    }
+    if (!expectedSlots.includes(parsed.slotKey)) {
+      sectionErrors.push({ level: "error", file, slotKey: parsed.slotKey, message: "slotKey tidak valid untuk struktur websiteType." });
+    }
+    if (!parsed.component) {
+      sectionErrors.push({ level: "error", file, slotKey: parsed.slotKey, message: "component tidak boleh kosong." });
+    }
+    for (const field of parsed.schema as any[]) {
+      if (!field?.key || !field?.label || !field?.type || !SECTION_FIELD_TYPES.includes(field.type)) {
+        sectionErrors.push({ level: "error", file, slotKey: parsed.slotKey, message: "schema field harus memiliki key, label, dan type valid." });
+        break;
+      }
+    }
+
+    if (sectionErrors.length === 0) foundValidSlots.add(parsed.slotKey);
+    else errors.push(...sectionErrors);
+
+    if (parsed.sectionKey) {
+      validSectionRows.push({
+        parsed: parsed as z.infer<typeof templateImportSchema>,
+        file,
+        status: sectionErrors.length > 0 ? "invalid" : "draft",
+        validationErrors: sectionErrors
+      });
+    }
+  }
+
+  const missingSlots = expectedSlots.filter((slotKey) => !foundValidSlots.has(slotKey));
+  for (const slotKey of missingSlots) {
+    warnings.push({ level: "warning", slotKey, message: "Template untuk slot ini belum ada di pack." });
+  }
+
+  const packStatus = errors.length > 0 ? "invalid" : missingSlots.length > 0 ? "draft" : "active";
+  for (const row of validSectionRows) {
+    if (row.status !== "invalid") row.status = packStatus === "active" ? "active" : "draft";
+  }
+
+  const summary = {
+    expectedPages: expectedPages.length,
+    expectedSlots: expectedSlots.length,
+    foundSections: sectionEntries.length,
+    validSections: validSectionRows.filter((row) => row.status !== "invalid").length,
+    draftSections: validSectionRows.filter((row) => row.status === "draft").length,
+    invalidSections: validSectionRows.filter((row) => row.status === "invalid").length
+  };
+
+  const templatePack = await prisma.templatePack.upsert({
+    where: { templatePackKey: manifest.templatePackKey },
+    update: {
+      websiteType: manifest.websiteType,
+      name: manifest.name,
+      theme: manifest.theme,
+      version: manifest.version,
+      description: manifest.description || null,
+      status: packStatus,
+      validationSummaryJson: validationSummary(summary, errors, warnings) as any
+    },
+    create: {
+      templatePackKey: manifest.templatePackKey,
+      websiteType: manifest.websiteType,
+      name: manifest.name,
+      theme: manifest.theme,
+      version: manifest.version,
+      description: manifest.description || null,
+      status: packStatus,
+      validationSummaryJson: validationSummary(summary, errors, warnings) as any
+    }
+  });
+
+  for (const row of validSectionRows) {
+    const parsed = row.parsed;
+    const schemaJson = normalizeSectionSchema(parsed.schema);
+    await prisma.templateSection.upsert({
+      where: { sectionKey: parsed.sectionKey },
+      update: {
+        templatePackId: templatePack.id,
+        websiteType: parsed.websiteType,
+        pageKey: parsed.pageKey,
+        slotKey: parsed.slotKey,
+        name: parsed.name,
+        component: parsed.component || "InvalidSection",
+        variant: parsed.variant || null,
+        schemaJson: schemaJson as any,
+        defaultContentJson: parsed.defaultContent as any,
+        status: row.status,
+        isActive: row.status === "active",
+        validationErrors: row.validationErrors.length ? row.validationErrors as any : null
+      },
+      create: {
+        templatePackId: templatePack.id,
+        sectionKey: parsed.sectionKey,
+        websiteType: parsed.websiteType,
+        pageKey: parsed.pageKey,
+        slotKey: parsed.slotKey,
+        name: parsed.name,
+        component: parsed.component || "InvalidSection",
+        variant: parsed.variant || null,
+        schemaJson: schemaJson as any,
+        defaultContentJson: parsed.defaultContent as any,
+        status: row.status,
+        isActive: row.status === "active",
+        validationErrors: row.validationErrors.length ? row.validationErrors as any : null
+      }
+    });
+  }
+
+  const savedPack = await prisma.templatePack.findUnique({ where: { id: templatePack.id }, include: { _count: { select: { sections: true } } } });
+  return { templatePack: savedPack || templatePack, summary, errors, warnings };
+};
+
 const registerTemplateRoutes = () => {
   app.post("/api/v1/internal/template-sections/import-zip", async (request, reply) => {
     await requireRole(request, ["internal_admin"]);
     const file = await request.file();
     if (!file) throw new AppError(400, "ZIP_REQUIRED", "Template ZIP file is required");
-    const buffer = await file.toBuffer();
-    const zip = new AdmZip(buffer);
-    const manifest = zip.getEntry("manifest.json");
-    if (!manifest) throw new AppError(400, "MANIFEST_REQUIRED", "manifest.json is required");
-    JSON.parse(manifest.getData().toString("utf8"));
-    const entries = zip.getEntries().filter((entry) => entry.entryName.startsWith("sections/") && entry.entryName.endsWith(".json"));
-    const imported = [];
-    for (const entry of entries) {
-      const parsed = templateImportSchema.parse(JSON.parse(entry.getData().toString("utf8")));
-      if (!isCompanyProfileSlot(parsed.slotKey)) throw new AppError(422, "INVALID_SLOT_KEY", `Invalid slotKey: ${parsed.slotKey}`);
-      const schemaJson = parsed.schema.map((field) => ({ ...field, type: normalizeFieldType(field.type) }));
-      imported.push(
-        await prisma.templateSection.upsert({
-          where: { sectionKey: parsed.sectionKey },
-          update: {
-            websiteType: parsed.websiteType,
-            slotKey: parsed.slotKey,
-            name: parsed.name,
-            component: parsed.component,
-            variant: parsed.variant || null,
-            schemaJson: schemaJson as any,
-            defaultContentJson: parsed.defaultContent as any,
-            status: "active",
-            isActive: true
-          },
-          create: {
-            sectionKey: parsed.sectionKey,
-            websiteType: parsed.websiteType,
-            slotKey: parsed.slotKey,
-            name: parsed.name,
-            component: parsed.component,
-            variant: parsed.variant || null,
-            schemaJson: schemaJson as any,
-            defaultContentJson: parsed.defaultContent as any,
-            status: "active",
-            isActive: true
-          }
-        })
-      );
-    }
-    return ok(reply, { importedCount: imported.length, sections: imported.map(templateContract) }, "Template sections imported");
+    const report = await importTemplatePackZip(await file.toBuffer());
+    return ok(reply, { templatePack: templatePackContract(report.templatePack), summary: report.summary, errors: report.errors, warnings: report.warnings }, "Template pack imported");
+  });
+  app.post("/api/v1/internal/template-packs/import-zip", async (request, reply) => {
+    await requireRole(request, ["internal_admin"]);
+    const file = await request.file();
+    if (!file) throw new AppError(400, "ZIP_REQUIRED", "Template pack ZIP file is required");
+    const report = await importTemplatePackZip(await file.toBuffer());
+    return ok(reply, { templatePack: templatePackContract(report.templatePack), summary: report.summary, errors: report.errors, warnings: report.warnings }, "Template pack imported");
+  });
+  app.get("/api/v1/internal/template-packs", async (request, reply) => {
+    await requireRole(request, ["internal_admin"]);
+    const packs = await prisma.templatePack.findMany({
+      orderBy: { updatedAt: "desc" },
+      include: { _count: { select: { sections: true } } }
+    });
+    return ok(reply, packs.map(templatePackContract), "Template packs loaded");
+  });
+  app.get("/api/v1/internal/template-packs/:templatePackId", async (request: Req, reply) => {
+    await requireRole(request, ["internal_admin"]);
+    const pack = await prisma.templatePack.findUnique({
+      where: { id: request.params?.templatePackId },
+      include: { sections: { orderBy: [{ pageKey: "asc" }, { slotKey: "asc" }, { name: "asc" }] }, _count: { select: { sections: true } } }
+    });
+    if (!pack) throw new AppError(404, "TEMPLATE_PACK_NOT_FOUND", "Template pack not found");
+    return ok(reply, { ...templatePackContract(pack), sections: pack.sections.map(templateContract) }, "Template pack loaded");
+  });
+  app.get("/api/v1/internal/template-packs/:templatePackId/validation-report", async (request: Req, reply) => {
+    await requireRole(request, ["internal_admin"]);
+    const pack = await prisma.templatePack.findUnique({ where: { id: request.params?.templatePackId }, include: { _count: { select: { sections: true } } } });
+    if (!pack) throw new AppError(404, "TEMPLATE_PACK_NOT_FOUND", "Template pack not found");
+    const report = pack.validationSummaryJson as any;
+    return ok(reply, { templatePack: templatePackContract(pack), summary: report || null, errors: report?.errors || [], warnings: report?.warnings || [] }, "Template pack validation report loaded");
   });
   app.get("/api/v1/template-sections", async (request: Req, reply) => {
     const user = await requireAuth(request);
@@ -823,19 +1074,20 @@ const registerTemplateRoutes = () => {
         slotKey: request.query?.slotKey,
         ...(includeDraft ? {} : { status: "active", isActive: true })
       },
-      orderBy: { name: "asc" }
+      orderBy: { name: "asc" },
+      include: { templatePack: true }
     });
     return ok(reply, sections.map(templateContract), "Template sections loaded");
   });
   app.get("/api/v1/template-sections/:id", async (request: Req, reply) => {
     await requireAuth(request);
-    const section = await prisma.templateSection.findUnique({ where: { id: request.params?.id } });
+    const section = await prisma.templateSection.findUnique({ where: { id: request.params?.id }, include: { templatePack: true } });
     if (!section) throw new AppError(404, "TEMPLATE_SECTION_NOT_FOUND", "Template section not found");
     return ok(reply, templateContract(section), "Template section loaded");
   });
   app.get("/api/v1/template-sections/by-slot/:slotKey", async (request: Req, reply) => {
     await requireAuth(request);
-    const sections = await prisma.templateSection.findMany({ where: { slotKey: request.params?.slotKey, status: "active", isActive: true }, orderBy: { name: "asc" } });
+    const sections = await prisma.templateSection.findMany({ where: { slotKey: request.params?.slotKey, status: "active", isActive: true }, orderBy: { name: "asc" }, include: { templatePack: true } });
     return ok(reply, sections.map(templateContract), "Template sections loaded");
   });
 };
