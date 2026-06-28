@@ -17,7 +17,11 @@ import {
   Rocket,
   Info,
   ArrowRight,
-  Eye
+  Eye,
+  HeartHandshake,
+  FolderKanban,
+  MessageSquare,
+  Award
 } from "lucide-react";
 
 interface Website {
@@ -328,6 +332,98 @@ export default function WebsiteOverviewPage() {
               </div>
               <div className="flex items-center text-xs font-semibold text-amber-600 pt-2 border-t border-slate-50">
                 <span>Lihat Lead</span>
+                <ChevronRight className="h-3.5 w-3.5 ml-1 transition-transform group-hover:translate-x-0.5" />
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Kelola Konten Usaha Section */}
+        <div className="space-y-4">
+          <h3 className="font-bold text-slate-900 text-lg">Kelola Konten Company Profile</h3>
+          <p className="text-xs text-slate-500 leading-relaxed max-w-2xl">
+            Isi database konten bisnis Anda di bawah ini agar data dapat ditampilkan secara rapi pada template bagian halaman yang memiliki elemen daftar layanan, galeri portfolio, testimoni pelanggan, maupun logo rekanan/brand partner.
+          </p>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="overview-content-grid">
+            
+            {/* 1. Layanan */}
+            <div 
+              onClick={() => router.push(`/websites/${website.id}/content/services`)}
+              className="bg-white border border-slate-200 hover:border-emerald-300 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between h-44 group"
+            >
+              <div className="space-y-2">
+                <div className="h-10 w-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center transition-colors group-hover:bg-emerald-600 group-hover:text-white">
+                  <HeartHandshake className="h-5 w-5" />
+                </div>
+                <h4 className="font-bold text-slate-900 text-sm group-hover:text-emerald-700 transition-colors">Daftar Layanan</h4>
+                <p className="text-xs text-slate-500 leading-normal">
+                  Tambahkan, edit, dan susun layanan atau produk utama yang ditawarkan bisnis Anda.
+                </p>
+              </div>
+              <div className="flex items-center text-xs font-semibold text-emerald-600 pt-2 border-t border-slate-50">
+                <span>Kelola Layanan</span>
+                <ChevronRight className="h-3.5 w-3.5 ml-1 transition-transform group-hover:translate-x-0.5" />
+              </div>
+            </div>
+
+            {/* 2. Portfolio */}
+            <div 
+              onClick={() => router.push(`/websites/${website.id}/content/portfolio`)}
+              className="bg-white border border-slate-200 hover:border-emerald-300 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between h-44 group"
+            >
+              <div className="space-y-2">
+                <div className="h-10 w-10 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center transition-colors group-hover:bg-teal-600 group-hover:text-white">
+                  <FolderKanban className="h-5 w-5" />
+                </div>
+                <h4 className="font-bold text-slate-900 text-sm group-hover:text-emerald-700 transition-colors">Galeri Portfolio</h4>
+                <p className="text-xs text-slate-500 leading-normal">
+                  Pajang hasil proyek, dokumentasi kerja, atau studi kasus kesuksesan bisnis Anda.
+                </p>
+              </div>
+              <div className="flex items-center text-xs font-semibold text-teal-600 pt-2 border-t border-slate-50">
+                <span>Kelola Portfolio</span>
+                <ChevronRight className="h-3.5 w-3.5 ml-1 transition-transform group-hover:translate-x-0.5" />
+              </div>
+            </div>
+
+            {/* 3. Testimonial */}
+            <div 
+              onClick={() => router.push(`/websites/${website.id}/content/testimonials`)}
+              className="bg-white border border-slate-200 hover:border-emerald-300 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between h-44 group"
+            >
+              <div className="space-y-2">
+                <div className="h-10 w-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center transition-colors group-hover:bg-amber-600 group-hover:text-white">
+                  <MessageSquare className="h-5 w-5" />
+                </div>
+                <h4 className="font-bold text-slate-900 text-sm group-hover:text-emerald-700 transition-colors">Testimoni Pelanggan</h4>
+                <p className="text-xs text-slate-500 leading-normal">
+                  Tampilkan ulasan positif dan tingkat kepuasan dari pelanggan setia Anda.
+                </p>
+              </div>
+              <div className="flex items-center text-xs font-semibold text-amber-600 pt-2 border-t border-slate-50">
+                <span>Kelola Testimoni</span>
+                <ChevronRight className="h-3.5 w-3.5 ml-1 transition-transform group-hover:translate-x-0.5" />
+              </div>
+            </div>
+
+            {/* 4. Brand / Partner */}
+            <div 
+              onClick={() => router.push(`/websites/${website.id}/content/brands`)}
+              className="bg-white border border-slate-200 hover:border-emerald-300 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between h-44 group"
+            >
+              <div className="space-y-2">
+                <div className="h-10 w-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center transition-colors group-hover:bg-indigo-600 group-hover:text-white">
+                  <Award className="h-5 w-5" />
+                </div>
+                <h4 className="font-bold text-slate-900 text-sm group-hover:text-emerald-700 transition-colors">Brand & Partner</h4>
+                <p className="text-xs text-slate-500 leading-normal">
+                  Kelola daftar logo klien, partner, atau merek terafiliasi yang bekerja sama dengan Anda.
+                </p>
+              </div>
+              <div className="flex items-center text-xs font-semibold text-indigo-600 pt-2 border-t border-slate-50">
+                <span>Kelola Brand Partner</span>
                 <ChevronRight className="h-3.5 w-3.5 ml-1 transition-transform group-hover:translate-x-0.5" />
               </div>
             </div>

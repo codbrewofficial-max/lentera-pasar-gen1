@@ -16,7 +16,12 @@ import {
   ChevronRight,
   ArrowLeft,
   Database,
-  User
+  User,
+  Shield,
+  HeartHandshake,
+  FolderKanban,
+  MessageSquare,
+  Award
 } from "lucide-react";
 
 function getRoleLabel(role: string) {
@@ -103,19 +108,43 @@ export default function DashboardLayout({
       label: "Ringkasan",
       icon: LayoutDashboard,
       href: `/websites/${websiteId}/overview`,
-      active: pathname?.includes(`/websites/${websiteId}/overview`)
+      active: pathname === `/websites/${websiteId}/overview`
     },
     {
       label: "Profil Bisnis",
       icon: Briefcase,
       href: `/websites/${websiteId}/profile`,
-      active: pathname?.includes(`/websites/${websiteId}/profile`)
+      active: pathname === `/websites/${websiteId}/profile`
     },
     {
       label: "Halaman",
       icon: Layers,
       href: `/websites/${websiteId}/pages`,
-      active: pathname?.includes(`/websites/${websiteId}/pages`)
+      active: pathname?.includes(`/websites/${websiteId}/pages`) || pathname?.includes(`/websites/${websiteId}/sections`)
+    },
+    {
+      label: "Layanan",
+      icon: HeartHandshake,
+      href: `/websites/${websiteId}/content/services`,
+      active: pathname?.includes(`/websites/${websiteId}/content/services`)
+    },
+    {
+      label: "Portfolio",
+      icon: FolderKanban,
+      href: `/websites/${websiteId}/content/portfolio`,
+      active: pathname?.includes(`/websites/${websiteId}/content/portfolio`)
+    },
+    {
+      label: "Testimoni",
+      icon: MessageSquare,
+      href: `/websites/${websiteId}/content/testimonials`,
+      active: pathname?.includes(`/websites/${websiteId}/content/testimonials`)
+    },
+    {
+      label: "Brand / Partner",
+      icon: Award,
+      href: `/websites/${websiteId}/content/brands`,
+      active: pathname?.includes(`/websites/${websiteId}/content/brands`)
     },
     {
       label: "Insight",
@@ -128,6 +157,34 @@ export default function DashboardLayout({
       icon: Users,
       href: `/websites/${websiteId}/leads`,
       active: pathname?.includes(`/websites/${websiteId}/leads`)
+    }
+  ] : [];
+
+  // Internal menu items for internal_admin
+  const internalMenuItems = userRole === "internal_admin" ? [
+    {
+      label: "Dashboard Internal",
+      icon: Shield,
+      href: "/internal",
+      active: pathname === "/internal"
+    },
+    {
+      label: "Owner Bisnis",
+      icon: Users,
+      href: "/internal/owners",
+      active: pathname === "/internal/owners"
+    },
+    {
+      label: "Daftar Website",
+      icon: Globe,
+      href: "/internal/websites",
+      active: pathname === "/internal/websites"
+    },
+    {
+      label: "Template Section",
+      icon: Layers,
+      href: "/internal/template-sections",
+      active: pathname === "/internal/template-sections"
     }
   ] : [];
 
@@ -175,6 +232,31 @@ export default function DashboardLayout({
               </span>
               <nav className="space-y-1">
                 {localTabs.map((item, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => router.push(item.href)}
+                    className={`w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-sm font-medium transition ${
+                      item.active
+                        ? "bg-emerald-50 text-emerald-700 font-semibold"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    }`}
+                  >
+                    <item.icon className={`h-5 w-5 ${item.active ? "text-emerald-600" : "text-slate-400"}`} />
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </nav>
+            </div>
+          )}
+
+          {/* Internal Admin Navigation */}
+          {userRole === "internal_admin" && (
+            <div>
+              <span className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                Menu Internal
+              </span>
+              <nav className="space-y-1">
+                {internalMenuItems.map((item, idx) => (
                   <button
                     key={idx}
                     onClick={() => router.push(item.href)}
@@ -301,6 +383,33 @@ export default function DashboardLayout({
                     </span>
                     <nav className="space-y-1">
                       {localTabs.map((item, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            setMobileMenuOpen(false);
+                            router.push(item.href);
+                          }}
+                          className={`w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-sm font-medium transition ${
+                            item.active
+                              ? "bg-emerald-50 text-emerald-700 font-semibold"
+                              : "text-slate-600 hover:bg-slate-50"
+                          }`}
+                        >
+                          <item.icon className="h-5 w-5" />
+                          <span>{item.label}</span>
+                        </button>
+                      ))}
+                    </nav>
+                  </div>
+                )}
+
+                {userRole === "internal_admin" && (
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                      Menu Internal
+                    </span>
+                    <nav className="space-y-1">
+                      {internalMenuItems.map((item, idx) => (
                         <button
                           key={idx}
                           onClick={() => {

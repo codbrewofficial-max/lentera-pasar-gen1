@@ -149,30 +149,58 @@ async function main() {
   const service = await request(`/api/v1/websites/${websiteId}/services`, {
     method: "POST",
     headers: auth(ownerToken),
-    body: JSON.stringify({ title: "Smoke Service", description: "Smoke description", sortOrder: 1 })
+    body: JSON.stringify({ title: "Smoke Service", description: "Smoke description", imageUrl: "https://example.com/service.jpg", sortOrder: 1, isActive: true })
   });
   await request(`/api/v1/websites/${websiteId}/services/${service.data.id}`, { headers: auth(ownerToken) });
+  const patchedService = await request(`/api/v1/websites/${websiteId}/services/${service.data.id}`, {
+    method: "PATCH",
+    headers: auth(ownerToken),
+    body: JSON.stringify({ title: "Smoke Service Patched", description: "Smoke description patched", imageUrl: "https://example.com/service-patched.jpg", sortOrder: 2, isActive: false })
+  });
+  assert(patchedService.data.title === "Smoke Service Patched", "Service PATCH did not update title");
+  await request(`/api/v1/websites/${websiteId}/services/${service.data.id}`, { method: "DELETE", headers: auth(ownerToken) });
 
   const portfolio = await request(`/api/v1/websites/${websiteId}/portfolios`, {
     method: "POST",
     headers: auth(ownerToken),
-    body: JSON.stringify({ title: "Smoke Portfolio", description: "Smoke portfolio", sortOrder: 1 })
+    body: JSON.stringify({ title: "Smoke Portfolio", description: "Smoke portfolio", imageUrl: "https://example.com/portfolio.jpg", sortOrder: 1, isActive: true })
   });
   await request(`/api/v1/websites/${websiteId}/portfolios/${portfolio.data.id}`, { headers: auth(ownerToken) });
+  const patchedPortfolio = await request(`/api/v1/websites/${websiteId}/portfolios/${portfolio.data.id}`, {
+    method: "PATCH",
+    headers: auth(ownerToken),
+    body: JSON.stringify({ title: "Smoke Portfolio Patched", description: "Smoke portfolio patched", imageUrl: "https://example.com/portfolio-patched.jpg", sortOrder: 2, isActive: false })
+  });
+  assert(patchedPortfolio.data.title === "Smoke Portfolio Patched", "Portfolio PATCH did not update title");
+  await request(`/api/v1/websites/${websiteId}/portfolios/${portfolio.data.id}`, { method: "DELETE", headers: auth(ownerToken) });
 
   const testimonial = await request(`/api/v1/websites/${websiteId}/testimonials`, {
     method: "POST",
     headers: auth(ownerToken),
-    body: JSON.stringify({ name: "Smoke Client", quote: "Smoke quote", sortOrder: 1 })
+    body: JSON.stringify({ name: "Smoke Client", role: "Owner", company: "Smoke Co", quote: "Smoke quote", avatarUrl: "https://example.com/avatar.jpg", sortOrder: 1, isActive: true })
   });
   await request(`/api/v1/websites/${websiteId}/testimonials/${testimonial.data.id}`, { headers: auth(ownerToken) });
+  const patchedTestimonial = await request(`/api/v1/websites/${websiteId}/testimonials/${testimonial.data.id}`, {
+    method: "PATCH",
+    headers: auth(ownerToken),
+    body: JSON.stringify({ name: "Smoke Client Patched", role: "Director", company: "Smoke Co Patched", quote: "Smoke quote patched", avatarUrl: "https://example.com/avatar-patched.jpg", sortOrder: 2, isActive: false })
+  });
+  assert(patchedTestimonial.data.name === "Smoke Client Patched", "Testimonial PATCH did not update name");
+  await request(`/api/v1/websites/${websiteId}/testimonials/${testimonial.data.id}`, { method: "DELETE", headers: auth(ownerToken) });
 
   const brand = await request(`/api/v1/websites/${websiteId}/brand-partners`, {
     method: "POST",
     headers: auth(ownerToken),
-    body: JSON.stringify({ name: "Smoke Partner", url: "https://example.com", sortOrder: 1 })
+    body: JSON.stringify({ name: "Smoke Partner", logoUrl: "https://example.com/logo.png", url: "https://example.com", sortOrder: 1, isActive: true })
   });
   await request(`/api/v1/websites/${websiteId}/brand-partners/${brand.data.id}`, { headers: auth(ownerToken) });
+  const patchedBrand = await request(`/api/v1/websites/${websiteId}/brand-partners/${brand.data.id}`, {
+    method: "PATCH",
+    headers: auth(ownerToken),
+    body: JSON.stringify({ name: "Smoke Partner Patched", logoUrl: "https://example.com/logo-patched.png", url: "https://partner.example.com", sortOrder: 2, isActive: false })
+  });
+  assert(patchedBrand.data.name === "Smoke Partner Patched", "Brand partner PATCH did not update name");
+  await request(`/api/v1/websites/${websiteId}/brand-partners/${brand.data.id}`, { method: "DELETE", headers: auth(ownerToken) });
 
   await request(`/api/v1/websites/${websiteId}/publish`, { method: "POST", headers: auth(ownerToken) });
   const publicHome = await request(`/api/v1/public/sites/${slug}`);
