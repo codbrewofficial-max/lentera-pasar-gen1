@@ -22,11 +22,19 @@ import {
   User
 } from "lucide-react";
 
+interface PortfolioCategory {
+  id: string;
+  name: string;
+  slug: string;
+  isActive: boolean;
+}
+
 interface PortfolioItem {
   id: string | number;
+  categoryId?: string | null;
+  category?: PortfolioCategory | null;
   title: string;
   description: string;
-  category?: string;
   imageUrl: string;
   projectUrl?: string;
   clientName?: string;
@@ -50,6 +58,7 @@ export default function PortfolioCrudPage() {
   const websiteId = params?.websiteId as string;
 
   const [items, setItems] = useState<PortfolioItem[]>([]);
+  const [categories, setCategories] = useState<PortfolioCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -63,6 +72,7 @@ export default function PortfolioCrudPage() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
+    categoryId: "",
     category: "Desain & Kreatif",
     imageUrl: "https://picsum.photos/seed/portfolio/800/600",
     projectUrl: "",
@@ -79,9 +89,12 @@ export default function PortfolioCrudPage() {
     setLoading(true);
     setErrorMsg("");
     try {
-      // Endpoint is plural as seen in preview payload structure: data.portfolios
-      const res = await apiCall<PortfolioItem[]>("GET", `websites/${websiteId}/portfolios`);
-      setItems(res.data || []);
+      const [portfolioRes, categoriesRes] = await Promise.all([
+        apiCall<PortfolioItem[]>("GET", `websites/${websiteId}/portfolios`),
+        apiCall<PortfolioCategory[]>("GET", `websites/${websiteId}/portfolio-categories`).catch(() => ({ data: [] as PortfolioCategory[] }))
+      ]);
+      setItems(portfolioRes.data || []);
+      setCategories(categoriesRes.data || []);
     } catch (err: any) {
       console.error("Fetch portfolios error:", err);
       setErrorMsg(err.error?.message || "Gagal memuat daftar portfolio.");
@@ -108,6 +121,7 @@ export default function PortfolioCrudPage() {
     setFormData({
       title: "",
       description: "",
+      categoryId: "",
       category: "Desain & Kreatif",
       imageUrl: "https://picsum.photos/seed/" + Math.floor(Math.random() * 1000) + "/800/600",
       projectUrl: "",
@@ -122,7 +136,8 @@ export default function PortfolioCrudPage() {
     setFormData({
       title: item.title,
       description: item.description,
-      category: item.category || "Desain & Kreatif",
+      categoryId: item.categoryId || "",
+      category: item.category?.name || "Desain & Kreatif",
       imageUrl: item.imageUrl || "https://picsum.photos/seed/portfolio/800/600",
       projectUrl: item.projectUrl || "",
       clientName: item.clientName || "",
@@ -142,6 +157,7 @@ export default function PortfolioCrudPage() {
     setErrorMsg("");
     try {
       const payload = {
+        categoryId: formData.categoryId || null,
         title: formData.title,
         description: formData.description,
         imageUrl: formData.imageUrl,
@@ -189,7 +205,7 @@ export default function PortfolioCrudPage() {
   const filteredItems = items.filter((item) =>
     item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.category?.toLowerCase().includes(searchQuery.toLowerCase())
+    (item.category?.name || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -297,7 +313,7 @@ export default function PortfolioCrudPage() {
                     {item.category && (
                       <span className="absolute bottom-4 left-4 inline-flex items-center gap-1 bg-slate-900/85 backdrop-blur-sm px-2.5 py-1 rounded-lg text-[10px] font-bold text-white shadow-sm font-sans uppercase tracking-wider">
                         <Tag className="h-3 w-3 text-emerald-400" />
-                        <span>{item.category}</span>
+                        <span>{item.category?.name}</span>
                       </span>
                     )}
                   </div>
@@ -389,20 +405,22 @@ export default function PortfolioCrudPage() {
                 {/* Category Selection */}
                 <div className="space-y-1">
                   <label htmlFor="port-cat" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
-                    Kategori Bidang Proyek
+                    Kategori Portfolio
                   </label>
                   <select
                     id="port-cat"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    value={formData.categoryId}
+                    onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
                   >
-                    {DEFAULT_PORTFOLIO_CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
+                    <option value="">Tanpa kategori</option>
+                    {categories.filter((category) => category.isActive).map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
                       </option>
                     ))}
                   </select>
+                  <p className="text-[10px] text-slate-400">Kelola pilihan ini di menu Kategori Portfolio.</p>
                 </div>
 
                 {/* Client Name */}

@@ -75,6 +75,10 @@ model Website {
   testimonials    Testimonial[]
   brandPartners   BrandPartner[]
   articles        Article[]
+  faqs            Faq[]
+  mediaAssets     MediaAsset[]
+  articleCategories ArticleCategory[]
+  portfolioCategories PortfolioCategory[]
   leads           Lead[]
   trackingEvents  TrackingEvent[]
   primaryForUsers User[]            @relation("PrimaryWebsite")
@@ -197,6 +201,8 @@ model Article {
   id             String        @id @default(cuid())
   websiteId      String
   website        Website       @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  categoryId     String?
+  category       ArticleCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   title          String
   slug           String
   excerpt        String?
@@ -212,6 +218,7 @@ model Article {
 
   @@unique([websiteId, slug])
   @@index([websiteId, status, sortOrder])
+  @@index([websiteId, categoryId])
 }
 
 model BusinessProfile {
@@ -251,6 +258,8 @@ model Portfolio {
   id          String   @id @default(cuid())
   websiteId   String
   website     Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  categoryId  String?
+  category    PortfolioCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   title       String
   description String?
   imageUrl    String?
@@ -260,6 +269,7 @@ model Portfolio {
   updatedAt   DateTime @updatedAt
 
   @@index([websiteId, sortOrder])
+  @@index([websiteId, categoryId])
 }
 
 model Testimonial {
@@ -293,6 +303,77 @@ model BrandPartner {
 
   @@index([websiteId, sortOrder])
 }
+
+model Faq {
+  id        String   @id @default(cuid())
+  websiteId String
+  website   Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  question  String
+  answer    String
+  pageKey   String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([websiteId, pageKey, sortOrder])
+  @@index([websiteId, isActive])
+}
+
+model ArticleCategory {
+  id          String   @id @default(cuid())
+  websiteId   String
+  website     Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  articles    Article[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([websiteId, slug])
+  @@index([websiteId, sortOrder])
+  @@index([websiteId, isActive])
+}
+
+model PortfolioCategory {
+  id          String   @id @default(cuid())
+  websiteId   String
+  website     Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  portfolios  Portfolio[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([websiteId, slug])
+  @@index([websiteId, sortOrder])
+  @@index([websiteId, isActive])
+}
+
+model MediaAsset {
+  id           String   @id @default(cuid())
+  websiteId    String
+  website      Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  filename     String
+  originalName String
+  mimeType     String
+  sizeBytes    Int
+  url          String
+  altText      String?
+  storagePath  String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([websiteId, createdAt])
+  @@index([websiteId, mimeType])
+}
+
 
 model Lead {
   id            String     @id @default(cuid())

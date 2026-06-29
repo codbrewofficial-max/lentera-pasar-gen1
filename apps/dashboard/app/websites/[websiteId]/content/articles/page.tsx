@@ -7,8 +7,17 @@ import DashboardLayout from "@/components/DashboardLayout";
 import EnhancedTextarea from "@/components/ui/EnhancedTextarea";
 import { AlertCircle, CheckCircle, Edit2, FileText, Plus, Save, Search, Trash2, X } from "lucide-react";
 
+interface ArticleCategory {
+  id: string;
+  name: string;
+  slug: string;
+  isActive: boolean;
+}
+
 interface ArticleItem {
   id: string;
+  categoryId?: string | null;
+  category?: ArticleCategory | null;
   title: string;
   slug: string;
   excerpt?: string | null;
@@ -23,6 +32,7 @@ interface ArticleItem {
 }
 
 const emptyForm = {
+  categoryId: "",
   title: "",
   slug: "",
   excerpt: "",
@@ -41,6 +51,7 @@ export default function ArticlesCrudPage() {
   const params = useParams();
   const websiteId = params?.websiteId as string;
   const [items, setItems] = useState<ArticleItem[]>([]);
+  const [categories, setCategories] = useState<ArticleCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -56,8 +67,12 @@ export default function ArticlesCrudPage() {
     setLoading(true);
     setErrorMsg("");
     try {
-      const res = await apiCall<ArticleItem[]>("GET", `websites/${websiteId}/articles`);
-      setItems(res.data || []);
+      const [articlesRes, categoriesRes] = await Promise.all([
+        apiCall<ArticleItem[]>("GET", `websites/${websiteId}/articles`),
+        apiCall<ArticleCategory[]>("GET", `websites/${websiteId}/article-categories`).catch(() => ({ data: [] as ArticleCategory[] }))
+      ]);
+      setItems(articlesRes.data || []);
+      setCategories(categoriesRes.data || []);
     } catch (err: any) {
       setErrorMsg(err.error?.message || err.message || "Gagal memuat artikel.");
     } finally {
@@ -83,6 +98,7 @@ export default function ArticlesCrudPage() {
   const openEdit = (item: ArticleItem) => {
     setEditingItem(item);
     setFormData({
+      categoryId: item.categoryId || "",
       title: item.title || "",
       slug: item.slug || "",
       excerpt: item.excerpt || "",
@@ -106,6 +122,7 @@ export default function ArticlesCrudPage() {
     setErrorMsg("");
     try {
       const payload = {
+        categoryId: formData.categoryId || null,
         title: formData.title,
         slug: formData.slug,
         excerpt: formData.excerpt || null,
@@ -212,6 +229,7 @@ export default function ArticlesCrudPage() {
                     </span>
                   </div>
                   <p className="text-[10px] text-slate-400 font-mono">/{item.slug}</p>
+                  {item.category && <p className="text-[10px] text-[#4f8be6] font-bold">Kategori: {item.category.name}</p>}
                   <p className="text-xs text-slate-500 leading-relaxed line-clamp-3">{item.excerpt || item.content}</p>
                 </div>
                 <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
@@ -252,6 +270,16 @@ export default function ArticlesCrudPage() {
                       <option value="draft">Draft</option>
                       <option value="published">Published</option>
                     </select>
+                  </div>
+                  <div className="space-y-1 sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Kategori Artikel</label>
+                    <select value={formData.categoryId} onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors">
+                      <option value="">Tanpa kategori</option>
+                      {categories.filter((category) => category.isActive).map((category) => (
+                        <option key={category.id} value={category.id}>{category.name}</option>
+                      ))}
+                    </select>
+                    <p className="text-[10px] text-slate-400">Kelola kategori di menu Kategori Artikel.</p>
                   </div>
                   <div className="space-y-1 sm:col-span-2">
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Ringkasan / Excerpt</label>

@@ -278,6 +278,55 @@ async function main() {
   });
   await request(`/api/v1/websites/${websiteId}/business-profile`, { headers: auth(smokeOwnerToken) });
 
+  const faq = await request(`/api/v1/websites/${websiteId}/faqs`, {
+    method: "POST",
+    headers: auth(smokeOwnerToken),
+    body: JSON.stringify({ question: "Smoke FAQ?", answer: "Smoke FAQ answer.", pageKey: "services", sortOrder: 1, isActive: true })
+  });
+  const patchedFaq = await request(`/api/v1/websites/${websiteId}/faqs/${faq.data.id}`, {
+    method: "PATCH",
+    headers: auth(smokeOwnerToken),
+    body: JSON.stringify({ answer: "Smoke FAQ answer patched.", isActive: true })
+  });
+  assert(patchedFaq.data.answer === "Smoke FAQ answer patched.", "FAQ PATCH did not update answer");
+  await request(`/api/v1/websites/${websiteId}/faqs/${faq.data.id}`, { method: "DELETE", headers: auth(smokeOwnerToken) });
+
+  const articleCategory = await request(`/api/v1/websites/${websiteId}/article-categories`, {
+    method: "POST",
+    headers: auth(smokeOwnerToken),
+    body: JSON.stringify({ name: "Smoke Article Category", slug: `smoke-article-category-${unique}`, description: "Smoke article category", sortOrder: 1, isActive: true })
+  });
+  const patchedArticleCategory = await request(`/api/v1/websites/${websiteId}/article-categories/${articleCategory.data.id}`, {
+    method: "PATCH",
+    headers: auth(smokeOwnerToken),
+    body: JSON.stringify({ name: "Smoke Article Category Patched", isActive: true })
+  });
+  assert(patchedArticleCategory.data.name === "Smoke Article Category Patched", "Article category PATCH did not update name");
+
+  const portfolioCategory = await request(`/api/v1/websites/${websiteId}/portfolio-categories`, {
+    method: "POST",
+    headers: auth(smokeOwnerToken),
+    body: JSON.stringify({ name: "Smoke Portfolio Category", slug: `smoke-portfolio-category-${unique}`, description: "Smoke portfolio category", sortOrder: 1, isActive: true })
+  });
+  const patchedPortfolioCategory = await request(`/api/v1/websites/${websiteId}/portfolio-categories/${portfolioCategory.data.id}`, {
+    method: "PATCH",
+    headers: auth(smokeOwnerToken),
+    body: JSON.stringify({ name: "Smoke Portfolio Category Patched", isActive: true })
+  });
+  assert(patchedPortfolioCategory.data.name === "Smoke Portfolio Category Patched", "Portfolio category PATCH did not update name");
+
+  const mediaFormData = new FormData();
+  mediaFormData.append("file", new Blob([Buffer.from("smoke image")], { type: "image/png" }), `smoke-${unique}.png`);
+  mediaFormData.append("altText", "Smoke media alt text");
+  const media = await requestMultipart(`/api/v1/websites/${websiteId}/media`, mediaFormData, smokeOwnerToken);
+  assert(media.data.url, "Media upload missing URL");
+  await request(`/api/v1/websites/${websiteId}/media/${media.data.id}`, {
+    method: "PATCH",
+    headers: auth(smokeOwnerToken),
+    body: JSON.stringify({ altText: "Smoke media alt text patched" })
+  });
+  await request(`/api/v1/websites/${websiteId}/media/${media.data.id}`, { method: "DELETE", headers: auth(smokeOwnerToken) });
+
   const service = await request(`/api/v1/websites/${websiteId}/services`, {
     method: "POST",
     headers: auth(smokeOwnerToken),
@@ -295,7 +344,7 @@ async function main() {
   const portfolio = await request(`/api/v1/websites/${websiteId}/portfolios`, {
     method: "POST",
     headers: auth(smokeOwnerToken),
-    body: JSON.stringify({ title: "Smoke Portfolio", description: "Smoke portfolio", imageUrl: "https://example.com/portfolio.jpg", sortOrder: 1, isActive: true })
+    body: JSON.stringify({ categoryId: portfolioCategory.data.id, title: "Smoke Portfolio", description: "Smoke portfolio", imageUrl: "https://example.com/portfolio.jpg", sortOrder: 1, isActive: true })
   });
   await request(`/api/v1/websites/${websiteId}/portfolios/${portfolio.data.id}`, { headers: auth(smokeOwnerToken) });
   const patchedPortfolio = await request(`/api/v1/websites/${websiteId}/portfolios/${portfolio.data.id}`, {
@@ -304,6 +353,7 @@ async function main() {
     body: JSON.stringify({ title: "Smoke Portfolio Patched", description: "Smoke portfolio patched", imageUrl: "https://example.com/portfolio-patched.jpg", sortOrder: 2, isActive: false })
   });
   assert(patchedPortfolio.data.title === "Smoke Portfolio Patched", "Portfolio PATCH did not update title");
+  assert(patchedPortfolio.data.category?.id === portfolioCategory.data.id, "Portfolio category relation missing");
   await request(`/api/v1/websites/${websiteId}/portfolios/${portfolio.data.id}`, { method: "DELETE", headers: auth(smokeOwnerToken) });
 
   const testimonial = await request(`/api/v1/websites/${websiteId}/testimonials`, {
@@ -338,6 +388,7 @@ async function main() {
     method: "POST",
     headers: auth(smokeOwnerToken),
     body: JSON.stringify({
+      categoryId: articleCategory.data.id,
       title: "Smoke Article",
       slug: `smoke-article-${unique}`,
       excerpt: "Smoke article excerpt",
@@ -361,6 +412,7 @@ async function main() {
     body: JSON.stringify({ status: "published" })
   });
   assert(publishedArticle.data.publishedAt, "Published article missing publishedAt");
+  assert(publishedArticle.data.category?.id === articleCategory.data.id, "Article category relation missing");
 
   await request(`/api/v1/websites/${websiteId}/publish`, { method: "POST", headers: auth(smokeOwnerToken) });
   const publicHome = await request(`/api/v1/public/sites/${slug}`);

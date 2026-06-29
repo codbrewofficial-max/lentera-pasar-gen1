@@ -23,7 +23,10 @@ import {
   Award,
   FileText,
   Package,
-  ScrollText
+  ScrollText,
+  HelpCircle,
+  Image,
+  Tags
 } from "lucide-react";
 import BrandMark from "@/components/brand/BrandMark";
 import BrandSignature from "@/components/brand/BrandSignature";
@@ -155,6 +158,30 @@ export default function DashboardLayout({
       icon: FileText,
       href: `/websites/${websiteId}/content/articles`,
       active: pathname?.includes(`/websites/${websiteId}/content/articles`)
+    },
+    {
+      label: "Kategori Artikel",
+      icon: Tags,
+      href: `/websites/${websiteId}/content/article-categories`,
+      active: pathname?.includes(`/websites/${websiteId}/content/article-categories`)
+    },
+    {
+      label: "Kategori Portfolio",
+      icon: Tags,
+      href: `/websites/${websiteId}/content/portfolio-categories`,
+      active: pathname?.includes(`/websites/${websiteId}/content/portfolio-categories`)
+    },
+    {
+      label: "FAQ",
+      icon: HelpCircle,
+      href: `/websites/${websiteId}/content/faq`,
+      active: pathname?.includes(`/websites/${websiteId}/content/faq`)
+    },
+    {
+      label: "Media Library",
+      icon: Image,
+      href: `/websites/${websiteId}/content/media`,
+      active: pathname?.includes(`/websites/${websiteId}/content/media`)
     },
     {
       label: "Brand / Partner",

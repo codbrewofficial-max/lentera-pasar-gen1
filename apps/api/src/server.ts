@@ -1,5 +1,7 @@
 import "dotenv/config";
 import AdmZip from "adm-zip";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+import path from "node:path";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import jwt from "@fastify/jwt";
@@ -370,6 +372,8 @@ const leadContract = (lead: any) => ({
 const articleContract = (article: any) => ({
   id: article.id,
   websiteId: article.websiteId,
+  categoryId: article.categoryId,
+  category: article.category ? categoryContract(article.category) : null,
   title: article.title,
   slug: article.slug,
   excerpt: article.excerpt,
@@ -387,6 +391,8 @@ const articleContract = (article: any) => ({
 
 const publicArticleSummary = (article: any) => ({
   id: article.id,
+  categoryId: article.categoryId,
+  category: article.category ? categoryContract(article.category) : null,
   title: article.title,
   slug: article.slug,
   excerpt: article.excerpt,
@@ -394,6 +400,44 @@ const publicArticleSummary = (article: any) => ({
   seoTitle: article.seoTitle,
   seoDescription: article.seoDescription,
   publishedAt: article.publishedAt
+});
+
+const categoryContract = (category: any) => ({
+  id: category.id,
+  websiteId: category.websiteId,
+  name: category.name,
+  slug: category.slug,
+  description: category.description,
+  sortOrder: category.sortOrder,
+  isActive: category.isActive,
+  createdAt: category.createdAt,
+  updatedAt: category.updatedAt
+});
+
+const faqContract = (faq: any) => ({
+  id: faq.id,
+  websiteId: faq.websiteId,
+  question: faq.question,
+  answer: faq.answer,
+  pageKey: faq.pageKey,
+  pageLabel: faq.pageKey ? getPageLabel(faq.pageKey) : null,
+  sortOrder: faq.sortOrder,
+  isActive: faq.isActive,
+  createdAt: faq.createdAt,
+  updatedAt: faq.updatedAt
+});
+
+const mediaAssetContract = (asset: any) => ({
+  id: asset.id,
+  websiteId: asset.websiteId,
+  filename: asset.filename,
+  originalName: asset.originalName,
+  mimeType: asset.mimeType,
+  sizeBytes: asset.sizeBytes,
+  url: asset.url,
+  altText: asset.altText,
+  createdAt: asset.createdAt,
+  updatedAt: asset.updatedAt
 });
 
 const ctaLabel = (ctaKey: string | null) => {
@@ -461,6 +505,7 @@ const businessProfileBody = z.object({
   address: z.string().nullable().optional()
 });
 const listItemBody = z.object({
+  categoryId: z.string().nullable().optional(),
   title: z.string().min(1),
   description: z.string().nullable().optional(),
   imageUrl: z.string().nullable().optional(),
@@ -483,7 +528,26 @@ const brandBody = z.object({
   sortOrder: z.number().int().optional(),
   isActive: z.boolean().optional()
 });
+
+const faqBody = z.object({
+  question: z.string().min(1),
+  answer: z.string().min(1),
+  pageKey: z.string().nullable().optional(),
+  sortOrder: z.number().int().optional(),
+  isActive: z.boolean().optional()
+});
+const categoryBody = z.object({
+  name: z.string().min(1),
+  slug: z.string().min(1).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  description: z.string().nullable().optional(),
+  sortOrder: z.number().int().optional(),
+  isActive: z.boolean().optional()
+});
+const mediaUpdateBody = z.object({
+  altText: z.string().nullable().optional()
+});
 const articleBody = z.object({
+  categoryId: z.string().nullable().optional(),
   title: z.string().min(1),
   slug: z.string().min(1).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   excerpt: z.string().nullable().optional(),
@@ -619,12 +683,15 @@ const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string;
     }
   });
   if (!page) throw new AppError(404, "PAGE_NOT_FOUND", "Page not found");
-  const [services, portfolios, testimonials, brands, articles] = await Promise.all([
+  const [services, portfolios, testimonials, brands, articles, faqs, articleCategories, portfolioCategories] = await Promise.all([
     prisma.service.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
-    prisma.portfolio.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.portfolio.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" }, include: { category: true } }),
     prisma.testimonial.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
     prisma.brandPartner.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
-    prisma.article.findMany({ where: { websiteId, status: "published" }, orderBy: [{ sortOrder: "asc" }, { publishedAt: "desc" }] })
+    prisma.article.findMany({ where: { websiteId, status: "published" }, orderBy: [{ sortOrder: "asc" }, { publishedAt: "desc" }], include: { category: true } }),
+    prisma.faq.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.articleCategory.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.portfolioCategory.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } })
   ]);
   const navigation = await buildNavigationContract(websiteId);
   return {
@@ -670,7 +737,16 @@ const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string;
             slotKey: section.slotKey,
             sectionKey: section.templateSection?.sectionKey || null
           },
-          data: { services, portfolios, testimonials, brands, articles: articles.map(publicArticleSummary) }
+          data: {
+            services,
+            portfolios,
+            testimonials,
+            brands,
+            faqs: faqs.map(faqContract),
+            articleCategories: articleCategories.map(categoryContract),
+            portfolioCategories: portfolioCategories.map(categoryContract),
+            articles: articles.map(publicArticleSummary)
+          }
         }))
     }
   };
@@ -1611,15 +1687,21 @@ const registerCrud = (
 ) => {
   const model = base === "services" ? prisma.service : base === "portfolios" ? prisma.portfolio : base === "testimonials" ? prisma.testimonial : prisma.brandPartner;
   const idParam = base === "services" ? "serviceId" : base === "portfolios" ? "portfolioId" : base === "testimonials" ? "testimonialId" : "brandPartnerId";
+  const include = base === "portfolios" ? { category: true } : undefined;
   app.get(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
-    const rows = await (model as any).findMany({ where: { websiteId: website.id }, orderBy: { sortOrder: "asc" } });
+    const rows = await (model as any).findMany({ where: { websiteId: website.id }, orderBy: { sortOrder: "asc" }, ...(include ? { include } : {}) });
     return ok(reply, rows, `${base} loaded`);
   });
   app.post(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {
     const { user, website } = await getWebsiteForAccess(request);
     const body = schema.parse(request.body);
-    const row = await (model as any).create({ data: { ...body, websiteId: website.id } });
+    const data = base === "portfolios" ? body : { ...body, categoryId: undefined };
+    if (base === "portfolios" && data.categoryId) {
+      const category = await prisma.portfolioCategory.findFirst({ where: { id: data.categoryId, websiteId: website.id } });
+      if (!category) throw new AppError(404, "PORTFOLIO_CATEGORY_NOT_FOUND", "Portfolio category not found");
+    }
+    const row = await (model as any).create({ data: { ...data, websiteId: website.id }, ...(include ? { include } : {}) });
     await createAuditLog(request, {
       action: `${base}.created`,
       actor: user,
@@ -1633,16 +1715,21 @@ const registerCrud = (
   });
   app.get(`/api/v1/websites/:websiteId/${base}/:${idParam}`, async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
-    const row = await (model as any).findFirst({ where: { id: request.params?.[idParam], websiteId: website.id } });
+    const row = await (model as any).findFirst({ where: { id: request.params?.[idParam], websiteId: website.id }, ...(include ? { include } : {}) });
     if (!row) throw new AppError(404, "ITEM_NOT_FOUND", "Item not found");
     return ok(reply, row, `${base} loaded`);
   });
   app.patch(`/api/v1/websites/:websiteId/${base}/:${idParam}`, async (request: Req, reply) => {
     const { user, website } = await getWebsiteForAccess(request);
     const body = (schema as any).partial().parse(request.body);
+    const data = base === "portfolios" ? body : { ...body, categoryId: undefined };
     const existing = await (model as any).findFirst({ where: { id: request.params?.[idParam], websiteId: website.id } });
     if (!existing) throw new AppError(404, "ITEM_NOT_FOUND", "Item not found");
-    const row = await (model as any).update({ where: { id: existing.id }, data: body });
+    if (base === "portfolios" && data.categoryId) {
+      const category = await prisma.portfolioCategory.findFirst({ where: { id: data.categoryId, websiteId: website.id } });
+      if (!category) throw new AppError(404, "PORTFOLIO_CATEGORY_NOT_FOUND", "Portfolio category not found");
+    }
+    const row = await (model as any).update({ where: { id: existing.id }, data, ...(include ? { include } : {}) });
     await createAuditLog(request, {
       action: `${base}.updated`,
       actor: user,
@@ -1673,6 +1760,7 @@ const registerCrud = (
 };
 
 const articleData = (body: z.infer<typeof articleBody>, existing?: { publishedAt: Date | null }) => ({
+  categoryId: body.categoryId || null,
   title: body.title,
   slug: body.slug,
   excerpt: body.excerpt || null,
@@ -1688,7 +1776,7 @@ const articleData = (body: z.infer<typeof articleBody>, existing?: { publishedAt
 const registerArticleRoutes = () => {
   app.get("/api/v1/websites/:websiteId/articles", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
-    const articles = await prisma.article.findMany({ where: { websiteId: website.id }, orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }] });
+    const articles = await prisma.article.findMany({ where: { websiteId: website.id }, orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }], include: { category: true } });
     return ok(reply, articles.map(articleContract), "Articles loaded");
   });
   app.post("/api/v1/websites/:websiteId/articles", async (request: Req, reply) => {
@@ -1696,7 +1784,11 @@ const registerArticleRoutes = () => {
     const body = articleBody.parse(request.body);
     const existingSlug = await prisma.article.findUnique({ where: { websiteId_slug: { websiteId: website.id, slug: body.slug } } });
     if (existingSlug) throw new AppError(409, "ARTICLE_SLUG_EXISTS", "Article slug already exists for this website");
-    const article = await prisma.article.create({ data: { ...articleData(body), websiteId: website.id } });
+    if (body.categoryId) {
+      const category = await prisma.articleCategory.findFirst({ where: { id: body.categoryId, websiteId: website.id } });
+      if (!category) throw new AppError(404, "ARTICLE_CATEGORY_NOT_FOUND", "Article category not found");
+    }
+    const article = await prisma.article.create({ data: { ...articleData(body), websiteId: website.id }, include: { category: true } });
     await createAuditLog(request, {
       action: "article.created",
       actor: user,
@@ -1710,23 +1802,28 @@ const registerArticleRoutes = () => {
   });
   app.get("/api/v1/websites/:websiteId/articles/:articleId", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
-    const article = await prisma.article.findFirst({ where: { id: request.params?.articleId, websiteId: website.id } });
+    const article = await prisma.article.findFirst({ where: { id: request.params?.articleId, websiteId: website.id }, include: { category: true } });
     if (!article) throw new AppError(404, "ARTICLE_NOT_FOUND", "Article not found");
     return ok(reply, articleContract(article), "Article loaded");
   });
   app.patch("/api/v1/websites/:websiteId/articles/:articleId", async (request: Req, reply) => {
     const { user, website } = await getWebsiteForAccess(request);
     const body = articleBody.partial().parse(request.body);
-    const article = await prisma.article.findFirst({ where: { id: request.params?.articleId, websiteId: website.id } });
+    const article = await prisma.article.findFirst({ where: { id: request.params?.articleId, websiteId: website.id }, include: { category: true } });
     if (!article) throw new AppError(404, "ARTICLE_NOT_FOUND", "Article not found");
     if (body.slug && body.slug !== article.slug) {
       const existingSlug = await prisma.article.findUnique({ where: { websiteId_slug: { websiteId: website.id, slug: body.slug } } });
       if (existingSlug) throw new AppError(409, "ARTICLE_SLUG_EXISTS", "Article slug already exists for this website");
     }
+    if (body.categoryId) {
+      const category = await prisma.articleCategory.findFirst({ where: { id: body.categoryId, websiteId: website.id } });
+      if (!category) throw new AppError(404, "ARTICLE_CATEGORY_NOT_FOUND", "Article category not found");
+    }
     const status = body.status || article.status;
     const updated = await prisma.article.update({
       where: { id: article.id },
       data: {
+        categoryId: body.categoryId,
         title: body.title,
         slug: body.slug,
         excerpt: body.excerpt,
@@ -1737,7 +1834,8 @@ const registerArticleRoutes = () => {
         status,
         sortOrder: body.sortOrder,
         publishedAt: status === "published" ? article.publishedAt || new Date() : null
-      }
+      },
+      include: { category: true }
     });
     await createAuditLog(request, {
       action: "article.updated",
@@ -1752,7 +1850,7 @@ const registerArticleRoutes = () => {
   });
   app.delete("/api/v1/websites/:websiteId/articles/:articleId", async (request: Req, reply) => {
     const { user, website } = await getWebsiteForAccess(request);
-    const article = await prisma.article.findFirst({ where: { id: request.params?.articleId, websiteId: website.id } });
+    const article = await prisma.article.findFirst({ where: { id: request.params?.articleId, websiteId: website.id }, include: { category: true } });
     if (!article) throw new AppError(404, "ARTICLE_NOT_FOUND", "Article not found");
     await prisma.article.delete({ where: { id: article.id } });
     await createAuditLog(request, {
@@ -1767,6 +1865,247 @@ const registerArticleRoutes = () => {
     return ok(reply, true, "Article deleted");
   });
 };
+
+
+const registerStage9cContentRoutes = () => {
+  const categoryRoutes = (
+    base: "article-categories" | "portfolio-categories",
+    model: typeof prisma.articleCategory | typeof prisma.portfolioCategory,
+    entityType: "article_category" | "portfolio_category"
+  ) => {
+    const idParam = base === "article-categories" ? "articleCategoryId" : "portfolioCategoryId";
+
+    app.get(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {
+      const { website } = await getWebsiteForAccess(request);
+      const rows = await (model as any).findMany({ where: { websiteId: website.id }, orderBy: { sortOrder: "asc" } });
+      return ok(reply, rows.map(categoryContract), `${base} loaded`);
+    });
+
+    app.post(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {
+      const { user, website } = await getWebsiteForAccess(request);
+      const body = categoryBody.parse(request.body);
+      const exists = await (model as any).findFirst({ where: { websiteId: website.id, slug: body.slug } });
+      if (exists) throw new AppError(409, "CATEGORY_SLUG_EXISTS", "Category slug already exists for this website");
+      const row = await (model as any).create({ data: { ...body, websiteId: website.id } });
+      await createAuditLog(request, {
+        action: `${entityType}.created`,
+        actor: user,
+        websiteId: website.id,
+        entityType,
+        entityId: row.id,
+        summary: `${entityType} created: ${row.name}`,
+        metadata: { slug: row.slug }
+      });
+      return created(reply, categoryContract(row), `${base} created`);
+    });
+
+    app.patch(`/api/v1/websites/:websiteId/${base}/:${idParam}`, async (request: Req, reply) => {
+      const { user, website } = await getWebsiteForAccess(request);
+      const body = categoryBody.partial().parse(request.body);
+      const existing = await (model as any).findFirst({ where: { id: request.params?.[idParam], websiteId: website.id } });
+      if (!existing) throw new AppError(404, "CATEGORY_NOT_FOUND", "Category not found");
+      if (body.slug && body.slug !== existing.slug) {
+        const exists = await (model as any).findFirst({ where: { websiteId: website.id, slug: body.slug } });
+        if (exists) throw new AppError(409, "CATEGORY_SLUG_EXISTS", "Category slug already exists for this website");
+      }
+      const row = await (model as any).update({ where: { id: existing.id }, data: body });
+      await createAuditLog(request, {
+        action: `${entityType}.updated`,
+        actor: user,
+        websiteId: website.id,
+        entityType,
+        entityId: row.id,
+        summary: `${entityType} updated: ${row.name}`,
+        metadata: { changedFields: Object.keys(body), oldSlug: existing.slug, newSlug: row.slug }
+      });
+      return ok(reply, categoryContract(row), `${base} updated`);
+    });
+
+    app.delete(`/api/v1/websites/:websiteId/${base}/:${idParam}`, async (request: Req, reply) => {
+      const { user, website } = await getWebsiteForAccess(request);
+      const existing = await (model as any).findFirst({ where: { id: request.params?.[idParam], websiteId: website.id } });
+      if (!existing) throw new AppError(404, "CATEGORY_NOT_FOUND", "Category not found");
+      await (model as any).delete({ where: { id: existing.id } });
+      await createAuditLog(request, {
+        action: `${entityType}.deleted`,
+        actor: user,
+        websiteId: website.id,
+        entityType,
+        entityId: existing.id,
+        summary: `${entityType} deleted: ${existing.name}`,
+        metadata: { slug: existing.slug }
+      });
+      return ok(reply, true, `${base} deleted`);
+    });
+  };
+
+  categoryRoutes("article-categories", prisma.articleCategory, "article_category");
+  categoryRoutes("portfolio-categories", prisma.portfolioCategory, "portfolio_category");
+
+  app.get("/api/v1/websites/:websiteId/faqs", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    const pageKey = request.query?.pageKey;
+    const faqs = await prisma.faq.findMany({
+      where: { websiteId: website.id, ...(pageKey ? { pageKey } : {}) },
+      orderBy: { sortOrder: "asc" }
+    });
+    return ok(reply, faqs.map(faqContract), "FAQs loaded");
+  });
+
+  app.post("/api/v1/websites/:websiteId/faqs", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const body = faqBody.parse(request.body);
+    const faq = await prisma.faq.create({ data: { ...body, websiteId: website.id } });
+    await createAuditLog(request, {
+      action: "faq.created",
+      actor: user,
+      websiteId: website.id,
+      entityType: "faq",
+      entityId: faq.id,
+      summary: `FAQ created: ${faq.question}`,
+      metadata: { pageKey: faq.pageKey }
+    });
+    return created(reply, faqContract(faq), "FAQ created");
+  });
+
+  app.patch("/api/v1/websites/:websiteId/faqs/:faqId", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const body = faqBody.partial().parse(request.body);
+    const existing = await prisma.faq.findFirst({ where: { id: request.params?.faqId, websiteId: website.id } });
+    if (!existing) throw new AppError(404, "FAQ_NOT_FOUND", "FAQ not found");
+    const faq = await prisma.faq.update({ where: { id: existing.id }, data: body });
+    await createAuditLog(request, {
+      action: "faq.updated",
+      actor: user,
+      websiteId: website.id,
+      entityType: "faq",
+      entityId: faq.id,
+      summary: `FAQ updated: ${faq.question}`,
+      metadata: { changedFields: Object.keys(body) }
+    });
+    return ok(reply, faqContract(faq), "FAQ updated");
+  });
+
+  app.delete("/api/v1/websites/:websiteId/faqs/:faqId", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const existing = await prisma.faq.findFirst({ where: { id: request.params?.faqId, websiteId: website.id } });
+    if (!existing) throw new AppError(404, "FAQ_NOT_FOUND", "FAQ not found");
+    await prisma.faq.delete({ where: { id: existing.id } });
+    await createAuditLog(request, {
+      action: "faq.deleted",
+      actor: user,
+      websiteId: website.id,
+      entityType: "faq",
+      entityId: existing.id,
+      summary: `FAQ deleted: ${existing.question}`,
+      metadata: { pageKey: existing.pageKey }
+    });
+    return ok(reply, true, "FAQ deleted");
+  });
+
+  app.get("/api/v1/websites/:websiteId/media", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    const assets = await prisma.mediaAsset.findMany({ where: { websiteId: website.id }, orderBy: { createdAt: "desc" } });
+    return ok(reply, assets.map(mediaAssetContract), "Media assets loaded");
+  });
+
+  app.post("/api/v1/websites/:websiteId/media", { config: { rateLimit: apiConfig.rateLimits.templateUpload } }, async (request, reply) => {
+    const { user, website } = await getWebsiteForAccess(request as any);
+    const file = await request.file();
+    if (!file) throw new AppError(400, "MEDIA_FILE_REQUIRED", "Media file is required");
+
+    const allowed = new Map([
+      ["image/jpeg", "jpg"],
+      ["image/png", "png"],
+      ["image/webp", "webp"],
+      ["image/gif", "gif"]
+    ]);
+    const ext = allowed.get(file.mimetype);
+    if (!ext) throw new AppError(400, "MEDIA_TYPE_NOT_ALLOWED", "Only JPG, PNG, WEBP, and GIF images are allowed");
+
+    const buffer = await file.toBuffer();
+    if (buffer.length > apiConfig.templateUploadMaxBytes) {
+      throw new AppError(413, "MEDIA_TOO_LARGE", "Media file is too large");
+    }
+
+    const id = randomToken("media");
+    const filename = `${id}.${ext}`;
+    const storageDir = path.join(process.cwd(), "storage", "uploads", "sites", website.id);
+    const storagePath = path.join(storageDir, filename);
+    await mkdir(storageDir, { recursive: true });
+    await writeFile(storagePath, buffer);
+
+    const asset = await prisma.mediaAsset.create({
+      data: {
+        id,
+        websiteId: website.id,
+        filename,
+        originalName: file.filename || filename,
+        mimeType: file.mimetype,
+        sizeBytes: buffer.length,
+        url: `/api/v1/public/media/${id}`,
+        altText: typeof ((file as any).fields?.altText as any)?.value === "string" ? String(((file as any).fields?.altText as any).value) : null,
+        storagePath
+      }
+    });
+
+    await createAuditLog(request, {
+      action: "media.uploaded",
+      actor: user,
+      websiteId: website.id,
+      entityType: "media_asset",
+      entityId: asset.id,
+      summary: `Media uploaded: ${asset.originalName}`,
+      metadata: { mimeType: asset.mimeType, sizeBytes: asset.sizeBytes }
+    });
+
+    return created(reply, mediaAssetContract(asset), "Media uploaded");
+  });
+
+  app.patch("/api/v1/websites/:websiteId/media/:mediaId", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const body = mediaUpdateBody.parse(request.body);
+    const existing = await prisma.mediaAsset.findFirst({ where: { id: request.params?.mediaId, websiteId: website.id } });
+    if (!existing) throw new AppError(404, "MEDIA_NOT_FOUND", "Media asset not found");
+    const asset = await prisma.mediaAsset.update({ where: { id: existing.id }, data: body });
+    await createAuditLog(request, {
+      action: "media.updated",
+      actor: user,
+      websiteId: website.id,
+      entityType: "media_asset",
+      entityId: asset.id,
+      summary: `Media updated: ${asset.originalName}`,
+      metadata: { changedFields: Object.keys(body) }
+    });
+    return ok(reply, mediaAssetContract(asset), "Media updated");
+  });
+
+  app.delete("/api/v1/websites/:websiteId/media/:mediaId", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const existing = await prisma.mediaAsset.findFirst({ where: { id: request.params?.mediaId, websiteId: website.id } });
+    if (!existing) throw new AppError(404, "MEDIA_NOT_FOUND", "Media asset not found");
+    await prisma.mediaAsset.delete({ where: { id: existing.id } });
+    await unlink(existing.storagePath).catch(() => undefined);
+    await createAuditLog(request, {
+      action: "media.deleted",
+      actor: user,
+      websiteId: website.id,
+      entityType: "media_asset",
+      entityId: existing.id,
+      summary: `Media deleted: ${existing.originalName}`,
+      metadata: { filename: existing.filename }
+    });
+    return ok(reply, true, "Media deleted");
+  });
+
+  app.get("/api/v1/public/media/:mediaId", async (request: Req, reply) => {
+    const asset = await prisma.mediaAsset.findUnique({ where: { id: request.params?.mediaId } });
+    if (!asset) throw new AppError(404, "MEDIA_NOT_FOUND", "Media asset not found");
+    const buffer = await readFile(asset.storagePath);
+    return reply.type(asset.mimeType).send(buffer);
+  });
+};
+
 
 const registerPublicRoutes = () => {
   app.get("/api/v1/public/sites/:slug", async (request: Req, reply) => {
@@ -1801,7 +2140,8 @@ const registerPublicRoutes = () => {
     if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
     const articles = await prisma.article.findMany({
       where: { websiteId: website.id, status: "published" },
-      orderBy: [{ sortOrder: "asc" }, { publishedAt: "desc" }]
+      orderBy: [{ sortOrder: "asc" }, { publishedAt: "desc" }],
+      include: { category: true }
     });
     return ok(reply, articles.map(publicArticleSummary), "Public articles loaded");
   });
@@ -1809,13 +2149,15 @@ const registerPublicRoutes = () => {
     const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" }, include: { businessProfile: true } });
     if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
     const article = await prisma.article.findFirst({
-      where: { websiteId: website.id, slug: request.params?.articleSlug, status: "published" }
+      where: { websiteId: website.id, slug: request.params?.articleSlug, status: "published" },
+      include: { category: true }
     });
     if (!article) throw new AppError(404, "ARTICLE_NOT_FOUND", "Published article not found");
     const relatedArticles = await prisma.article.findMany({
       where: { websiteId: website.id, status: "published", id: { not: article.id } },
       orderBy: [{ sortOrder: "asc" }, { publishedAt: "desc" }],
-      take: 3
+      take: 3,
+      include: { category: true }
     });
     return ok(reply, {
       article: articleContract(article),
@@ -2208,6 +2550,7 @@ export const buildApp = async () => {
   registerCrud("testimonials", testimonialBody);
   registerCrud("brand-partners", brandBody);
   registerArticleRoutes();
+  registerStage9cContentRoutes();
   registerPublicRoutes();
   registerAuditRoutes();
   registerLeadAndInsightRoutes();

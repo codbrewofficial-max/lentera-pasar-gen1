@@ -9,6 +9,10 @@ type CountSummary = {
   templatePacks: number;
   templateSections: number;
   articles: number;
+  faqs: number;
+  mediaAssets: number;
+  articleCategories: number;
+  portfolioCategories: number;
   leads: number;
   trackingEvents: number;
   auditLogs: number;
@@ -36,6 +40,10 @@ async function getSummary(): Promise<CountSummary> {
     templatePacks: await countModel("templatePack"),
     templateSections: await countModel("templateSection"),
     articles: await countModel("article"),
+    faqs: await countModel("faq"),
+    mediaAssets: await countModel("mediaAsset"),
+    articleCategories: await countModel("articleCategory"),
+    portfolioCategories: await countModel("portfolioCategory"),
     leads:
       (await countModel("lead")) +
       (await countModel("contactLead")) +
@@ -66,9 +74,13 @@ async function main() {
     "contactMessage",
     "contactLead",
     "lead",
+    "mediaAsset",
     "article",
+    "articleCategory",
+    "faq",
     "service",
     "portfolio",
+    "portfolioCategory",
     "testimonial",
     "brandPartner",
     "businessProfile",
