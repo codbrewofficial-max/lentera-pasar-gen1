@@ -132,6 +132,27 @@ export const COMPANY_PROFILE_SECTION_SLOTS = Object.entries(PAGE_SECTION_RULES.c
   sortOrder: number;
 }>;
 
+
+export const COMPANY_PROFILE_PAGE_PURPOSES = {
+  home: "Halaman utama untuk memperkenalkan bisnis dan mengarahkan pengunjung ke aksi penting.",
+  about: "Halaman untuk menjelaskan siapa bisnis Anda, sejarah singkat, visi misi, nilai utama, dan tim.",
+  services: "Halaman untuk menampilkan daftar layanan utama yang ditawarkan kepada calon client.",
+  portfolio: "Halaman untuk menampilkan bukti kerja, pengalaman, project, atau hasil yang pernah dikerjakan.",
+  articles: "Halaman untuk artikel, edukasi, dan konten SEO agar bisnis lebih mudah ditemukan dari pencarian.",
+  article_detail: "Template halaman detail artikel. Halaman ini tidak tampil di navbar karena digunakan otomatis saat pengunjung membuka artikel tertentu.",
+  contact: "Halaman untuk informasi kontak, lokasi, dan cara calon client menghubungi bisnis."
+} as const;
+
+export const COMPANY_PROFILE_DEFAULT_NAV_LABELS = {
+  home: "Home",
+  about: "Tentang",
+  services: "Layanan",
+  portfolio: "Portfolio",
+  articles: "Artikel",
+  article_detail: "Detail Artikel",
+  contact: "Kontak"
+} as const;
+
 export const COMPANY_PROFILE_PAGE_LABELS = Object.fromEntries(
   WEBSITE_TYPE_PAGES.company_profile.map((pageKey) => [pageKey, PAGES[pageKey]])
 ) as Record<(typeof WEBSITE_TYPE_PAGES.company_profile)[number], string>;

@@ -69,6 +69,7 @@ async function main() {
     "testimonial",
     "brandPartner",
     "businessProfile",
+    "websitePageSlugHistory",
     "pageSection",
     "websitePage",
     "website",

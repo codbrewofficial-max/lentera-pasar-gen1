@@ -2,6 +2,8 @@ export * from "./website-structure.js";
 import {
   COMPANY_PROFILE_PAGE_LABELS,
   COMPANY_PROFILE_PAGES,
+  COMPANY_PROFILE_PAGE_PURPOSES,
+  COMPANY_PROFILE_DEFAULT_NAV_LABELS,
   COMPANY_PROFILE_SECTION_SLOT_DESCRIPTIONS,
   COMPANY_PROFILE_SECTION_SLOT_LABELS,
   COMPANY_PROFILE_SECTION_SLOTS,
@@ -108,3 +110,10 @@ export const getArticleStatusLabel = (status: string) =>
 
 export const getTemplateSectionStatusLabel = (status: string) =>
   TEMPLATE_SECTION_STATUS_LABELS[status as TemplateSectionStatus] || status;
+
+
+export const getPagePurpose = (pageKey: string) =>
+  (COMPANY_PROFILE_PAGE_PURPOSES as Record<string, string>)[pageKey] || "";
+
+export const getDefaultPageNavLabel = (pageKey: string) =>
+  (COMPANY_PROFILE_DEFAULT_NAV_LABELS as Record<string, string>)[pageKey] || getPageLabel(pageKey);

@@ -11,7 +11,8 @@
     "prisma:seed": "corepack pnpm --filter @lentera-pasar/api prisma:seed",
     "db:reset:keep-users": "corepack pnpm --filter @lentera-pasar/api db:reset:keep-users",
     "backfill:company-profile-structure": "corepack pnpm --filter @lentera-pasar/api backfill:company-profile-structure",
-    "smoke:api": "corepack pnpm --filter @lentera-pasar/api smoke"
+    "smoke:api": "corepack pnpm --filter @lentera-pasar/api smoke",
+    "backfill:page-navigation": "corepack pnpm --filter @lentera-pasar/api backfill:page-navigation"
   },
   "devDependencies": {
     "typescript": "^5.5.4"

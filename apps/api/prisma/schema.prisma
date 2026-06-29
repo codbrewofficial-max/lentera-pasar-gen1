@@ -77,6 +77,7 @@ model Website {
   leads           Lead[]
   trackingEvents  TrackingEvent[]
   primaryForUsers User[]            @relation("PrimaryWebsite")
+  pageSlugHistories WebsitePageSlugHistory[]
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
@@ -86,19 +87,46 @@ model Website {
 }
 
 model WebsitePage {
-  id        String        @id @default(cuid())
-  websiteId String
-  website   Website       @relation(fields: [websiteId], references: [id], onDelete: Cascade)
-  pageKey   String
-  title     String
-  slug      String
-  sortOrder Int
-  isActive  Boolean       @default(true)
-  sections  PageSection[]
+  id                 String        @id @default(cuid())
+  websiteId          String
+  website            Website       @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  pageKey            String
+  title              String
+  slug               String
+  sortOrder          Int
+  isActive           Boolean       @default(true)
+  navLabel           String?
+  footerLabel        String?
+  purpose            String?
+  isPublished        Boolean       @default(true)
+  isVisibleInNavbar  Boolean       @default(true)
+  isVisibleInFooter  Boolean       @default(true)
+  seoTitle           String?
+  seoDescription     String?
+  sections           PageSection[]
+  slugHistories      WebsitePageSlugHistory[]
 
   @@unique([websiteId, pageKey])
   @@unique([websiteId, slug])
   @@index([websiteId, sortOrder])
+  @@index([websiteId, isPublished])
+  @@index([websiteId, isVisibleInNavbar])
+}
+
+model WebsitePageSlugHistory {
+  id           String      @id @default(cuid())
+  websiteId    String
+  website      Website     @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  pageId       String
+  page         WebsitePage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  pageKey      String
+  oldSlug      String
+  newSlug      String
+  redirectType Int         @default(301)
+  createdAt    DateTime    @default(now())
+
+  @@index([websiteId, oldSlug])
+  @@index([websiteId, pageKey])
 }
 
 model PageSection {

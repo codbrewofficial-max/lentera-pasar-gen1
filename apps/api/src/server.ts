@@ -27,7 +27,7 @@ import {
   getWebsiteTypeLabel
 } from "@lentera-pasar/shared";
 import { prisma } from "./prisma.js";
-import { createCompanyProfileDefaults, isDynamicDetailPage } from "./defaults.js";
+import { createCompanyProfileDefaults, defaultPageNavLabel, isDynamicDetailPage, pagePurpose } from "./defaults.js";
 import { AppError, created, ok, publicUser, toErrorPayload } from "./http.js";
 import { hashIp, hashPassword, limitJson, prismaJson, randomToken, verifyPassword } from "./security.js";
 
@@ -164,19 +164,106 @@ const sectionDetailContract = (section: any, websiteId: string) => ({
   }
 });
 
+const cleanPageSlug = (value: string | null | undefined) =>
+  String(value || "")
+    .trim()
+    .replace(/^\/+|\/+$/g, "")
+    .toLowerCase();
+
+const isValidPageSlug = (value: string) => value === "" || /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
+
+const pagePublicPath = (page: any) => {
+  if (page.pageKey === "article_detail") return "/articles/:articleSlug";
+  if (page.pageKey === "home") return "/";
+  return `/${page.slug}`;
+};
+
+const pageDisplayLabel = (page: any) => page.navLabel || page.title || defaultPageNavLabel(page.pageKey);
+
 const pageDashboardSummary = (page: any) => {
   const sections = page.sections || [];
+  const dynamicDetailPage = isDynamicDetailPage(page.pageKey);
   return {
     id: page.id,
     pageKey: page.pageKey,
     title: page.title,
+    navLabel: page.navLabel || page.title,
+    footerLabel: page.footerLabel || page.navLabel || page.title,
     slug: page.slug,
+    publicPath: pagePublicPath(page),
+    purpose: page.purpose || pagePurpose(page.pageKey),
     pageLabel: getPageLabel(page.pageKey),
-    isDynamicDetailPage: isDynamicDetailPage(page.pageKey),
+    isDynamicDetailPage: dynamicDetailPage,
+    isPublished: page.isPublished ?? page.isActive,
+    isVisibleInNavbar: dynamicDetailPage ? false : Boolean(page.isVisibleInNavbar),
+    isVisibleInFooter: dynamicDetailPage ? false : Boolean(page.isVisibleInFooter),
+    seoTitle: page.seoTitle || null,
+    seoDescription: page.seoDescription || null,
     sectionCount: sections.length,
     filledSectionCount: sections.filter((section: any) => section.templateSectionId || section.contentJson).length,
     sortOrder: page.sortOrder,
-    isActive: page.isActive
+    isActive: page.isActive,
+    oldSlugsCount: page._count?.slugHistories ?? page.slugHistories?.length ?? 0
+  };
+};
+
+const buildNavigationContract = async (websiteId: string) => {
+  const [pages, businessProfile] = await Promise.all([
+    prisma.websitePage.findMany({ where: { websiteId }, orderBy: { sortOrder: "asc" } }),
+    prisma.businessProfile.findUnique({ where: { websiteId } })
+  ]);
+
+  const publishedPages = pages.filter((page: any) => (page.isPublished ?? page.isActive) && !isDynamicDetailPage(page.pageKey));
+  const navbarItems = publishedPages
+    .filter((page: any) => page.isVisibleInNavbar)
+    .slice(0, 6)
+    .map((page: any) => ({
+      pageKey: page.pageKey,
+      label: page.navLabel || page.title || defaultPageNavLabel(page.pageKey),
+      slug: page.slug,
+      path: pagePublicPath(page),
+      sortOrder: page.sortOrder
+    }));
+
+  const footerItems = publishedPages
+    .filter((page: any) => page.isVisibleInFooter)
+    .map((page: any) => ({
+      pageKey: page.pageKey,
+      label: page.footerLabel || page.navLabel || page.title || defaultPageNavLabel(page.pageKey),
+      slug: page.slug,
+      path: pagePublicPath(page),
+      sortOrder: page.sortOrder
+    }));
+
+  const availableTargets = [
+    ...publishedPages.map((page: any) => ({
+      type: "page",
+      pageKey: page.pageKey,
+      label: `Halaman ${pageDisplayLabel(page)}`,
+      path: pagePublicPath(page)
+    })),
+    {
+      type: "whatsapp",
+      label: "WhatsApp Bisnis",
+      value: "business_whatsapp",
+      path: businessProfile?.whatsapp ? `https://wa.me/${String(businessProfile.whatsapp).replace(/\D/g, "")}` : null
+    },
+    { type: "custom", label: "Link Custom", value: "custom", path: null }
+  ];
+
+  return {
+    navbar: {
+      maxItems: 6,
+      items: navbarItems,
+      cta: {
+        label: "Hubungi Kami",
+        targetType: "page",
+        targetPageKey: "contact",
+        path: publishedPages.find((page: any) => page.pageKey === "contact") ? pagePublicPath(publishedPages.find((page: any) => page.pageKey === "contact")) : "/contact"
+      }
+    },
+    footer: { items: footerItems },
+    availableTargets
   };
 };
 
@@ -263,6 +350,19 @@ const patchWebsiteBody = z.object({
   name: z.string().min(2).optional(),
   slug: z.string().min(2).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
   themeJson: z.unknown().optional()
+});
+const pageSetupBody = z.object({
+  title: z.string().min(1).optional(),
+  navLabel: z.string().min(1).nullable().optional(),
+  footerLabel: z.string().min(1).nullable().optional(),
+  slug: z.string().nullable().optional(),
+  purpose: z.string().nullable().optional(),
+  isPublished: z.boolean().optional(),
+  isVisibleInNavbar: z.boolean().optional(),
+  isVisibleInFooter: z.boolean().optional(),
+  sortOrder: z.number().int().optional(),
+  seoTitle: z.string().nullable().optional(),
+  seoDescription: z.string().nullable().optional()
 });
 const businessProfileBody = z.object({
   name: z.string().min(2),
@@ -384,14 +484,14 @@ const getWebsiteForAccess = async (request: Req, websiteId?: string) => {
   return { user, website };
 };
 
-const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string; slug?: string }) => {
+const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string; slug?: string }, options: { publicOnly?: boolean } = {}) => {
   const website = await prisma.website.findUnique({
     where: { id: websiteId },
     include: { businessProfile: true }
   });
   if (!website) throw new AppError(404, "WEBSITE_NOT_FOUND", "Website not found");
   const page = await prisma.websitePage.findFirst({
-    where: { websiteId, isActive: true, ...pageWhere },
+    where: { websiteId, isActive: true, ...(options.publicOnly ? { isPublished: true } : {}), ...pageWhere },
     include: {
       sections: {
         where: { isVisible: true },
@@ -408,12 +508,7 @@ const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string;
     prisma.brandPartner.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
     prisma.article.findMany({ where: { websiteId, status: "published" }, orderBy: [{ sortOrder: "asc" }, { publishedAt: "desc" }] })
   ]);
-  const navigation = COMPANY_PROFILE_PAGES
-    .filter((navPage) => !navPage.isDynamicDetailPage)
-    .map((navPage) => ({
-      label: navPage.title,
-      href: navPage.slug ? `/${website.slug}/${navPage.slug}` : `/${website.slug}`
-    }));
+  const navigation = await buildNavigationContract(websiteId);
   return {
     website: {
       id: website.id,
@@ -434,7 +529,15 @@ const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string;
     page: {
       pageKey: page.pageKey,
       title: page.title,
+      navLabel: page.navLabel || page.title,
+      footerLabel: page.footerLabel || page.navLabel || page.title,
       slug: page.slug,
+      path: pagePublicPath(page),
+      purpose: page.purpose || pagePurpose(page.pageKey),
+      isPublished: page.isPublished ?? page.isActive,
+      isDynamicDetailPage: isDynamicDetailPage(page.pageKey),
+      seoTitle: page.seoTitle || null,
+      seoDescription: page.seoDescription || null,
       sections: page.sections
         .filter((section: any) => section.templateSection)
         .map((section: any) => ({
@@ -686,11 +789,104 @@ const registerWebsiteRoutes = () => {
     const updated = await prisma.website.update({ where: { id: website.id }, data: { status: "draft" } });
     return ok(reply, websiteSummary(updated), "Website unpublished");
   });
+  app.get("/api/v1/websites/:websiteId/page-setup", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    const pages = await prisma.websitePage.findMany({
+      where: { websiteId: website.id },
+      include: { sections: true, _count: { select: { slugHistories: true } } },
+      orderBy: { sortOrder: "asc" }
+    });
+    const navigation = await buildNavigationContract(website.id);
+    return ok(reply, {
+      pages: pages.map(pageDashboardSummary),
+      navbarItems: navigation.navbar.items,
+      footerItems: navigation.footer.items,
+      availableTargets: navigation.availableTargets
+    }, "Page setup loaded");
+  });
+
+  app.get("/api/v1/websites/:websiteId/navigation-contract", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    return ok(reply, await buildNavigationContract(website.id), "Navigation contract loaded");
+  });
+
+  app.get("/api/v1/websites/:websiteId/page-redirects", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    const redirects = await prisma.websitePageSlugHistory.findMany({
+      where: { websiteId: website.id },
+      orderBy: { createdAt: "desc" }
+    });
+    return ok(reply, redirects.map((redirect: any) => ({
+      id: redirect.id,
+      pageKey: redirect.pageKey,
+      oldSlug: redirect.oldSlug,
+      newSlug: redirect.newSlug,
+      from: redirect.oldSlug ? `/${redirect.oldSlug}` : "/",
+      to: redirect.newSlug ? `/${redirect.newSlug}` : "/",
+      redirectType: redirect.redirectType,
+      createdAt: redirect.createdAt
+    })), "Page redirects loaded");
+  });
+
+  app.patch("/api/v1/websites/:websiteId/pages/:pageKey/setup", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    const pageKey = request.params?.pageKey || "";
+    const body = pageSetupBody.parse(request.body);
+    const page = await prisma.websitePage.findUnique({ where: { websiteId_pageKey: { websiteId: website.id, pageKey } } });
+    if (!page) throw new AppError(404, "PAGE_NOT_FOUND", "Page not found");
+
+    const dynamicDetailPage = isDynamicDetailPage(page.pageKey);
+    const nextSlug = page.pageKey === "home" ? "" : body.slug === undefined ? page.slug : cleanPageSlug(body.slug);
+    if (!isValidPageSlug(nextSlug)) throw new AppError(422, "INVALID_PAGE_SLUG", "Slug must use lowercase kebab-case without slash");
+    if (page.pageKey !== "home" && !nextSlug) throw new AppError(422, "PAGE_SLUG_REQUIRED", "Slug is required for this page");
+
+    if (nextSlug !== page.slug) {
+      const existingSlug = await prisma.websitePage.findFirst({ where: { websiteId: website.id, slug: nextSlug, id: { not: page.id } } });
+      if (existingSlug) throw new AppError(409, "PAGE_SLUG_EXISTS", "Slug already used by another page");
+    }
+
+    const data: any = {
+      title: body.title,
+      navLabel: body.navLabel === undefined ? undefined : body.navLabel || null,
+      footerLabel: body.footerLabel === undefined ? undefined : body.footerLabel || null,
+      slug: nextSlug,
+      purpose: body.purpose === undefined ? undefined : body.purpose || null,
+      isPublished: body.isPublished,
+      isVisibleInNavbar: dynamicDetailPage ? false : body.isVisibleInNavbar,
+      isVisibleInFooter: dynamicDetailPage ? false : body.isVisibleInFooter,
+      sortOrder: body.sortOrder,
+      seoTitle: body.seoTitle === undefined ? undefined : body.seoTitle || null,
+      seoDescription: body.seoDescription === undefined ? undefined : body.seoDescription || null
+    };
+
+    const updated = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      if (nextSlug !== page.slug) {
+        await tx.websitePageSlugHistory.create({
+          data: {
+            websiteId: website.id,
+            pageId: page.id,
+            pageKey: page.pageKey,
+            oldSlug: page.slug,
+            newSlug: nextSlug,
+            redirectType: 301
+          }
+        });
+      }
+      return tx.websitePage.update({
+        where: { id: page.id },
+        data,
+        include: { sections: true, _count: { select: { slugHistories: true } } }
+      });
+    });
+
+    return ok(reply, pageDashboardSummary(updated), "Page setup updated");
+  });
+
   app.get("/api/v1/websites/:websiteId/pages", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
     const pages = await prisma.websitePage.findMany({
       where: { websiteId: website.id },
-      include: { sections: true },
+      include: { sections: true, _count: { select: { slugHistories: true } } },
       orderBy: { sortOrder: "asc" }
     });
     return ok(reply, pages.map(pageDashboardSummary), "Pages loaded");
@@ -711,9 +907,18 @@ const registerWebsiteRoutes = () => {
       id: page.id,
       pageKey: page.pageKey,
       title: page.title,
+      navLabel: page.navLabel || page.title,
+      footerLabel: page.footerLabel || page.navLabel || page.title,
       slug: page.slug,
+      publicPath: pagePublicPath(page),
+      purpose: page.purpose || pagePurpose(page.pageKey),
       pageLabel: getPageLabel(page.pageKey),
       isDynamicDetailPage: isDynamicDetailPage(page.pageKey),
+      isPublished: page.isPublished ?? page.isActive,
+      isVisibleInNavbar: isDynamicDetailPage(page.pageKey) ? false : page.isVisibleInNavbar,
+      isVisibleInFooter: isDynamicDetailPage(page.pageKey) ? false : page.isVisibleInFooter,
+      seoTitle: page.seoTitle || null,
+      seoDescription: page.seoDescription || null,
       isActive: page.isActive,
       sections: page.sections.map((section: any) => sectionDetailContract(section, website.id))
     }, "Page loaded");
@@ -1219,12 +1424,29 @@ const registerPublicRoutes = () => {
   app.get("/api/v1/public/sites/:slug", async (request: Req, reply) => {
     const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" } });
     if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
-    return ok(reply, await buildPublicPage(website.id, { pageKey: "home" }), "Public page loaded");
+    return ok(reply, await buildPublicPage(website.id, { pageKey: "home" }, { publicOnly: true }), "Public page loaded");
   });
   app.get("/api/v1/public/sites/:slug/pages/:pageSlug", async (request: Req, reply) => {
     const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" } });
     if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
-    return ok(reply, await buildPublicPage(website.id, { slug: request.params?.pageSlug || "" }), "Public page loaded");
+    const requestedSlug = cleanPageSlug(request.params?.pageSlug || "");
+    const page = await prisma.websitePage.findFirst({ where: { websiteId: website.id, slug: requestedSlug, isPublished: true } });
+    if (!page) {
+      const redirect = await prisma.websitePageSlugHistory.findFirst({
+        where: { websiteId: website.id, oldSlug: requestedSlug },
+        orderBy: { createdAt: "desc" }
+      });
+      if (redirect) {
+        return ok(reply, {
+          redirect: {
+            type: redirect.redirectType,
+            from: redirect.oldSlug ? `/${redirect.oldSlug}` : "/",
+            to: redirect.newSlug ? `/${redirect.newSlug}` : "/"
+          }
+        }, "Page redirect found");
+      }
+    }
+    return ok(reply, await buildPublicPage(website.id, { slug: requestedSlug }, { publicOnly: true }), "Public page loaded");
   });
   app.get("/api/v1/public/sites/:slug/articles", async (request: Req, reply) => {
     const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" }, include: { businessProfile: true } });
@@ -1256,7 +1478,8 @@ const registerPublicRoutes = () => {
         title: article.seoTitle || article.title,
         description: article.seoDescription || article.excerpt || website.businessProfile?.description || website.name
       },
-      trackingKey: website.trackingKey
+      trackingKey: website.trackingKey,
+      navigation: await buildNavigationContract(website.id)
     }, "Public article loaded");
   });
   app.get("/api/v1/websites/:websiteId/preview/pages/:pageKey", async (request: Req, reply) => {

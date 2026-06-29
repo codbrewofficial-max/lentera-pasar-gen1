@@ -119,6 +119,12 @@ export default function DashboardLayout({
       active: pathname === `/websites/${websiteId}/profile`
     },
     {
+      label: "Halaman & Menu",
+      icon: Menu,
+      href: `/websites/${websiteId}/page-setup`,
+      active: pathname?.includes(`/websites/${websiteId}/page-setup`)
+    },
+    {
       label: "Halaman",
       icon: Layers,
       href: `/websites/${websiteId}/pages`,
