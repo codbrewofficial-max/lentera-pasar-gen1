@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
+import { apiConfig } from "./env.js";
 
 export const hashPassword = (password: string) => bcrypt.hash(password, 10);
 export const verifyPassword = (password: string, hash: string) => bcrypt.compare(password, hash);
@@ -9,7 +10,7 @@ export const randomToken = (prefix: string) => `${prefix}_${crypto.randomBytes(2
 export const hashIp = (ip: string | undefined) => {
   if (!ip) return null;
   return crypto
-    .createHmac("sha256", process.env.IP_HASH_SECRET || process.env.JWT_SECRET || "dev-secret")
+    .createHmac("sha256", apiConfig.ipHashSecret)
     .update(ip)
     .digest("hex");
 };
@@ -24,3 +25,12 @@ export const limitJson = (value: unknown, maxBytes = 4096) => {
 };
 
 export const prismaJson = (value: unknown) => (value == null ? undefined : (value as any));
+
+
+export const verifyApiKey = (provided: unknown, expected = apiConfig.internalApiKey) => {
+  if (!expected || typeof provided !== "string" || !provided) return false;
+  const providedBuffer = Buffer.from(provided);
+  const expectedBuffer = Buffer.from(expected);
+  if (providedBuffer.length !== expectedBuffer.length) return false;
+  return crypto.timingSafeEqual(providedBuffer, expectedBuffer);
+};

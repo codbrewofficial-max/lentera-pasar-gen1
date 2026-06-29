@@ -367,7 +367,8 @@ async function main() {
   assert(publicHome.data.page.pageKey === "home", "Public site did not return home page");
   assert(publicHome.data.seo?.title, "Public renderer missing seo.title");
   assert(publicHome.data.website.websiteTypeLabel === "Company Profile", "Public renderer missing websiteTypeLabel");
-  assert(Array.isArray(publicHome.data.navigation), "Public renderer missing navigation");
+  assert(publicHome.data.navigation?.navbar?.items?.length >= 1, "Public renderer missing navigation.navbar.items");
+  assert(publicHome.data.navigation?.footer?.items, "Public renderer missing navigation.footer.items");
   assert(Array.isArray(publicHome.data.page.sections), "Public site did not return sections");
   assert(publicHome.data.page.sections[0].slotLabel, "Public section missing slotLabel");
   assert(publicHome.data.page.sections[0].tracking?.slotKey, "Public section missing tracking metadata");

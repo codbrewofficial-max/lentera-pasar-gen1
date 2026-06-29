@@ -6,6 +6,8 @@ import jwt from "@fastify/jwt";
 import multipart from "@fastify/multipart";
 import rateLimit from "@fastify/rate-limit";
 import Fastify, { type FastifyRequest } from "fastify";
+import { apiConfig, assertRuntimeEnv, isOriginAllowed } from "./env.js";
+import { loggerConfig, registerObservabilityHooks, safeServerInfo } from "./observability.js";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import {
@@ -29,14 +31,18 @@ import {
 import { prisma } from "./prisma.js";
 import { createCompanyProfileDefaults, defaultPageNavLabel, isDynamicDetailPage, pagePurpose } from "./defaults.js";
 import { AppError, created, ok, publicUser, toErrorPayload } from "./http.js";
-import { hashIp, hashPassword, limitJson, prismaJson, randomToken, verifyPassword } from "./security.js";
+import { hashIp, hashPassword, limitJson, prismaJson, randomToken, verifyApiKey, verifyPassword } from "./security.js";
 
 type AuthUser = { id: string; role: "internal_admin" | "owner_admin"; email: string };
 type Req = FastifyRequest<{ Params?: Record<string, string>; Querystring?: Record<string, string> }>;
 
-const app = Fastify({ 
-  logger: true,
-  maxParamLength: 500,
+assertRuntimeEnv();
+
+const app = Fastify({
+  logger: loggerConfig,
+  maxParamLength: apiConfig.maxParamLength,
+  bodyLimit: apiConfig.requestBodyLimitBytes,
+  requestIdHeader: "x-request-id"
 });
 
 const publicUrlFor = (website: { slug: string; status: string }) =>
@@ -453,11 +459,31 @@ const contactBody = z.object({
 });
 
 const registerPlugins = async () => {
-  await app.register(cors, { origin: (process.env.CORS_ORIGIN || "*").split(",") });
-  await app.register(helmet);
-  await app.register(jwt, { secret: process.env.JWT_SECRET || "dev-secret" });
-  await app.register(multipart, { limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
-  await app.register(rateLimit, { max: 120, timeWindow: "1 minute" });
+  await app.register(cors, {
+    origin: (origin, callback) => {
+      if (isOriginAllowed(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error(`Origin ${origin} is not allowed by CORS`), false);
+    },
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-lentera-api-key", "x-request-id"],
+    exposedHeaders: ["x-request-id"],
+    credentials: false,
+    maxAge: apiConfig.isProductionLike ? 86400 : 600
+  });
+  await app.register(helmet, {
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" }
+  });
+  await app.register(jwt, {
+    secret: apiConfig.jwtSecret,
+    sign: { expiresIn: apiConfig.jwtExpiresIn }
+  });
+  await app.register(multipart, { limits: { fileSize: apiConfig.templateUploadMaxBytes, files: 1 } });
+  await app.register(rateLimit, apiConfig.rateLimits.global);
+  registerObservabilityHooks(app);
 };
 
 const requireAuth = async (request: FastifyRequest) => {
@@ -473,6 +499,13 @@ const requireRole = async (request: FastifyRequest, roles: AuthUser["role"][]) =
   const user = await requireAuth(request);
   if (!roles.includes(user.role)) throw new AppError(403, "FORBIDDEN", "You do not have access");
   return user;
+};
+
+const requireInternalApiKey = async (request: FastifyRequest) => {
+  const provided = request.headers["x-lentera-api-key"];
+  if (!verifyApiKey(provided)) {
+    throw new AppError(401, "INVALID_API_KEY", "Valid internal API key is required");
+  }
 };
 
 const getWebsiteForAccess = async (request: Req, websiteId?: string) => {
@@ -588,7 +621,7 @@ const recordTracking = async (request: FastifyRequest, input: z.infer<typeof tra
 };
 
 const registerAuthRoutes = () => {
-  app.post("/api/v1/auth/register", async (request, reply) => {
+  app.post("/api/v1/auth/register", { config: { rateLimit: apiConfig.rateLimits.auth } }, async (request, reply) => {
     const body = authBody.parse(request.body);
     const count = await prisma.user.count();
     const role = count === 0 ? "internal_admin" : "owner_admin";
@@ -602,7 +635,7 @@ const registerAuthRoutes = () => {
     });
     return created(reply, { user: publicUser(user), token: app.jwt.sign({ id: user.id, role: user.role, email: user.email }) }, "Registered");
   });
-  app.post("/api/v1/auth/login", async (request, reply) => {
+  app.post("/api/v1/auth/login", { config: { rateLimit: apiConfig.rateLimits.auth } }, async (request, reply) => {
     const body = authBody.omit({ name: true }).parse(request.body);
     const user = await prisma.user.findUnique({ where: { email: body.email.toLowerCase() } });
     if (!user || !(await verifyPassword(body.password, user.passwordHash))) {
@@ -620,7 +653,24 @@ const registerAuthRoutes = () => {
 };
 
 const registerCoreRoutes = () => {
-  app.get("/api/v1/health", async (_request, reply) => ok(reply, { status: "ok" }, "API healthy"));
+  app.get("/api/v1/health", async (_request, reply) => ok(reply, safeServerInfo(), "API healthy"));
+  app.get("/api/v1/health/live", async (_request, reply) => ok(reply, safeServerInfo(), "API live"));
+  app.get("/api/v1/health/ready", async (request, reply) => {
+    await requireInternalApiKey(request);
+    await prisma.$queryRaw`SELECT 1`;
+    return ok(reply, { ...safeServerInfo(), database: "ok" }, "API ready");
+  });
+  app.get("/api/v1/deployment/health", async (request, reply) => {
+    await requireInternalApiKey(request);
+    await prisma.$queryRaw`SELECT 1`;
+    return ok(reply, {
+      ...safeServerInfo(),
+      database: "ok",
+      corsOrigins: apiConfig.corsOrigins,
+      jwtExpiresIn: apiConfig.jwtExpiresIn,
+      rateLimits: apiConfig.rateLimits
+    }, "Deployment health loaded");
+  });
   app.get("/api/v1/website-types", async (_request, reply) => ok(reply, WEBSITE_TYPES, "Website types loaded"));
 };
 
@@ -1235,14 +1285,14 @@ const importTemplatePackZip = async (buffer: Buffer) => {
 };
 
 const registerTemplateRoutes = () => {
-  app.post("/api/v1/internal/template-sections/import-zip", async (request, reply) => {
+  app.post("/api/v1/internal/template-sections/import-zip", { config: { rateLimit: apiConfig.rateLimits.templateUpload } }, async (request, reply) => {
     await requireRole(request, ["internal_admin"]);
     const file = await request.file();
     if (!file) throw new AppError(400, "ZIP_REQUIRED", "Template ZIP file is required");
     const report = await importTemplatePackZip(await file.toBuffer());
     return ok(reply, { templatePack: templatePackContract(report.templatePack), summary: report.summary, errors: report.errors, warnings: report.warnings }, "Template pack imported");
   });
-  app.post("/api/v1/internal/template-packs/import-zip", async (request, reply) => {
+  app.post("/api/v1/internal/template-packs/import-zip", { config: { rateLimit: apiConfig.rateLimits.templateUpload } }, async (request, reply) => {
     await requireRole(request, ["internal_admin"]);
     const file = await request.file();
     if (!file) throw new AppError(400, "ZIP_REQUIRED", "Template pack ZIP file is required");
@@ -1489,12 +1539,12 @@ const registerPublicRoutes = () => {
     const { website } = await getWebsiteForAccess(request);
     return ok(reply, { ...(await buildPublicPage(website.id, { pageKey: request.params?.pageKey || "home" })), isPreview: true }, "Preview page loaded");
   });
-  app.post("/api/v1/public/tracking/events", { config: { rateLimit: { max: 60, timeWindow: "1 minute" } } }, async (request, reply) => {
+  app.post("/api/v1/public/tracking/events", { config: { rateLimit: apiConfig.rateLimits.tracking } }, async (request, reply) => {
     const body = trackingBody.parse(request.body);
     await recordTracking(request, body);
     return ok(reply, { accepted: true }, "Tracking event accepted", 202);
   });
-  app.post("/api/v1/public/sites/:slug/contact", { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } }, async (request: Req, reply) => {
+  app.post("/api/v1/public/sites/:slug/contact", { config: { rateLimit: apiConfig.rateLimits.contact } }, async (request: Req, reply) => {
     const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" } });
     if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
     const body = contactBody.parse(request.body);
@@ -1752,9 +1802,20 @@ const registerLeadAndInsightRoutes = () => {
 
 export const buildApp = async () => {
   await registerPlugins();
-  app.setErrorHandler((error, _request, reply) => {
-    const payload = toErrorPayload(error);
+  app.setErrorHandler((error, request, reply) => {
+    request.log.error({ err: error, requestId: request.id, method: request.method, url: request.url }, "request_error");
+    const payload = toErrorPayload(error, request);
     reply.code(payload.statusCode).send(payload.body);
+  });
+  app.setNotFoundHandler((request, reply) => {
+    reply.code(404).send({
+      error: {
+        code: "ROUTE_NOT_FOUND",
+        message: `Route ${request.method}:${request.url} not found`,
+        details: {},
+        requestId: request.id
+      }
+    });
   });
   registerCoreRoutes();
   registerAuthRoutes();
@@ -1774,9 +1835,10 @@ export const buildApp = async () => {
 };
 
 if (process.env.NODE_ENV !== "test") {
-  const port = Number(process.env.API_PORT || process.env.PORT || 4000);
+  const port = apiConfig.port;
   buildApp()
     .then((server) => server.listen({ port, host: "0.0.0.0" }))
+    .then(() => app.log.info({ port, runtimeMode: apiConfig.runtimeMode }, "api_started"))
     .catch(async (error) => {
       app.log.error(error);
       await prisma.$disconnect();

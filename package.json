@@ -15,7 +15,8 @@
     "backfill:page-navigation": "corepack pnpm --filter @lentera-pasar/api backfill:page-navigation",
     "dev:site-renderer": "corepack pnpm --filter @lentera-pasar/site-renderer dev",
     "build:site-renderer": "corepack pnpm --filter @lentera-pasar/site-renderer build",
-    "start:site-renderer": "corepack pnpm --filter @lentera-pasar/site-renderer start"
+    "start:site-renderer": "corepack pnpm --filter @lentera-pasar/site-renderer start",
+    "check:deployment": "corepack pnpm --filter @lentera-pasar/api check:deployment"
   },
   "devDependencies": {
     "typescript": "^5.5.4"
