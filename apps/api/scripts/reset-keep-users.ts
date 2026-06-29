@@ -11,6 +11,7 @@ type CountSummary = {
   articles: number;
   leads: number;
   trackingEvents: number;
+  auditLogs: number;
 };
 
 const delegate = (modelName: string) => (prisma as any)[modelName];
@@ -39,7 +40,8 @@ async function getSummary(): Promise<CountSummary> {
       (await countModel("lead")) +
       (await countModel("contactLead")) +
       (await countModel("contactMessage")),
-    trackingEvents: await countModel("trackingEvent")
+    trackingEvents: await countModel("trackingEvent"),
+    auditLogs: await countModel("auditLog")
   };
 }
 
@@ -59,6 +61,7 @@ async function main() {
   const usersUpdated = await nullPrimaryWebsite();
 
   const deleteOrder = [
+    "auditLog",
     "trackingEvent",
     "contactMessage",
     "contactLead",

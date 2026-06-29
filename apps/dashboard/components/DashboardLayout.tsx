@@ -23,7 +23,8 @@ import {
   MessageSquare,
   Award,
   FileText,
-  Package
+  Package,
+  ScrollText
 } from "lucide-react";
 
 function getRoleLabel(role: string) {
@@ -181,6 +182,12 @@ export default function DashboardLayout({
       icon: Shield,
       href: "/internal",
       active: pathname === "/internal"
+    },
+    {
+      label: "Audit Log",
+      icon: ScrollText,
+      href: "/internal/audit-logs",
+      active: pathname === "/internal/audit-logs"
     },
     {
       label: "Owner Bisnis",

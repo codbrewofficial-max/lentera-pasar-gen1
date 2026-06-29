@@ -144,6 +144,81 @@ const ownerContract = (owner: any) => ({
   createdAt: owner.createdAt
 });
 
+const auditLogContract = (log: any) => ({
+  id: log.id,
+  category: log.category,
+  action: log.action,
+  actorUserId: log.actorUserId,
+  actorRole: log.actorRole,
+  actor: log.actor
+    ? {
+        id: log.actor.id,
+        name: log.actor.name,
+        email: log.actor.email,
+        role: log.actor.role
+      }
+    : null,
+  websiteId: log.websiteId,
+  website: log.website
+    ? {
+        id: log.website.id,
+        name: log.website.name,
+        slug: log.website.slug,
+        status: log.website.status
+      }
+    : null,
+  entityType: log.entityType,
+  entityId: log.entityId,
+  summary: log.summary,
+  metadata: log.metadataJson || null,
+  ipHash: log.ipHash || null,
+  userAgent: log.userAgent || null,
+  requestId: log.requestId || null,
+  createdAt: log.createdAt
+});
+
+const createAuditLog = async (
+  request: FastifyRequest,
+  input: {
+    category?: "audit" | "security" | "system";
+    action: string;
+    actor?: AuthUser | null;
+    websiteId?: string | null;
+    entityType?: string | null;
+    entityId?: string | null;
+    summary: string;
+    metadata?: unknown;
+  }
+) => {
+  try {
+    await prisma.auditLog.create({
+      data: {
+        category: input.category || "audit",
+        action: input.action,
+        actorUserId: input.actor?.id || null,
+        actorRole: input.actor?.role || null,
+        websiteId: input.websiteId || null,
+        entityType: input.entityType || null,
+        entityId: input.entityId || null,
+        summary: input.summary,
+        metadataJson: prismaJson(limitJson(input.metadata, 5000)),
+        ipHash: hashIp(request.ip),
+        userAgent: request.headers["user-agent"] || null,
+        requestId: request.id
+      }
+    });
+  } catch (error) {
+    request.log.warn(
+      {
+        requestId: request.id,
+        action: input.action,
+        error: error instanceof Error ? error.message : String(error)
+      },
+      "audit_log_failed"
+    );
+  }
+};
+
 const mergeContent = (template: any, contentJson: unknown) => ({
   ...((template?.defaultContentJson as Record<string, unknown> | null) || {}),
   ...((contentJson as Record<string, unknown> | null) || {})
@@ -504,6 +579,13 @@ const requireRole = async (request: FastifyRequest, roles: AuthUser["role"][]) =
 const requireInternalApiKey = async (request: FastifyRequest) => {
   const provided = request.headers["x-lentera-api-key"];
   if (!verifyApiKey(provided)) {
+    await createAuditLog(request, {
+      category: "security",
+      action: "api_key.invalid",
+      entityType: "api_key",
+      summary: "Invalid internal API key request",
+      metadata: { method: request.method, url: request.url }
+    });
     throw new AppError(401, "INVALID_API_KEY", "Valid internal API key is required");
   }
 };
@@ -633,14 +715,39 @@ const registerAuthRoutes = () => {
         role
       }
     });
+    const authUser = { id: user.id, role: user.role, email: user.email } as AuthUser;
+    await createAuditLog(request, {
+      category: "security",
+      action: "auth.registered",
+      actor: authUser,
+      entityType: "user",
+      entityId: user.id,
+      summary: `${user.email} registered as ${user.role}`
+    });
     return created(reply, { user: publicUser(user), token: app.jwt.sign({ id: user.id, role: user.role, email: user.email }) }, "Registered");
   });
   app.post("/api/v1/auth/login", { config: { rateLimit: apiConfig.rateLimits.auth } }, async (request, reply) => {
     const body = authBody.omit({ name: true }).parse(request.body);
     const user = await prisma.user.findUnique({ where: { email: body.email.toLowerCase() } });
     if (!user || !(await verifyPassword(body.password, user.passwordHash))) {
+      await createAuditLog(request, {
+        category: "security",
+        action: "auth.login_failed",
+        entityType: "auth",
+        summary: "Failed login attempt",
+        metadata: { email: body.email.toLowerCase() }
+      });
       throw new AppError(401, "INVALID_CREDENTIALS", "Invalid email or password");
     }
+    const authUser = { id: user.id, role: user.role, email: user.email } as AuthUser;
+    await createAuditLog(request, {
+      category: "security",
+      action: "auth.login_success",
+      actor: authUser,
+      entityType: "user",
+      entityId: user.id,
+      summary: `${user.email} logged in`
+    });
     return ok(reply, { user: publicUser(user), token: app.jwt.sign({ id: user.id, role: user.role, email: user.email }) }, "Logged in");
   });
   app.get("/api/v1/auth/me", async (request, reply) => {
@@ -685,7 +792,7 @@ const registerInternalRoutes = () => {
     return ok(reply, owners.map(ownerContract), "Owners loaded");
   });
   app.post("/api/v1/internal/owners", async (request, reply) => {
-    await requireRole(request, ["internal_admin"]);
+    const actor = await requireRole(request, ["internal_admin"]);
     const body = createOwnerBody.parse(request.body);
     const owner = await prisma.user.create({
       data: {
@@ -697,6 +804,14 @@ const registerInternalRoutes = () => {
         primaryWebsiteId: body.primaryWebsiteId || null
       },
       include: { primaryWebsite: true, _count: { select: { websites: true } } }
+    });
+    await createAuditLog(request, {
+      action: "internal.owner_created",
+      actor,
+      entityType: "user",
+      entityId: owner.id,
+      summary: `Owner ${owner.email} created`,
+      metadata: { ownerEmail: owner.email, whatsapp: owner.whatsapp || null }
     });
     return created(reply, ownerContract(owner), "Owner created");
   });
@@ -710,7 +825,7 @@ const registerInternalRoutes = () => {
     return ok(reply, ownerContract(owner), "Owner loaded");
   });
   app.patch("/api/v1/internal/owners/:ownerId", async (request: Req, reply) => {
-    await requireRole(request, ["internal_admin"]);
+    const actor = await requireRole(request, ["internal_admin"]);
     const body = patchOwnerBody.parse(request.body);
     if (body.primaryWebsiteId) {
       const website = await prisma.website.findFirst({ where: { id: body.primaryWebsiteId, ownerId: request.params?.ownerId } });
@@ -727,10 +842,18 @@ const registerInternalRoutes = () => {
       },
       include: { primaryWebsite: true, _count: { select: { websites: true } } }
     });
+    await createAuditLog(request, {
+      action: "internal.owner_updated",
+      actor,
+      entityType: "user",
+      entityId: owner.id,
+      summary: `Owner ${owner.email} updated`,
+      metadata: { changedFields: Object.keys(body).filter((key) => key !== "password") }
+    });
     return ok(reply, ownerContract(owner), "Owner updated");
   });
   app.post("/api/v1/internal/owners/:ownerId/websites", async (request: Req, reply) => {
-    await requireRole(request, ["internal_admin"]);
+    const actor = await requireRole(request, ["internal_admin"]);
     const body = createOwnerWebsiteBody.parse(request.body);
     const owner = await prisma.user.findUnique({ where: { id: request.params?.ownerId } });
     if (!owner || owner.role !== "owner_admin") throw new AppError(404, "OWNER_NOT_FOUND", "Owner not found");
@@ -747,10 +870,19 @@ const registerInternalRoutes = () => {
       await createCompanyProfileDefaults(tx, createdWebsite.id, createdWebsite.name);
       return createdWebsite;
     });
+    await createAuditLog(request, {
+      action: "internal.owner_website_created",
+      actor,
+      websiteId: website.id,
+      entityType: "website",
+      entityId: website.id,
+      summary: `Website ${website.slug} created for owner ${owner.email}`,
+      metadata: { ownerId: owner.id, websiteSlug: website.slug }
+    });
     return created(reply, websiteSummary(website), "Owner website created");
   });
   app.patch("/api/v1/internal/owners/:ownerId/primary-website", async (request: Req, reply) => {
-    await requireRole(request, ["internal_admin"]);
+    const actor = await requireRole(request, ["internal_admin"]);
     const body = primaryWebsiteBody.parse(request.body);
     const owner = await prisma.user.findUnique({ where: { id: request.params?.ownerId } });
     if (!owner || owner.role !== "owner_admin") throw new AppError(404, "OWNER_NOT_FOUND", "Owner not found");
@@ -760,6 +892,15 @@ const registerInternalRoutes = () => {
       where: { id: owner.id },
       data: { primaryWebsiteId: website.id },
       include: { primaryWebsite: true, _count: { select: { websites: true } } }
+    });
+    await createAuditLog(request, {
+      action: "internal.primary_website_updated",
+      actor,
+      websiteId: website.id,
+      entityType: "user",
+      entityId: owner.id,
+      summary: `Primary website updated for owner ${owner.email}`,
+      metadata: { primaryWebsiteId: website.id, websiteSlug: website.slug }
     });
     return ok(reply, ownerContract(updated), "Primary website updated");
   });
@@ -804,6 +945,15 @@ const registerWebsiteRoutes = () => {
       await createCompanyProfileDefaults(tx, created.id, created.name);
       return created;
     });
+    await createAuditLog(request, {
+      action: "website.created",
+      actor: user,
+      websiteId: website.id,
+      entityType: "website",
+      entityId: website.id,
+      summary: `Website ${website.slug} created`,
+      metadata: { websiteType: website.websiteType }
+    });
     return created(reply, websiteSummary(website), "Website created");
   });
   app.get("/api/v1/websites/:websiteId", async (request: Req, reply) => {
@@ -827,19 +977,44 @@ const registerWebsiteRoutes = () => {
     }, "Website loaded");
   });
   app.patch("/api/v1/websites/:websiteId", async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const body = patchWebsiteBody.parse(request.body);
     const updated = await prisma.website.update({ where: { id: website.id }, data: { ...body, themeJson: prismaJson(limitJson(body.themeJson)) } });
+    await createAuditLog(request, {
+      action: "website.updated",
+      actor: user,
+      websiteId: website.id,
+      entityType: "website",
+      entityId: website.id,
+      summary: `Website ${website.slug} updated`,
+      metadata: { changedFields: Object.keys(body) }
+    });
     return ok(reply, websiteSummary(updated), "Website updated");
   });
   app.post("/api/v1/websites/:websiteId/publish", async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const updated = await prisma.website.update({ where: { id: website.id }, data: { status: "published" } });
+    await createAuditLog(request, {
+      action: "website.published",
+      actor: user,
+      websiteId: website.id,
+      entityType: "website",
+      entityId: website.id,
+      summary: `Website ${website.slug} published`
+    });
     return ok(reply, websiteSummary(updated), "Website published");
   });
   app.post("/api/v1/websites/:websiteId/unpublish", async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const updated = await prisma.website.update({ where: { id: website.id }, data: { status: "draft" } });
+    await createAuditLog(request, {
+      action: "website.unpublished",
+      actor: user,
+      websiteId: website.id,
+      entityType: "website",
+      entityId: website.id,
+      summary: `Website ${website.slug} unpublished`
+    });
     return ok(reply, websiteSummary(updated), "Website unpublished");
   });
   app.get("/api/v1/websites/:websiteId/page-setup", async (request: Req, reply) => {
@@ -882,7 +1057,7 @@ const registerWebsiteRoutes = () => {
   });
 
   app.patch("/api/v1/websites/:websiteId/pages/:pageKey/setup", async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const pageKey = request.params?.pageKey || "";
     const body = pageSetupBody.parse(request.body);
     const page = await prisma.websitePage.findUnique({ where: { websiteId_pageKey: { websiteId: website.id, pageKey } } });
@@ -932,6 +1107,20 @@ const registerWebsiteRoutes = () => {
       });
     });
 
+    await createAuditLog(request, {
+      action: "page_setup.updated",
+      actor: user,
+      websiteId: website.id,
+      entityType: "website_page",
+      entityId: updated.id,
+      summary: `Page setup updated: ${updated.pageKey}`,
+      metadata: {
+        pageKey: updated.pageKey,
+        oldSlug: page.slug,
+        newSlug: updated.slug,
+        changedFields: Object.keys(body)
+      }
+    });
     return ok(reply, pageDashboardSummary(updated), "Page setup updated");
   });
 
@@ -991,7 +1180,7 @@ const registerSectionRoutes = () => {
     return ok(reply, sectionDetailContract(section, website.id), "Section loaded");
   });
   app.patch("/api/v1/websites/:websiteId/sections/:slotKey/template", async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const body = sectionTemplateBody.parse(request.body);
     const section = await prisma.pageSection.findUnique({ where: { websiteId_slotKey: { websiteId: website.id, slotKey: request.params?.slotKey || "" } } });
     const template = await prisma.templateSection.findUnique({ where: { id: body.templateSectionId } });
@@ -999,25 +1188,52 @@ const registerSectionRoutes = () => {
       throw new AppError(400, "INVALID_TEMPLATE_SECTION", "Template section does not match this slot");
     }
     const updated = await prisma.pageSection.update({ where: { id: section.id }, data: { templateSectionId: template.id }, include: { templateSection: true } });
+    await createAuditLog(request, {
+      action: "section.template_updated",
+      actor: user,
+      websiteId: website.id,
+      entityType: "page_section",
+      entityId: updated.id,
+      summary: `Section template updated: ${updated.slotKey}`,
+      metadata: { slotKey: updated.slotKey, templateSectionId: template.id, sectionKey: template.sectionKey }
+    });
     return ok(reply, sectionDetailContract(updated, website.id), "Section template updated");
   });
   app.patch("/api/v1/websites/:websiteId/sections/:slotKey/content", async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const body = sectionContentBody.parse(request.body);
     const updated = await prisma.pageSection.update({
       where: { websiteId_slotKey: { websiteId: website.id, slotKey: request.params?.slotKey || "" } },
       data: { contentJson: prismaJson(limitJson(body.contentJson)) },
       include: { templateSection: true }
     });
+    await createAuditLog(request, {
+      action: "section.content_updated",
+      actor: user,
+      websiteId: website.id,
+      entityType: "page_section",
+      entityId: updated.id,
+      summary: `Section content updated: ${updated.slotKey}`,
+      metadata: { slotKey: updated.slotKey, contentKeys: Object.keys(body.contentJson || {}) }
+    });
     return ok(reply, sectionDetailContract(updated, website.id), "Section content updated");
   });
   app.patch("/api/v1/websites/:websiteId/sections/:slotKey/visibility", async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const body = visibilityBody.parse(request.body);
     const updated = await prisma.pageSection.update({
       where: { websiteId_slotKey: { websiteId: website.id, slotKey: request.params?.slotKey || "" } },
       data: { isVisible: body.isVisible },
       include: { templateSection: true }
+    });
+    await createAuditLog(request, {
+      action: "section.visibility_updated",
+      actor: user,
+      websiteId: website.id,
+      entityType: "page_section",
+      entityId: updated.id,
+      summary: `Section visibility updated: ${updated.slotKey}`,
+      metadata: { slotKey: updated.slotKey, isVisible: updated.isVisible }
     });
     return ok(reply, sectionDetailContract(updated, website.id), "Section visibility updated");
   });
@@ -1286,17 +1502,33 @@ const importTemplatePackZip = async (buffer: Buffer) => {
 
 const registerTemplateRoutes = () => {
   app.post("/api/v1/internal/template-sections/import-zip", { config: { rateLimit: apiConfig.rateLimits.templateUpload } }, async (request, reply) => {
-    await requireRole(request, ["internal_admin"]);
+    const actor = await requireRole(request, ["internal_admin"]);
     const file = await request.file();
     if (!file) throw new AppError(400, "ZIP_REQUIRED", "Template ZIP file is required");
     const report = await importTemplatePackZip(await file.toBuffer());
+    await createAuditLog(request, {
+      action: "template_pack.imported",
+      actor,
+      entityType: "template_pack",
+      entityId: report.templatePack.id,
+      summary: `Template pack imported: ${report.templatePack.templatePackKey}`,
+      metadata: { status: report.templatePack.status, summary: report.summary, errors: report.errors.length, warnings: report.warnings.length }
+    });
     return ok(reply, { templatePack: templatePackContract(report.templatePack), summary: report.summary, errors: report.errors, warnings: report.warnings }, "Template pack imported");
   });
   app.post("/api/v1/internal/template-packs/import-zip", { config: { rateLimit: apiConfig.rateLimits.templateUpload } }, async (request, reply) => {
-    await requireRole(request, ["internal_admin"]);
+    const actor = await requireRole(request, ["internal_admin"]);
     const file = await request.file();
     if (!file) throw new AppError(400, "ZIP_REQUIRED", "Template pack ZIP file is required");
     const report = await importTemplatePackZip(await file.toBuffer());
+    await createAuditLog(request, {
+      action: "template_pack.imported",
+      actor,
+      entityType: "template_pack",
+      entityId: report.templatePack.id,
+      summary: `Template pack imported: ${report.templatePack.templatePackKey}`,
+      metadata: { status: report.templatePack.status, summary: report.summary, errors: report.errors.length, warnings: report.warnings.length }
+    });
     return ok(reply, { templatePack: templatePackContract(report.templatePack), summary: report.summary, errors: report.errors, warnings: report.warnings }, "Template pack imported");
   });
   app.get("/api/v1/internal/template-packs", async (request, reply) => {
@@ -1356,10 +1588,19 @@ const registerContentRoutes = () => {
     return ok(reply, await prisma.businessProfile.findUnique({ where: { websiteId: website.id } }), "Business profile loaded");
   });
   app.put("/api/v1/websites/:websiteId/business-profile", async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const body = businessProfileBody.parse(request.body);
     const profileData = { ...body, timelineJson: prismaJson(limitJson(body.timelineJson)) };
     const profile = await prisma.businessProfile.upsert({ where: { websiteId: website.id }, update: profileData, create: { ...profileData, websiteId: website.id } });
+    await createAuditLog(request, {
+      action: "business_profile.saved",
+      actor: user,
+      websiteId: website.id,
+      entityType: "business_profile",
+      entityId: profile.id,
+      summary: `Business profile saved for ${website.slug}`,
+      metadata: { changedFields: Object.keys(body) }
+    });
     return ok(reply, profile, "Business profile saved");
   });
 };
@@ -1376,9 +1617,18 @@ const registerCrud = (
     return ok(reply, rows, `${base} loaded`);
   });
   app.post(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const body = schema.parse(request.body);
     const row = await (model as any).create({ data: { ...body, websiteId: website.id } });
+    await createAuditLog(request, {
+      action: `${base}.created`,
+      actor: user,
+      websiteId: website.id,
+      entityType: base,
+      entityId: row.id,
+      summary: `${base} item created`,
+      metadata: { title: row.title || row.name || null }
+    });
     return ok(reply, row, `${base} created`, 201);
   });
   app.get(`/api/v1/websites/:websiteId/${base}/:${idParam}`, async (request: Req, reply) => {
@@ -1388,18 +1638,36 @@ const registerCrud = (
     return ok(reply, row, `${base} loaded`);
   });
   app.patch(`/api/v1/websites/:websiteId/${base}/:${idParam}`, async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const body = (schema as any).partial().parse(request.body);
     const existing = await (model as any).findFirst({ where: { id: request.params?.[idParam], websiteId: website.id } });
     if (!existing) throw new AppError(404, "ITEM_NOT_FOUND", "Item not found");
     const row = await (model as any).update({ where: { id: existing.id }, data: body });
+    await createAuditLog(request, {
+      action: `${base}.updated`,
+      actor: user,
+      websiteId: website.id,
+      entityType: base,
+      entityId: row.id,
+      summary: `${base} item updated`,
+      metadata: { changedFields: Object.keys(body) }
+    });
     return ok(reply, row, `${base} updated`);
   });
   app.delete(`/api/v1/websites/:websiteId/${base}/:${idParam}`, async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const existing = await (model as any).findFirst({ where: { id: request.params?.[idParam], websiteId: website.id } });
     if (!existing) throw new AppError(404, "ITEM_NOT_FOUND", "Item not found");
     await (model as any).delete({ where: { id: existing.id } });
+    await createAuditLog(request, {
+      action: `${base}.deleted`,
+      actor: user,
+      websiteId: website.id,
+      entityType: base,
+      entityId: existing.id,
+      summary: `${base} item deleted`,
+      metadata: { title: existing.title || existing.name || null }
+    });
     return ok(reply, true, `${base} deleted`);
   });
 };
@@ -1424,11 +1692,20 @@ const registerArticleRoutes = () => {
     return ok(reply, articles.map(articleContract), "Articles loaded");
   });
   app.post("/api/v1/websites/:websiteId/articles", async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const body = articleBody.parse(request.body);
     const existingSlug = await prisma.article.findUnique({ where: { websiteId_slug: { websiteId: website.id, slug: body.slug } } });
     if (existingSlug) throw new AppError(409, "ARTICLE_SLUG_EXISTS", "Article slug already exists for this website");
     const article = await prisma.article.create({ data: { ...articleData(body), websiteId: website.id } });
+    await createAuditLog(request, {
+      action: "article.created",
+      actor: user,
+      websiteId: website.id,
+      entityType: "article",
+      entityId: article.id,
+      summary: `Article created: ${article.title}`,
+      metadata: { slug: article.slug, status: article.status }
+    });
     return created(reply, articleContract(article), "Article created");
   });
   app.get("/api/v1/websites/:websiteId/articles/:articleId", async (request: Req, reply) => {
@@ -1438,7 +1715,7 @@ const registerArticleRoutes = () => {
     return ok(reply, articleContract(article), "Article loaded");
   });
   app.patch("/api/v1/websites/:websiteId/articles/:articleId", async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const body = articleBody.partial().parse(request.body);
     const article = await prisma.article.findFirst({ where: { id: request.params?.articleId, websiteId: website.id } });
     if (!article) throw new AppError(404, "ARTICLE_NOT_FOUND", "Article not found");
@@ -1462,13 +1739,31 @@ const registerArticleRoutes = () => {
         publishedAt: status === "published" ? article.publishedAt || new Date() : null
       }
     });
+    await createAuditLog(request, {
+      action: "article.updated",
+      actor: user,
+      websiteId: website.id,
+      entityType: "article",
+      entityId: updated.id,
+      summary: `Article updated: ${updated.title}`,
+      metadata: { changedFields: Object.keys(body), oldSlug: article.slug, newSlug: updated.slug, status: updated.status }
+    });
     return ok(reply, articleContract(updated), "Article updated");
   });
   app.delete("/api/v1/websites/:websiteId/articles/:articleId", async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const article = await prisma.article.findFirst({ where: { id: request.params?.articleId, websiteId: website.id } });
     if (!article) throw new AppError(404, "ARTICLE_NOT_FOUND", "Article not found");
     await prisma.article.delete({ where: { id: article.id } });
+    await createAuditLog(request, {
+      action: "article.deleted",
+      actor: user,
+      websiteId: website.id,
+      entityType: "article",
+      entityId: article.id,
+      summary: `Article deleted: ${article.title}`,
+      metadata: { slug: article.slug }
+    });
     return ok(reply, true, "Article deleted");
   });
 };
@@ -1581,6 +1876,80 @@ const registerPublicRoutes = () => {
   });
 };
 
+
+const registerAuditRoutes = () => {
+  app.get("/api/v1/internal/audit-logs", async (request: Req, reply) => {
+    await requireRole(request, ["internal_admin"]);
+
+    const query = request.query || {};
+    const limit = Math.min(Math.max(Number(query.limit || 50), 1), 100);
+    const page = Math.max(Number(query.page || 1), 1);
+    const skip = (page - 1) * limit;
+    const search = query.q?.trim();
+
+    const where: Prisma.AuditLogWhereInput = {
+      ...(query.category ? { category: query.category } : {}),
+      ...(query.action ? { action: query.action } : {}),
+      ...(query.websiteId ? { websiteId: query.websiteId } : {}),
+      ...(query.actorUserId ? { actorUserId: query.actorUserId } : {}),
+      ...(query.entityType ? { entityType: query.entityType } : {}),
+      ...(search
+        ? {
+            OR: [
+              { action: { contains: search, mode: "insensitive" } },
+              { summary: { contains: search, mode: "insensitive" } },
+              { entityType: { contains: search, mode: "insensitive" } },
+              { actorRole: { contains: search, mode: "insensitive" } }
+            ]
+          }
+        : {})
+    };
+
+    const [items, total] = await Promise.all([
+      prisma.auditLog.findMany({
+        where,
+        include: { actor: true, website: true },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit
+      }),
+      prisma.auditLog.count({ where })
+    ]);
+
+    return ok(reply, {
+      items: items.map(auditLogContract),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.max(Math.ceil(total / limit), 1)
+      }
+    }, "Audit logs loaded");
+  });
+
+  app.get("/api/v1/internal/audit-logs/summary", async (request: Req, reply) => {
+    await requireRole(request, ["internal_admin"]);
+
+    const [total, security, audit, system, latest] = await Promise.all([
+      prisma.auditLog.count(),
+      prisma.auditLog.count({ where: { category: "security" } }),
+      prisma.auditLog.count({ where: { category: "audit" } }),
+      prisma.auditLog.count({ where: { category: "system" } }),
+      prisma.auditLog.findMany({
+        include: { actor: true, website: true },
+        orderBy: { createdAt: "desc" },
+        take: 5
+      })
+    ]);
+
+    return ok(reply, {
+      total,
+      categories: { security, audit, system },
+      latest: latest.map(auditLogContract)
+    }, "Audit log summary loaded");
+  });
+};
+
 const registerLeadAndInsightRoutes = () => {
   app.get("/api/v1/websites/:websiteId/leads", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
@@ -1593,11 +1962,21 @@ const registerLeadAndInsightRoutes = () => {
     return ok(reply, leads.map(leadContract), "Recent leads loaded");
   });
   app.patch("/api/v1/websites/:websiteId/leads/:leadId/status", async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const body = z.object({ status: z.enum(LEAD_STATUS) }).parse(request.body);
     const lead = await prisma.lead.findFirst({ where: { id: request.params?.leadId, websiteId: website.id } });
     if (!lead) throw new AppError(404, "LEAD_NOT_FOUND", "Lead not found");
-    return ok(reply, leadContract(await prisma.lead.update({ where: { id: lead.id }, data: { status: body.status } })), "Lead status updated");
+    const updatedLead = await prisma.lead.update({ where: { id: lead.id }, data: { status: body.status } });
+    await createAuditLog(request, {
+      action: "lead.status_updated",
+      actor: user,
+      websiteId: website.id,
+      entityType: "lead",
+      entityId: lead.id,
+      summary: `Lead status updated to ${body.status}`,
+      metadata: { oldStatus: lead.status, newStatus: body.status }
+    });
+    return ok(reply, leadContract(updatedLead), "Lead status updated");
   });
 
   const topBy = async (websiteId: string, field: "pageKey" | "slotKey" | "ctaKey" | "objectId", where: Record<string, unknown> = {}) => {
@@ -1830,6 +2209,7 @@ export const buildApp = async () => {
   registerCrud("brand-partners", brandBody);
   registerArticleRoutes();
   registerPublicRoutes();
+  registerAuditRoutes();
   registerLeadAndInsightRoutes();
   return app;
 };

@@ -52,6 +52,7 @@ model User {
   primaryWebsiteId String?
   primaryWebsite   Website?  @relation("PrimaryWebsite", fields: [primaryWebsiteId], references: [id], onDelete: SetNull)
   websites         Website[] @relation("OwnerWebsites")
+  auditLogs        AuditLog[] @relation("ActorAuditLogs")
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 }
@@ -78,6 +79,7 @@ model Website {
   trackingEvents  TrackingEvent[]
   primaryForUsers User[]            @relation("PrimaryWebsite")
   pageSlugHistories WebsitePageSlugHistory[]
+  auditLogs       AuditLog[]
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
@@ -338,4 +340,30 @@ model TrackingEvent {
   @@index([websiteId, slotKey, createdAt])
   @@index([websiteId, objectType, objectId, createdAt])
   @@index([websiteId, visitorId])
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  category     String   @default("audit")
+  action       String
+  actorUserId  String?
+  actor        User?    @relation("ActorAuditLogs", fields: [actorUserId], references: [id], onDelete: SetNull)
+  actorRole    String?
+  websiteId    String?
+  website      Website? @relation(fields: [websiteId], references: [id], onDelete: SetNull)
+  entityType   String?
+  entityId     String?
+  summary      String
+  metadataJson Json?
+  ipHash       String?
+  userAgent    String?
+  requestId    String?
+  createdAt    DateTime @default(now())
+
+  @@index([category, createdAt])
+  @@index([action, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([websiteId, createdAt])
+  @@index([entityType, entityId])
+  @@index([requestId])
 }

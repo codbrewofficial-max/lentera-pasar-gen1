@@ -511,6 +511,12 @@ async function main() {
   assert(topArticles.data[0].articleId === article.data.id, "Top articles missing smoke article");
   const trafficSources = await request(`/api/v1/websites/${websiteId}/insights/traffic-sources`, { headers: auth(smokeOwnerToken) });
   assert(trafficSources.data[0].label, "Traffic sources missing label");
+  const auditLogs = await request("/api/v1/internal/audit-logs?limit=20", { headers: auth(internalToken) });
+  assert(Array.isArray(auditLogs.data.items), "Audit logs endpoint missing items array");
+  assert(auditLogs.data.items.length > 0, "Expected audit logs after smoke actions");
+  assert(auditLogs.data.items.some((item: any) => item.action === "website.published"), "Audit logs missing website.published action");
+  const auditSummary = await request("/api/v1/internal/audit-logs/summary", { headers: auth(internalToken) });
+  assert(typeof auditSummary.data.total === "number", "Audit log summary missing total");
 
   console.log("Smoke test passed");
 }
