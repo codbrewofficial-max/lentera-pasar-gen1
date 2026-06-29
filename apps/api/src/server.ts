@@ -403,6 +403,7 @@ const publicArticleSummary = (article: any) => ({
   seoDescription: article.seoDescription,
   isFeatured: article.isFeatured ?? false,
   featuredOrder: article.featuredOrder ?? 0,
+  sortOrder: article.sortOrder ?? 0,
   publishedAt: article.publishedAt
 });
 
@@ -2230,12 +2231,27 @@ const registerPublicRoutes = () => {
       include: { category: true }
     });
     if (!article) throw new AppError(404, "ARTICLE_NOT_FOUND", "Published article not found");
-    const relatedArticles = await prisma.article.findMany({
-      where: { websiteId: website.id, status: "published", id: { not: article.id } },
-      orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }, { publishedAt: "desc" }],
-      take: 3,
-      include: { category: true }
-    });
+    const sameCategoryArticles = article.categoryId
+      ? await prisma.article.findMany({
+        where: { websiteId: website.id, status: "published", id: { not: article.id }, categoryId: article.categoryId },
+        orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }, { publishedAt: "desc" }],
+        take: 3,
+        include: { category: true }
+      })
+      : [];
+    const fallbackArticles = sameCategoryArticles.length < 3
+      ? await prisma.article.findMany({
+        where: {
+          websiteId: website.id,
+          status: "published",
+          id: { notIn: [article.id, ...sameCategoryArticles.map((item: any) => item.id)] }
+        },
+        orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }, { publishedAt: "desc" }],
+        take: 3 - sameCategoryArticles.length,
+        include: { category: true }
+      })
+      : [];
+    const relatedArticles = [...sameCategoryArticles, ...fallbackArticles].slice(0, 3);
     return ok(reply, {
       article: articleContract(article),
       relatedArticles: relatedArticles.map(publicArticleSummary),

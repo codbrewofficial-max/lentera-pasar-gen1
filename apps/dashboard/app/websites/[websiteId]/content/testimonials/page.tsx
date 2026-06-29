@@ -207,6 +207,20 @@ export default function TestimonialCrudPage() {
           </div>
         )}
 
+        <div className="rounded-3xl border border-[#649FF6]/20 bg-[#649FF6]/10 p-5 text-sm text-slate-700">
+          <div className="flex items-start gap-3">
+            <div className="rounded-2xl bg-white p-2 text-[#649FF6] shadow-sm">
+              <Star className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="font-black text-slate-900">Ringkasan Tampilan Website</h3>
+              <p className="mt-1 leading-6">
+                Section testimoni di website publik hanya menampilkan maksimal <strong>5 testimoni aktif teratas</strong>. Atur urutan testimoni agar ulasan paling penting tampil lebih dulu.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
           <div className="relative w-full sm:max-w-xs">

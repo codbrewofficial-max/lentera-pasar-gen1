@@ -20,6 +20,57 @@ function imageOf(item: CrudItem) {
   return item.imageUrl || item.coverImageUrl || null;
 }
 
+function categoryNameOf(item: CrudItem) {
+  return item.category?.name || item.categoryName || null;
+}
+
+function contentImageOf(content: Record<string, any>) {
+  return (
+    text(content.imageUrl) ||
+    text(content.coverImageUrl) ||
+    text(content.heroImageUrl) ||
+    text(content.backgroundImageUrl) ||
+    text(content.illustrationImageUrl) ||
+    text(content.photoUrl) ||
+    text(content.thumbnailUrl) ||
+    ''
+  );
+}
+
+function boolValue(value: unknown, fallback = false) {
+  if (value === undefined || value === null || value === '') return fallback;
+  if (typeof value === 'boolean') return value;
+  const normalized = String(value).trim().toLowerCase();
+  if (['true', '1', 'yes', 'ya', 'on'].includes(normalized)) return true;
+  if (['false', '0', 'no', 'tidak', 'off'].includes(normalized)) return false;
+  return fallback;
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'Asia/Jakarta'
+  }).format(date);
+}
+
+function maxWidthClass(value: unknown) {
+  const normalized = String(value || '').toLowerCase();
+  if (['narrow', 'sempit', 'small'].includes(normalized)) return 'max-w-2xl';
+  if (['wide', 'lebar', 'large'].includes(normalized)) return 'max-w-5xl';
+  return 'max-w-3xl';
+}
+
+function pickFaqs(items: CrudItem[], pageKey: string, limit = 10) {
+  const sorted = [...items].sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
+  const exact = sorted.filter((item) => item.pageKey === pageKey);
+  return (exact.length ? exact : sorted).slice(0, limit);
+}
+
 function sortFeaturedFirst(items: CrudItem[]) {
   return [...items].sort((a, b) => {
     const featuredDelta = Number(Boolean(b.isFeatured)) - Number(Boolean(a.isFeatured));
@@ -170,9 +221,14 @@ function PreviewCards({
               )}
             </div>
             <div className="p-5">
-              {item.isFeatured && (
-                <span className="mb-3 inline-flex rounded-full bg-rose-50 px-3 py-1 text-[11px] font-black uppercase tracking-wide text-rose-600">Unggulan</span>
-              )}
+              <div className="mb-3 flex flex-wrap gap-2">
+                {item.isFeatured && (
+                  <span className="inline-flex rounded-full bg-rose-50 px-3 py-1 text-[11px] font-black uppercase tracking-wide text-rose-600">Unggulan</span>
+                )}
+                {categoryNameOf(item) && (
+                  <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-[11px] font-black uppercase tracking-wide text-blue-700">{categoryNameOf(item)}</span>
+                )}
+              </div>
               <h3 className="text-lg font-black text-slate-950">{titleOf(item)}</h3>
               <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">
                 {item.description || item.excerpt || item.quote || 'Informasi singkat akan tampil di sini.'}
@@ -299,7 +355,9 @@ function PortfolioPreviewSection(props: SectionProps) {
 
 function TrustProofSection(props: SectionProps) {
   const c = props.section.content || {};
-  const testimonials = props.section.data?.testimonials || [];
+  const testimonials = (props.section.data?.testimonials || [])
+    .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0))
+    .slice(0, 5);
   const brands = props.section.data?.brands || [];
 
   return (
@@ -322,7 +380,7 @@ function TrustProofSection(props: SectionProps) {
 
           <div className="grid gap-4">
             {testimonials.length > 0 ? (
-              testimonials.slice(0, 2).map((item, i) => (
+              testimonials.map((item, i) => (
                 <blockquote key={item.id || i} className="rounded-3xl bg-white p-6 text-slate-950">
                   <p className="text-lg font-bold">“{item.quote || item.description || 'Testimonial client akan tampil di sini.'}”</p>
                   <footer className="mt-4 text-sm text-slate-500">
@@ -371,6 +429,13 @@ function CtaContactSection(props: SectionProps) {
 
 function TextImageSection(props: SectionProps) {
   const c = props.section.content || {};
+  const imageUrl = contentImageOf(c);
+  const supportText = [
+    text(c.valueOne || c.stepOne || c.benefitOne || c.missionTitle),
+    text(c.valueTwo || c.stepTwo || c.benefitTwo || c.mission),
+    text(c.valueThree || c.stepThree || c.benefitThree)
+  ].filter(Boolean);
+
   return (
     <section className="lp-section">
       <div className="lp-container grid items-center gap-10 md:grid-cols-2">
@@ -380,12 +445,20 @@ function TextImageSection(props: SectionProps) {
             description={text(c.description || c.vision || c.mission, '')}
           />
         </div>
-        <div className="lp-card bg-slate-50 p-8">
-          <p className="text-lg leading-8 text-slate-600">
-            {text(c.valueOne || c.stepOne || c.benefitOne || c.missionTitle, 'Konten pendukung akan tampil di sini.')}
-          </p>
-          <p className="mt-3 text-lg leading-8 text-slate-600">{text(c.valueTwo || c.stepTwo || c.benefitTwo || c.mission, '')}</p>
-          <p className="mt-3 text-lg leading-8 text-slate-600">{text(c.valueThree || c.stepThree || c.benefitThree, '')}</p>
+        <div className="lp-card overflow-hidden bg-slate-50">
+          {imageUrl ? (
+            <img src={imageUrl} alt={text(c.imageAlt || c.title, props.section.slotLabel || 'Gambar section')} className="aspect-[4/3] w-full object-cover" loading="lazy" />
+          ) : supportText.length ? (
+            <div className="p-8">
+              {supportText.map((item, index) => (
+                <p key={index} className="mt-3 first:mt-0 text-lg leading-8 text-slate-600">{item}</p>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8">
+              <p className="text-lg leading-8 text-slate-600">Konten pendukung akan tampil di sini.</p>
+            </div>
+          )}
         </div>
       </div>
     </section>
@@ -394,14 +467,22 @@ function TextImageSection(props: SectionProps) {
 
 function PageHeroSection(props: SectionProps) {
   const c = props.section.content || {};
+  const imageUrl = contentImageOf(c);
   return (
     <section className="bg-slate-50 py-16 md:py-24">
       <div className="lp-container">
-        <Heading
-          center
-          title={text(c.title, props.payload.page.navLabel || props.payload.page.title || 'Halaman')}
-          description={text(c.description, props.payload.page.purpose || '')}
-        />
+        <div className={imageUrl ? 'grid items-center gap-10 md:grid-cols-[1fr_.85fr]' : ''}>
+          <Heading
+            center={!imageUrl}
+            title={text(c.title, props.payload.page.navLabel || props.payload.page.title || 'Halaman')}
+            description={text(c.description, props.payload.page.purpose || '')}
+          />
+          {imageUrl && (
+            <div className="lp-card mt-8 overflow-hidden bg-slate-100 md:mt-0">
+              <img src={imageUrl} alt={text(c.imageAlt || c.title, props.payload.page.title || 'Gambar halaman')} className="aspect-[4/3] w-full object-cover" loading="lazy" />
+            </div>
+          )}
+        </div>
       </div>
     </section>
   );
@@ -500,15 +581,25 @@ function FeaturedArticleSection(props: SectionProps) {
 
 function ArticleDetailHeroSection(props: SectionProps) {
   const article = props.section.data?.article;
+  const c = props.section.content || {};
+  const showCoverImage = boolValue(c.showCoverImage ?? c.displayCoverImage, true);
+  const showPublishedDate = boolValue(c.showPublishedDate ?? c.displayPublishedDate ?? c.showDate, true);
+  const publishedDate = formatDate(article?.publishedAt || article?.createdAt || null);
+  const categoryName = article ? categoryNameOf(article) : null;
+
   return (
     <section className="bg-slate-50 py-16 md:py-24">
       <div className="lp-container max-w-4xl">
-        <p className="lp-eyebrow">Artikel</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="lp-eyebrow">Artikel</p>
+          {categoryName && <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">{categoryName}</span>}
+          {showPublishedDate && publishedDate && <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-500">{publishedDate}</span>}
+        </div>
         <h1 className="mt-4 text-4xl font-black tracking-tight md:text-6xl">
           {article?.title || props.payload.seo?.title || 'Detail Artikel'}
         </h1>
         {article?.excerpt && <p className="mt-5 text-lg leading-8 text-slate-600">{article.excerpt}</p>}
-        {article?.coverImageUrl && (
+        {showCoverImage && article?.coverImageUrl && (
           <img src={article.coverImageUrl} alt={article.title} className="mt-10 aspect-[16/8] w-full rounded-[32px] object-cover" />
         )}
       </div>
@@ -518,11 +609,23 @@ function ArticleDetailHeroSection(props: SectionProps) {
 
 function ArticleContentSection(props: SectionProps) {
   const article = props.section.data?.article;
+  const c = props.section.content || {};
+  const width = maxWidthClass(c.contentMaxWidth || c.maxContentWidth || c.maxWidth || c.contentWidth || c.articleWidth || c.width);
+  const showShare = boolValue(c.showShareCta ?? c.showShare ?? c.showShareButton ?? c.displayShareCta ?? c.enableShareCta ?? c.showSharing, false);
+
   return (
     <section className="lp-section">
-      <article className="lp-container max-w-3xl prose-lite whitespace-pre-line text-slate-700">
+      <article className={`lp-container ${width} prose-lite whitespace-pre-line text-slate-700`}>
         {article?.content || 'Konten artikel belum tersedia.'}
       </article>
+      {showShare && (
+        <div className={`lp-container ${width} mt-8`}>
+          <div className="rounded-3xl border border-blue-100 bg-blue-50 p-5 text-sm leading-7 text-blue-900">
+            <p className="font-black">Bagikan artikel ini</p>
+            <p className="mt-1">Salin tautan halaman dari address bar browser untuk membagikan artikel kepada calon pelanggan atau tim Anda.</p>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -538,6 +641,7 @@ function RelatedArticlesSection(props: SectionProps) {
           type="articles"
           siteSlug={props.siteSlug}
           payload={props.payload}
+          limit={3}
           emptyTitle="Belum ada artikel terkait"
           emptyDescription="Artikel terkait akan tampil ketika ada artikel published lain."
         />
@@ -550,6 +654,97 @@ function ArticleCtaSection(props: SectionProps) {
   return <CtaContactSection {...props} />;
 }
 
+
+function FaqList({ items, emptyTitle, emptyDescription }: { items: CrudItem[]; emptyTitle: string; emptyDescription: string }) {
+  if (!items.length) {
+    return (
+      <div className="mt-8">
+        <PublicEmptyState title={emptyTitle} description={emptyDescription} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-8 grid gap-3">
+      {items.map((item, index) => (
+        <details key={item.id || index} className="group rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <summary className="flex cursor-pointer list-none items-start justify-between gap-4 text-left font-black text-slate-950">
+            <span>{item.question || item.title || `Pertanyaan ${index + 1}`}</span>
+            <span className="mt-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500 group-open:bg-blue-50 group-open:text-blue-700">+</span>
+          </summary>
+          <p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-600">{item.answer || item.description || 'Jawaban FAQ akan tampil di sini.'}</p>
+        </details>
+      ))}
+    </div>
+  );
+}
+
+function ServiceFaqSection(props: SectionProps) {
+  const c = props.section.content || {};
+  const faqs = pickFaqs(props.section.data?.faqs || [], 'services', 10);
+  return (
+    <section className="lp-section bg-slate-50">
+      <div className="lp-container max-w-4xl">
+        <Heading center title={text(c.title, 'Pertanyaan Umum Layanan')} description={text(c.description, '')} />
+        <FaqList
+          items={faqs}
+          emptyTitle="Belum ada FAQ layanan"
+          emptyDescription="Tambahkan FAQ aktif untuk halaman layanan agar pertanyaan calon pelanggan terjawab lebih cepat. Maksimal 10 FAQ tampil di website."
+        />
+      </div>
+    </section>
+  );
+}
+
+function ContactFaqSection(props: SectionProps) {
+  const c = props.section.content || {};
+  const faqs = pickFaqs(props.section.data?.faqs || [], 'contact', 10);
+  return (
+    <section className="lp-section bg-slate-50">
+      <div className="lp-container grid gap-10 md:grid-cols-[.95fr_1.05fr]">
+        <div>
+          <Heading title={text(c.title, 'Pertanyaan Umum Kontak')} description={text(c.description, '')} />
+          <FaqList
+            items={faqs}
+            emptyTitle="Belum ada FAQ kontak"
+            emptyDescription="Tambahkan FAQ aktif untuk halaman kontak agar calon pelanggan mendapat jawaban sebelum mengirim pesan. Maksimal 10 FAQ tampil di website."
+          />
+        </div>
+        <div className="lp-card p-6">
+          <h3 className="text-xl font-black text-slate-950">Kirim Pesan</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-600">Gunakan form ini untuk mengirim kebutuhan, pertanyaan, atau permintaan penawaran.</p>
+          <div className="mt-6">
+            <ContactForm siteSlug={props.siteSlug} pageKey={props.payload.page.pageKey} slotKey={props.section.slotKey} />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PortfolioCategorySection(props: SectionProps) {
+  const c = props.section.content || {};
+  const categories = (props.section.data?.portfolioCategories || []).slice(0, 12);
+  return (
+    <section className="lp-section bg-slate-50">
+      <div className="lp-container">
+        <Heading title={text(c.title, 'Kategori Portofolio')} description={text(c.description, '')} />
+        {categories.length ? (
+          <div className="mt-8 flex flex-wrap gap-3">
+            {categories.map((category, index) => (
+              <span key={category.id || index} className="rounded-full border border-blue-100 bg-white px-4 py-2 text-sm font-black text-blue-700 shadow-sm">
+                {category.name}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-8"><PublicEmptyState title="Belum ada kategori portofolio" description="Kategori portofolio yang aktif akan tampil di sini." /></div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function ContactInformationSection(props: SectionProps) {
   const bp = props.payload.businessProfile || {};
   const c = props.section.content || {};
@@ -557,19 +752,16 @@ function ContactInformationSection(props: SectionProps) {
 
   return (
     <section className="lp-section">
-      <div className="lp-container grid gap-8 md:grid-cols-2">
-        <div>
-          <Heading title={text(c.title, 'Informasi Kontak')} description={text(c.description, '')} />
-          <div className="mt-8 grid gap-3 text-slate-700">
-            {bp.whatsapp && <p><b>WhatsApp:</b> {bp.whatsapp}</p>}
-            {email && <p><b>Email:</b> {email}</p>}
-            {bp.address && <p><b>Alamat:</b> {bp.address}</p>}
-            {!bp.whatsapp && !email && !bp.address && (
-              <p className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">Informasi kontak belum dilengkapi.</p>
-            )}
-          </div>
+      <div className="lp-container">
+        <Heading title={text(c.title, 'Informasi Kontak')} description={text(c.description, '')} />
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          {bp.whatsapp && <div className="lp-card p-5"><p className="text-xs font-black uppercase tracking-wide text-slate-400">WhatsApp</p><p className="mt-2 font-bold text-slate-800">{bp.whatsapp}</p></div>}
+          {email && <div className="lp-card p-5"><p className="text-xs font-black uppercase tracking-wide text-slate-400">Email</p><p className="mt-2 break-all font-bold text-slate-800">{email}</p></div>}
+          {bp.address && <div className="lp-card p-5 md:col-span-3"><p className="text-xs font-black uppercase tracking-wide text-slate-400">Alamat</p><p className="mt-2 leading-7 text-slate-800">{bp.address}</p></div>}
+          {!bp.whatsapp && !email && !bp.address && (
+            <div className="md:col-span-3"><PublicEmptyState title="Informasi kontak belum lengkap" description="Lengkapi WhatsApp, email, atau alamat di Profil Bisnis agar pengunjung mudah menghubungi Anda." /></div>
+          )}
         </div>
-        <ContactForm siteSlug={props.siteSlug} pageKey={props.payload.page.pageKey} slotKey={props.section.slotKey} />
       </div>
     </section>
   );
@@ -598,11 +790,9 @@ function ContactCtaSection(props: SectionProps) {
   return (
     <section className="lp-section">
       <div className="lp-container">
-        <div className="grid gap-8 md:grid-cols-2">
-          <div>
-            <Heading title={text(c.title, 'Kirim Kebutuhan Anda Sekarang')} description={text(c.description, '')} />
-          </div>
-          <ContactForm siteSlug={props.siteSlug} pageKey={props.payload.page.pageKey} slotKey={props.section.slotKey} />
+        <div className="rounded-[32px] bg-blue-600 p-8 text-white md:p-12">
+          <Heading title={text(c.title, 'Siap Menghubungi Kami?')} description={text(c.description, 'Kirim kebutuhan Anda dan tim kami akan membantu menindaklanjutinya.')} />
+          <CtaButtons {...props} secondary={false} />
         </div>
       </div>
     </section>
@@ -625,9 +815,9 @@ const registry: Record<string, SectionComponent> = {
   ServiceGridSection,
   ServiceProcessSection: TextImageSection,
   ServiceBenefitsSection: TextImageSection,
-  ServiceFaqSection: TextImageSection,
+  ServiceFaqSection,
   PortfolioHeroSection: PageHeroSection,
-  PortfolioCategorySection: TextImageSection,
+  PortfolioCategorySection,
   PortfolioGridSection,
   CaseHighlightSection: TextImageSection,
   PortfolioCtaSection: CtaContactSection,
@@ -641,7 +831,7 @@ const registry: Record<string, SectionComponent> = {
   ContactHeroSection: PageHeroSection,
   ContactInformationSection,
   MapsLocationSection,
-  ContactFaqSection: TextImageSection,
+  ContactFaqSection,
   ContactCtaSection,
 };
 
@@ -713,11 +903,27 @@ export function RenderArticleDetail({ siteSlug, detail }: { siteSlug: string; de
     data: { article: detail.article, relatedArticles: detail.relatedArticles }
   };
 
+  const ctaSection: PublicSection = {
+    id: 'article-detail-cta',
+    slotKey: 'article_detail.article_cta',
+    component: 'ArticleCtaSection',
+    content: {
+      title: 'Butuh Bantuan Setelah Membaca Artikel Ini?',
+      description: 'Hubungi tim kami untuk mendiskusikan kebutuhan Anda lebih lanjut.',
+      ctaLabel: 'Hubungi Kami',
+      ctaUrl: '/contact',
+      ctaTargetType: 'page',
+      ctaTargetPageKey: 'contact'
+    },
+    data: { article: detail.article, relatedArticles: detail.relatedArticles }
+  };
+
   return (
     <>
       <ArticleDetailHeroSection siteSlug={siteSlug} payload={payload} section={heroSection} />
       <ArticleContentSection siteSlug={siteSlug} payload={payload} section={contentSection} />
       <RelatedArticlesSection siteSlug={siteSlug} payload={payload} section={relatedSection} />
+      <ArticleCtaSection siteSlug={siteSlug} payload={payload} section={ctaSection} />
     </>
   );
 }
