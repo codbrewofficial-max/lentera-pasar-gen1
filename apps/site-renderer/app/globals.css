@@ -28,3 +28,23 @@ a { text-decoration: none; }
 .lp-btn-secondary { background: #eff6ff; color: #1d4ed8; }
 .lp-btn-secondary:hover { background: #dbeafe; }
 .lp-eyebrow { color: var(--lp-primary); font-weight: 800; text-transform: uppercase; letter-spacing: .16em; font-size: .78rem; }
+
+@media (max-width: 640px) {
+  .lp-section { padding-block: 56px; }
+  .lp-container { width: min(100% - 24px, 1120px); }
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-5 {
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+details > summary::-webkit-details-marker { display: none; }

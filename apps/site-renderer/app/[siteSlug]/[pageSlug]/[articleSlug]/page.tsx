@@ -4,20 +4,30 @@ import { RenderArticleDetail, RenderSections } from '@/components/sections/Secti
 import { ArticleTracking } from '@/components/tracking/PageTracking';
 import { getPublicArticleDetail, getPublicPage } from '@/lib/api';
 import { getSiteHref } from '@/lib/links';
+import { getArticleSeoDescription, getArticleSeoTitle } from '@/lib/seo';
 
 type Props = { params: Promise<{ siteSlug: string; pageSlug: string; articleSlug: string }> };
 
 export async function generateMetadata({ params }: Props) {
   const { siteSlug, pageSlug, articleSlug } = await params;
   const articlesPage = await getPublicPage(siteSlug, pageSlug).catch(() => null);
+
   if (!articlesPage || 'redirect' in articlesPage || articlesPage.page?.pageKey !== 'articles') {
     return { title: 'Artikel tidak ditemukan' };
   }
+
   const detail = await getPublicArticleDetail(siteSlug, articleSlug).catch(() => null);
   if (!detail) return { title: 'Artikel tidak ditemukan' };
+
   return {
-    title: detail.seo?.title || detail.article.title,
-    description: detail.seo?.description || detail.article.excerpt || detail.website.name,
+    title: getArticleSeoTitle(detail),
+    description: getArticleSeoDescription(detail),
+    openGraph: {
+      title: getArticleSeoTitle(detail),
+      description: getArticleSeoDescription(detail),
+      type: 'article',
+      images: detail.article.coverImageUrl ? [{ url: detail.article.coverImageUrl }] : undefined
+    }
   };
 }
 
@@ -57,8 +67,8 @@ export default async function ArticleDetailFromCustomArticlesSlugPage({ params }
           isDynamicDetailPage: true,
           seoTitle: detail.seo?.title,
           seoDescription: detail.seo?.description,
-          sections: [],
-        },
+          sections: []
+        }
       };
 
   const payloadWithArticleSections = articleTemplate && !('redirect' in articleTemplate)
@@ -72,10 +82,10 @@ export default async function ArticleDetailFromCustomArticlesSlugPage({ params }
               ...section.data,
               article: detail.article,
               relatedArticles: detail.relatedArticles,
-              articles: detail.relatedArticles,
-            },
-          })),
-        },
+              articles: detail.relatedArticles
+            }
+          }))
+        }
       }
     : null;
 
