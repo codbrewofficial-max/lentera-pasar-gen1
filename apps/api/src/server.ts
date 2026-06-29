@@ -689,7 +689,7 @@ const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string;
       sections: {
         where: { isVisible: true },
         orderBy: { sortOrder: "asc" },
-        include: { templateSection: true }
+        include: { templateSection: { include: { templatePack: true } } }
       }
     }
   });
@@ -741,6 +741,9 @@ const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string;
           slotKey: section.slotKey,
           slotLabel: getSlotLabel(section.slotKey),
           sectionKey: section.templateSection?.sectionKey || null,
+          templateKey: section.templateSection?.templatePack?.templatePackKey || null,
+          templateName: section.templateSection?.templatePack?.name || null,
+          templateTheme: section.templateSection?.templatePack?.theme || null,
           component: section.templateSection?.component || null,
           variant: section.templateSection?.variant || null,
           content: mergeContent(section.templateSection, section.contentJson),
@@ -1339,6 +1342,7 @@ const templateFieldSchema = z
 
 const templateImportSchema = z.object({
   sectionKey: z.string().min(1),
+  templateKey: z.string().min(1).nullable().optional(),
   slotKey: z.string().min(1),
   websiteType: z.literal("company_profile"),
   pageKey: z.string().min(1),
@@ -1353,7 +1357,7 @@ const templatePackManifestSchema = z.object({
   templatePackKey: z.string().min(1),
   websiteType: z.literal("company_profile"),
   name: z.string().min(1),
-  theme: z.enum(["formal", "casual", "abstract"]),
+  theme: z.enum(["formal", "casual", "abstract", "premium"]),
   version: z.string().min(1),
   description: z.string().nullable().optional(),
   pages: z.array(z.string().min(1))
@@ -1454,6 +1458,7 @@ const importTemplatePackZip = async (buffer: Buffer) => {
       ? parsedResult.data
       : {
           sectionKey: String(raw?.sectionKey || ""),
+          templateKey: raw?.templateKey ? String(raw.templateKey) : null,
           slotKey: String(raw?.slotKey || ""),
           websiteType: raw?.websiteType,
           pageKey: String(raw?.pageKey || ""),
@@ -1471,6 +1476,9 @@ const importTemplatePackZip = async (buffer: Buffer) => {
     if (parsed.sectionKey) seenSectionKeys.add(parsed.sectionKey);
     if (parsed.websiteType !== manifest.websiteType) {
       sectionErrors.push({ level: "error", file, slotKey: parsed.slotKey, message: "websiteType section tidak sama dengan manifest." });
+    }
+    if (parsed.templateKey && parsed.templateKey !== manifest.templatePackKey) {
+      sectionErrors.push({ level: "error", file, slotKey: parsed.slotKey, message: "templateKey section tidak sama dengan templatePackKey manifest." });
     }
     if (!expectedPages.includes(parsed.pageKey as any)) {
       sectionErrors.push({ level: "error", file, slotKey: parsed.slotKey, message: "pageKey tidak valid untuk websiteType." });

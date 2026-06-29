@@ -10,7 +10,8 @@ export const GOALS = {
 export const THEMES = {
   formal: "Formal",
   casual: "Casual",
-  abstract: "Abstract"
+  abstract: "Abstract",
+  premium: "Premium"
 } as const;
 
 export const PAGES = {

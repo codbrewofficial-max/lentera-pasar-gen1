@@ -4,6 +4,7 @@ import { resolveTargetHref, getSiteHref } from '@/lib/links';
 import { CtaLink } from '@/components/tracking/CtaLink';
 import { PublicEmptyState } from '@/components/layout/PublicState';
 import { ContactForm } from './ContactForm';
+import { getCompanyProfileTemplateDebugLabel, resolveCompanyProfileSectionComponentName } from '@/templates/company-profile/registry';
 
 type SectionProps = { siteSlug: string; payload: PublicPagePayload; section: PublicSection };
 type SectionComponent = (props: SectionProps) => ReactNode;
@@ -164,7 +165,7 @@ function EmptySection({ section }: { section: PublicSection }) {
       <div className="lp-container">
         <PublicEmptyState
           title="Template section belum tersedia"
-          description={`Component "${section.component || section.slotKey}" belum ada di registry renderer. Section tetap aman ditampilkan sebagai fallback agar halaman tidak blank.`}
+          description={`Component "${section.component || section.slotKey}" belum ada di registry renderer untuk ${getCompanyProfileTemplateDebugLabel(section)}. Section tetap aman ditampilkan sebagai fallback agar halaman tidak blank.`}
         />
       </div>
     </section>
@@ -854,7 +855,8 @@ export function RenderSections({ siteSlug, payload }: { siteSlug: string; payloa
   return (
     <>
       {sections.map((section) => {
-        const Component = section.component ? registry[section.component] : null;
+        const componentName = resolveCompanyProfileSectionComponentName(section);
+        const Component = componentName ? registry[componentName] : null;
         return Component ? (
           <Component key={section.id || section.slotKey} siteSlug={siteSlug} payload={payload} section={section} />
         ) : (
