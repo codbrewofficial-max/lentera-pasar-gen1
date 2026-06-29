@@ -1,0 +1,544 @@
+{
+  "info": {
+    "_postman_id": "54e585e4-44a5-4a8b-80e5-6607e2598b72",
+    "name": "AI Catalog Assistant Stage 7 - Manual Testing",
+    "description": "Manual testing collection untuk backend Stage 7.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 - Health",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Deep Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/deep",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health",
+                "deep"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 - Auth",
+      "item": [
+        {
+          "name": "Login - Jaya Motor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login success', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('token', json.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenant_slug\": \"{{tenantSlug}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Tenant",
+      "item": [
+        {
+          "name": "Get Tenant Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tenant/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tenant",
+                "profile"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Catalog & FAQ",
+      "item": [
+        {
+          "name": "List Catalog Items",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog-items?limit=20&page=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalog-items"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Catalog Items - Brio",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog-items?q=Brio",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalog-items"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "Brio"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List FAQs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/faqs?limit=20&page=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "faqs"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search FAQs - Kredit",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/faqs?q=kredit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "faqs"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "kredit"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Simulator + Conversations",
+      "item": [
+        {
+          "name": "Simulator - Produk Tidak Ada / Handoff",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Created', function () { pm.expect(pm.response.code).to.eql(201); });",
+                  "const json = pm.response.json();",
+                  "if (json.conversation) pm.environment.set('conversationId', json.conversation.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"628123456789\",\n  \"name\": \"Customer Demo\",\n  \"message\": \"Harga Toyota Alphard terbaru berapa?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/simulator/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "simulator",
+                "messages"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Simulator - Produk Ada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"628123456789\",\n  \"name\": \"Customer Demo\",\n  \"message\": \"Ada Honda Brio 2021?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/simulator/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "simulator",
+                "messages"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Simulator - FAQ",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"628123456789\",\n  \"name\": \"Customer Demo\",\n  \"message\": \"Apakah bisa kredit?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/simulator/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "simulator",
+                "messages"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Conversations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/conversations?limit=20&page=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "conversations"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Conversation Messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/conversations/{{conversationId}}/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "conversations",
+                "{{conversationId}}",
+                "messages"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Conversation AI Runs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/conversations/{{conversationId}}/ai-runs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "conversations",
+                "{{conversationId}}",
+                "ai-runs"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Handoffs + Reports",
+      "item": [
+        {
+          "name": "List Open Handoffs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/handoffs?status=open&limit=20&page=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "handoffs"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "open"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Report Overview",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/overview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "overview"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

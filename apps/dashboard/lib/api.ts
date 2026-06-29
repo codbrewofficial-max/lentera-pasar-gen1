@@ -51,9 +51,13 @@ export async function apiRequest<T>(
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
   const url = `${baseUrl}${cleanPath}`;
   
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
+  const hasBody = body !== undefined && body !== null;
+
+  const headers: Record<string, string> = {};
+
+  if (hasBody) {
+    headers["Content-Type"] = "application/json";
+  }
 
   const token = getAuthToken();
   if (token) {
@@ -64,7 +68,7 @@ export async function apiRequest<T>(
     const res = await fetch(url, {
       method,
       headers,
-      body: body ? JSON.stringify(body) : undefined,
+      body: hasBody ? JSON.stringify(body) : undefined,
     });
 
     if (res.status === 401) {
