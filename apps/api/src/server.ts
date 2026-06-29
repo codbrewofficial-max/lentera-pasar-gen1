@@ -34,7 +34,10 @@ import { hashIp, hashPassword, limitJson, prismaJson, randomToken, verifyPasswor
 type AuthUser = { id: string; role: "internal_admin" | "owner_admin"; email: string };
 type Req = FastifyRequest<{ Params?: Record<string, string>; Querystring?: Record<string, string> }>;
 
-const app = Fastify({ logger: true });
+const app = Fastify({ 
+  logger: true,
+  maxParamLength: 500,
+});
 
 const publicUrlFor = (website: { slug: string; status: string }) =>
   website.status === "published" ? `/${website.slug}` : null;
