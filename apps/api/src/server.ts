@@ -2011,8 +2011,6 @@ const registerStage9cContentRoutes = () => {
 
   app.post("/api/v1/websites/:websiteId/media", { config: { rateLimit: apiConfig.rateLimits.templateUpload } }, async (request, reply) => {
     const { user, website } = await getWebsiteForAccess(request as any);
-    const file = await request.file();
-    if (!file) throw new AppError(400, "MEDIA_FILE_REQUIRED", "Media file is required");
 
     const allowed = new Map([
       ["image/jpeg", "jpg"],
@@ -2020,31 +2018,78 @@ const registerStage9cContentRoutes = () => {
       ["image/webp", "webp"],
       ["image/gif", "gif"]
     ]);
-    const ext = allowed.get(file.mimetype);
-    if (!ext) throw new AppError(400, "MEDIA_TYPE_NOT_ALLOWED", "Only JPG, PNG, WEBP, and GIF images are allowed");
 
-    const buffer = await file.toBuffer();
-    if (buffer.length > apiConfig.templateUploadMaxBytes) {
-      throw new AppError(413, "MEDIA_TOO_LARGE", "Media file is too large");
+    let uploadedFile: { buffer: Buffer; filename: string; mimetype: string } | null = null;
+    let altText: string | null = null;
+
+    try {
+      for await (const part of (request as any).parts()) {
+        if (part.type === "field" && part.fieldname === "altText") {
+          const value = String(part.value || "").trim();
+          altText = value ? value.slice(0, 300) : null;
+          continue;
+        }
+
+        if (part.type !== "file" || part.fieldname !== "file") {
+          continue;
+        }
+
+        if (uploadedFile) {
+          throw new AppError(400, "MEDIA_ONLY_ONE_FILE", "Upload satu gambar saja dalam satu waktu");
+        }
+
+        const ext = allowed.get(part.mimetype);
+        if (!ext) {
+          throw new AppError(400, "MEDIA_TYPE_NOT_ALLOWED", "Format gambar yang didukung hanya JPG, PNG, WEBP, dan GIF");
+        }
+
+        const chunks: Buffer[] = [];
+        let totalBytes = 0;
+        for await (const chunk of part.file) {
+          const bufferChunk = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+          totalBytes += bufferChunk.length;
+          if (totalBytes > apiConfig.templateUploadMaxBytes) {
+            throw new AppError(413, "MEDIA_TOO_LARGE", `Ukuran gambar maksimal ${Math.round(apiConfig.templateUploadMaxBytes / 1024 / 1024)} MB`);
+          }
+          chunks.push(bufferChunk);
+        }
+
+        uploadedFile = {
+          buffer: Buffer.concat(chunks),
+          filename: part.filename || `media.${ext}`,
+          mimetype: part.mimetype
+        };
+      }
+    } catch (error: any) {
+      if (error instanceof AppError) throw error;
+      if (error?.code === "FST_REQ_FILE_TOO_LARGE" || error?.message?.toLowerCase?.().includes("request file too large")) {
+        throw new AppError(413, "MEDIA_TOO_LARGE", `Ukuran gambar maksimal ${Math.round(apiConfig.templateUploadMaxBytes / 1024 / 1024)} MB`);
+      }
+      throw error;
     }
 
+    if (!uploadedFile) {
+      throw new AppError(400, "MEDIA_FILE_REQUIRED", "Pilih file gambar terlebih dahulu");
+    }
+
+    const ext = allowed.get(uploadedFile.mimetype)!;
     const id = randomToken("media");
     const filename = `${id}.${ext}`;
     const storageDir = path.join(process.cwd(), "storage", "uploads", "sites", website.id);
     const storagePath = path.join(storageDir, filename);
     await mkdir(storageDir, { recursive: true });
-    await writeFile(storagePath, buffer);
+    await writeFile(storagePath, uploadedFile.buffer);
 
     const asset = await prisma.mediaAsset.create({
       data: {
         id,
         websiteId: website.id,
         filename,
-        originalName: file.filename || filename,
-        mimeType: file.mimetype,
-        sizeBytes: buffer.length,
+        originalName: uploadedFile.filename,
+        mimeType: uploadedFile.mimetype,
+        sizeBytes: uploadedFile.buffer.length,
         url: `/api/v1/public/media/${id}`,
-        altText: typeof ((file as any).fields?.altText as any)?.value === "string" ? String(((file as any).fields?.altText as any).value) : null,
+        altText,
         storagePath
       }
     });
@@ -2098,11 +2143,26 @@ const registerStage9cContentRoutes = () => {
     return ok(reply, true, "Media deleted");
   });
 
+  app.get("/api/v1/api/v1/public/media/:mediaId", async (request: Req, reply) => {
+    return reply
+      .code(301)
+      .header("Location", `/api/v1/public/media/${request.params?.mediaId}`)
+      .send();
+  });
+
   app.get("/api/v1/public/media/:mediaId", async (request: Req, reply) => {
     const asset = await prisma.mediaAsset.findUnique({ where: { id: request.params?.mediaId } });
     if (!asset) throw new AppError(404, "MEDIA_NOT_FOUND", "Media asset not found");
-    const buffer = await readFile(asset.storagePath);
-    return reply.type(asset.mimeType).send(buffer);
+
+    try {
+      const buffer = await readFile(asset.storagePath);
+      return reply
+        .header("Cache-Control", "public, max-age=2592000")
+        .type(asset.mimeType)
+        .send(buffer);
+    } catch {
+      throw new AppError(404, "MEDIA_FILE_MISSING", "File media tidak ditemukan di storage. Cek volume/folder upload backend.");
+    }
   });
 };
 
@@ -2140,8 +2200,7 @@ const registerPublicRoutes = () => {
     if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
     const articles = await prisma.article.findMany({
       where: { websiteId: website.id, status: "published" },
-      orderBy: [{ sortOrder: "asc" }, { publishedAt: "desc" }],
-      include: { category: true }
+      orderBy: [{ sortOrder: "asc" }, { publishedAt: "desc" }]
     });
     return ok(reply, articles.map(publicArticleSummary), "Public articles loaded");
   });
@@ -2149,15 +2208,13 @@ const registerPublicRoutes = () => {
     const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" }, include: { businessProfile: true } });
     if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
     const article = await prisma.article.findFirst({
-      where: { websiteId: website.id, slug: request.params?.articleSlug, status: "published" },
-      include: { category: true }
+      where: { websiteId: website.id, slug: request.params?.articleSlug, status: "published" }
     });
     if (!article) throw new AppError(404, "ARTICLE_NOT_FOUND", "Published article not found");
     const relatedArticles = await prisma.article.findMany({
       where: { websiteId: website.id, status: "published", id: { not: article.id } },
       orderBy: [{ sortOrder: "asc" }, { publishedAt: "desc" }],
-      take: 3,
-      include: { category: true }
+      take: 3
     });
     return ok(reply, {
       article: articleContract(article),

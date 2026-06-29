@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { apiCall, apiUpload, getApiBaseUrl } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
-import { AlertCircle, CheckCircle, Copy, Image, RefreshCw, Trash2, Upload } from "lucide-react";
+import { AlertCircle, CheckCircle, Copy, FileImage, Image, Info, RefreshCw, Trash2, Upload } from "lucide-react";
 
 type MediaAsset = {
   id: string;
@@ -16,6 +16,9 @@ type MediaAsset = {
   altText?: string | null;
   createdAt: string;
 };
+
+const MAX_FILE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 const formatBytes = (bytes: number) => {
   if (!bytes) return "0 B";
@@ -34,15 +37,34 @@ export default function MediaLibraryPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [altText, setAltText] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [brokenImageIds, setBrokenImageIds] = useState<Record<string, boolean>>({});
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
   const baseUrl = useMemo(() => getApiBaseUrl().replace(/\/$/, ""), []);
+  const apiOrigin = useMemo(() => {
+    try {
+      return new URL(baseUrl).origin;
+    } catch {
+      return baseUrl.replace(/\/api\/v1\/?$/, "");
+    }
+  }, [baseUrl]);
 
   const mediaUrl = (url: string) => {
     if (!url) return "";
     if (url.startsWith("http")) return url;
-    return `${baseUrl}${url.startsWith("/") ? url : `/${url}`}`;
+
+    const normalizedPath = url.startsWith("/") ? url : `/${url}`;
+
+    if (normalizedPath.startsWith("/api/v1/")) {
+      return `${apiOrigin}${normalizedPath}`;
+    }
+
+    if (normalizedPath.startsWith("/public/")) {
+      return `${baseUrl}${normalizedPath}`;
+    }
+
+    return `${baseUrl}${normalizedPath}`;
   };
 
   const fetchItems = async () => {
@@ -67,6 +89,24 @@ export default function MediaLibraryPage() {
     setTimeout(() => setSuccessMsg(""), 4000);
   };
 
+  const handleSelectFile = (file: File | null) => {
+    setErrorMsg("");
+    setSelectedFile(null);
+    if (!file) return;
+
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setErrorMsg("Format tidak didukung. Gunakan JPG, PNG, WEBP, atau GIF.");
+      return;
+    }
+
+    if (file.size > MAX_FILE_BYTES) {
+      setErrorMsg(`Ukuran gambar terlalu besar. Maksimal ${formatBytes(MAX_FILE_BYTES)}.`);
+      return;
+    }
+
+    setSelectedFile(file);
+  };
+
   const handleUpload = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!selectedFile) {
@@ -79,14 +119,14 @@ export default function MediaLibraryPage() {
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
-      if (altText) formData.append("altText", altText);
+      formData.append("altText", altText.trim());
       await apiUpload<MediaAsset>(`websites/${websiteId}/media`, formData);
       setSelectedFile(null);
       setAltText("");
-      showSuccess("Media berhasil diupload.");
+      showSuccess("Media berhasil diupload dan siap dipakai di field gambar/URL.");
       fetchItems();
     } catch (err: any) {
-      setErrorMsg(err.error?.message || err.message || "Gagal upload media.");
+      setErrorMsg(err.error?.message || err.message || "Gagal upload media. Cek ukuran, format, dan log backend.");
     } finally {
       setUploading(false);
     }
@@ -110,11 +150,11 @@ export default function MediaLibraryPage() {
   const copyUrl = async (url: string) => {
     const fullUrl = mediaUrl(url);
     await navigator.clipboard.writeText(fullUrl);
-    showSuccess("URL media disalin.");
+    showSuccess("URL media disalin. Tempel URL ini ke field gambar, logo, cover, atau section.");
   };
 
   return (
-    <DashboardLayout title="Media Library" subtitle="Upload dan kelola gambar untuk logo, artikel, portfolio, layanan, dan section" showBackButton backUrl={`/websites/${websiteId}/overview`}>
+    <DashboardLayout title="Media Library" subtitle="Bank gambar website: upload, salin URL, lalu pakai di logo, artikel, portfolio, layanan, atau section" showBackButton backUrl={`/websites/${websiteId}/overview`}>
       <div className="space-y-6">
         {successMsg && (
           <div className="p-4 bg-[#649FF6]/10 border border-[#649FF6]/25 rounded-2xl text-[#3f6fae] text-sm flex items-start space-x-3">
@@ -130,34 +170,74 @@ export default function MediaLibraryPage() {
           </div>
         )}
 
-        <form onSubmit={handleUpload} className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
-          <div>
-            <h3 className="text-sm font-bold text-slate-900">Upload Media</h3>
-            <p className="text-xs text-slate-500 mt-1">Format yang didukung: JPG, PNG, WEBP, GIF. Gunakan gambar yang sudah dioptimasi untuk website.</p>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <label className="lg:col-span-1 border-2 border-dashed border-slate-200 rounded-2xl p-5 text-center hover:border-[#649FF6]/60 transition cursor-pointer bg-slate-50">
-              <Upload className="h-7 w-7 mx-auto text-slate-400 mb-2" />
-              <span className="block text-xs font-bold text-slate-700">{selectedFile ? selectedFile.name : "Pilih gambar"}</span>
-              <span className="block text-[10px] text-slate-400 mt-1">{selectedFile ? formatBytes(selectedFile.size) : "Klik untuk memilih file"}</span>
-              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(event) => setSelectedFile(event.target.files?.[0] || null)} />
-            </label>
-            <div className="lg:col-span-2 space-y-3">
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Alt Text</label>
-                <input value={altText} onChange={(event) => setAltText(event.target.value)} placeholder="Contoh: Foto kegiatan pelatihan dakwah digital" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6]" />
-                <p className="text-[10px] text-slate-400">Alt text membantu aksesibilitas dan SEO gambar.</p>
-              </div>
-              <button type="submit" disabled={uploading || !selectedFile} className="inline-flex items-center gap-2 px-5 py-2 bg-[#649FF6] hover:bg-[#4f8be6] disabled:bg-[#8bb8fb] text-white text-xs font-bold rounded-xl shadow-md transition">
-                <Upload className="h-4 w-4" />
-                {uploading ? "Mengupload..." : "Upload Media"}
-              </button>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <form onSubmit={handleUpload} className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Upload Media</h3>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                Upload gambar sekali, lalu salin URL-nya untuk dipakai di field logo, cover artikel, gambar portfolio, layanan, atau section.
+              </p>
             </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <label className="lg:col-span-1 border-2 border-dashed border-slate-200 rounded-2xl p-5 text-center hover:border-[#649FF6]/60 transition cursor-pointer bg-slate-50">
+                <Upload className="h-7 w-7 mx-auto text-slate-400 mb-2" />
+                <span className="block text-xs font-bold text-slate-700">{selectedFile ? selectedFile.name : "Pilih gambar"}</span>
+                <span className="block text-[10px] text-slate-400 mt-1">{selectedFile ? formatBytes(selectedFile.size) : "Klik untuk memilih file"}</span>
+                <input type="file" accept={ALLOWED_TYPES.join(",")} className="hidden" onChange={(event) => handleSelectFile(event.target.files?.[0] || null)} />
+              </label>
+
+              <div className="lg:col-span-2 space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px] text-slate-500">
+                  <div className="rounded-xl bg-slate-50 border border-slate-100 p-3">
+                    <strong className="block text-slate-700">Format</strong>
+                    JPG, PNG, WEBP, GIF
+                  </div>
+                  <div className="rounded-xl bg-slate-50 border border-slate-100 p-3">
+                    <strong className="block text-slate-700">Maksimal</strong>
+                    {formatBytes(MAX_FILE_BYTES)} per file
+                  </div>
+                  <div className="rounded-xl bg-slate-50 border border-slate-100 p-3">
+                    <strong className="block text-slate-700">Saran</strong>
+                    WEBP/JPG terkompres
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Alt Text</label>
+                  <input value={altText} onChange={(event) => setAltText(event.target.value)} placeholder="Contoh: Foto kegiatan pelatihan dakwah digital" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6]" />
+                  <p className="text-[10px] text-slate-400">Alt text membantu aksesibilitas dan SEO gambar.</p>
+                </div>
+
+                <button type="submit" disabled={uploading || !selectedFile} className="inline-flex items-center gap-2 px-5 py-2 bg-[#649FF6] hover:bg-[#4f8be6] disabled:bg-[#8bb8fb] text-white text-xs font-bold rounded-xl shadow-md transition">
+                  <Upload className="h-4 w-4" />
+                  {uploading ? "Mengupload..." : "Upload Media"}
+                </button>
+              </div>
+            </div>
+          </form>
+
+          <div className="bg-[#649FF6]/10 border border-[#649FF6]/20 rounded-3xl p-6 text-sm text-[#315f99] space-y-3">
+            <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/70 text-[#649FF6]">
+              <Info className="h-5 w-5" />
+            </div>
+            <h3 className="font-black text-slate-900">Cara Pakai</h3>
+            <ol className="list-decimal pl-4 space-y-1 text-xs leading-relaxed">
+              <li>Upload gambar dari komputer.</li>
+              <li>Klik tombol copy pada kartu media.</li>
+              <li>Tempel URL ke field gambar/logo/cover di konten atau section.</li>
+            </ol>
+            <p className="text-[10px] leading-relaxed text-slate-500">
+              Saat deploy Docker, folder <code className="font-mono">apps/api/storage/uploads</code> wajib dijadikan volume agar gambar tidak hilang saat rebuild.
+            </p>
           </div>
-        </form>
+        </div>
 
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-slate-900">Daftar Media</h3>
+          <div>
+            <h3 className="text-sm font-bold text-slate-900">Daftar Media</h3>
+            <p className="text-[10px] text-slate-400">{items.length} media tersimpan</p>
+          </div>
           <button onClick={fetchItems} className="inline-flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-[#649FF6] hover:bg-white rounded-xl transition">
             <RefreshCw className="h-4 w-4" />
             Refresh Data
@@ -176,28 +256,41 @@ export default function MediaLibraryPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {items.map((asset) => (
-              <div key={asset.id} className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
-                <div className="aspect-video bg-slate-100 overflow-hidden">
-                  <img src={mediaUrl(asset.url)} alt={asset.altText || asset.originalName} className="w-full h-full object-cover" />
-                </div>
-                <div className="p-4 space-y-3">
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-900 truncate">{asset.originalName}</h4>
-                    <p className="text-[10px] text-slate-400">{asset.mimeType} · {formatBytes(asset.sizeBytes)}</p>
+            {items.map((asset) => {
+              const src = mediaUrl(asset.url);
+              const isBroken = brokenImageIds[asset.id];
+              return (
+                <div key={asset.id} className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+                  <div className="aspect-video bg-slate-100 overflow-hidden flex items-center justify-center">
+                    {isBroken ? (
+                      <div className="text-center text-slate-400 p-4">
+                        <FileImage className="h-8 w-8 mx-auto mb-2" />
+                        <p className="text-[10px] leading-relaxed">Preview gagal dimuat. Cek file storage backend atau volume upload.</p>
+                      </div>
+                    ) : (
+                      <img src={src} alt={asset.altText || asset.originalName} className="w-full h-full object-cover" onError={() => setBrokenImageIds((current) => ({ ...current, [asset.id]: true }))} />
+                    )}
                   </div>
-                  {asset.altText && <p className="text-[10px] text-slate-500 line-clamp-2">{asset.altText}</p>}
-                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                    <button onClick={() => copyUrl(asset.url)} className="p-2 text-slate-500 hover:text-[#649FF6] hover:bg-slate-50 rounded-xl transition" title="Copy URL">
-                      <Copy className="h-4 w-4" />
-                    </button>
-                    <button onClick={() => handleDelete(asset)} disabled={deletingId === asset.id} className="p-2 text-slate-500 hover:text-rose-600 hover:bg-slate-50 rounded-xl transition" title="Hapus">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                  <div className="p-4 space-y-3">
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900 truncate">{asset.originalName}</h4>
+                      <p className="text-[10px] text-slate-400">{asset.mimeType} · {formatBytes(asset.sizeBytes)}</p>
+                    </div>
+                    {asset.altText && <p className="text-[10px] text-slate-500 line-clamp-2">{asset.altText}</p>}
+                    <p className="text-[10px] text-slate-400 font-mono truncate">{asset.url}</p>
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                      <button onClick={() => copyUrl(asset.url)} className="inline-flex items-center gap-1 px-3 py-2 text-[10px] font-bold text-slate-600 hover:text-[#649FF6] hover:bg-slate-50 rounded-xl transition" title="Copy URL">
+                        <Copy className="h-4 w-4" />
+                        Copy URL
+                      </button>
+                      <button onClick={() => handleDelete(asset)} disabled={deletingId === asset.id} className="p-2 text-slate-500 hover:text-rose-600 hover:bg-slate-50 rounded-xl transition" title="Hapus">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

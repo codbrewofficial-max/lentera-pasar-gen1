@@ -138,7 +138,7 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
         </div>
 
         <div className="border-t border-white/10 py-5 text-center text-xs text-slate-400">
-          © {new Date().getFullYear()} {businessName}. Powered by Lentera Pasar.
+          © <span suppressHydrationWarning>{new Date().getFullYear()}</span> {businessName}. Powered by Lentera Pasar.
         </div>
       </footer>
     </div>

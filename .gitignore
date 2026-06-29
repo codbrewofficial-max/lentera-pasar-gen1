@@ -4,3 +4,4 @@ apps/*/dist/
 .env
 apps/*/.env
 *.log
+apps/*/storage

@@ -18,7 +18,13 @@ type CategoryItem = {
 };
 
 const slugify = (value: string) =>
-  value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  value
+    .toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 
 const emptyForm = {
   name: "",
@@ -236,7 +242,7 @@ export default function CategoryCrudPage() {
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Nama Kategori</label>
                   <input
                     value={formData.name}
-                    onChange={(event) => setFormData({ ...formData, name: event.target.value, slug: formData.slug || slugify(event.target.value) })}
+                    onChange={(event) => setFormData({ ...formData, name: event.target.value, slug: slugify(event.target.value) })}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6]"
                   />
                 </div>
@@ -247,6 +253,7 @@ export default function CategoryCrudPage() {
                     onChange={(event) => setFormData({ ...formData, slug: slugify(event.target.value) })}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6]"
                   />
+                  <p className="text-[10px] text-slate-400">Slug otomatis mengikuti nama kategori. Anda tetap bisa mengedit slug manual bila diperlukan.</p>
                 </div>
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Deskripsi</label>
