@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
 import EnhancedTextarea from "@/components/ui/EnhancedTextarea";
+import BooleanRadio from "@/components/ui/BooleanRadio";
 import { AlertCircle, CheckCircle, Edit2, FileText, Plus, Save, Search, Trash2, X } from "lucide-react";
 
 interface ArticleCategory {
@@ -28,6 +29,8 @@ interface ArticleItem {
   status: "draft" | "published";
   statusLabel?: string;
   sortOrder?: number;
+  isFeatured?: boolean;
+  featuredOrder?: number;
   publishedAt?: string | null;
 }
 
@@ -41,7 +44,9 @@ const emptyForm = {
   seoTitle: "",
   seoDescription: "",
   status: "draft" as "draft" | "published",
-  sortOrder: 0
+  sortOrder: 0,
+  isFeatured: false,
+  featuredOrder: 0
 };
 
 const slugify = (value: string) =>
@@ -107,7 +112,9 @@ export default function ArticlesCrudPage() {
       seoTitle: item.seoTitle || "",
       seoDescription: item.seoDescription || "",
       status: item.status || "draft",
-      sortOrder: item.sortOrder ?? 0
+      sortOrder: item.sortOrder ?? 0,
+      isFeatured: item.isFeatured ?? false,
+      featuredOrder: item.featuredOrder ?? 0
     });
     setIsFormOpen(true);
   };
@@ -131,7 +138,9 @@ export default function ArticlesCrudPage() {
         seoTitle: formData.seoTitle || null,
         seoDescription: formData.seoDescription || null,
         status: formData.status,
-        sortOrder: Number(formData.sortOrder) || 0
+        sortOrder: Number(formData.sortOrder) || 0,
+        isFeatured: formData.isFeatured,
+        featuredOrder: Number(formData.featuredOrder) || 0
       };
       if (editingItem) {
         await apiCall("PATCH", `websites/${websiteId}/articles/${editingItem.id}`, payload);
@@ -229,7 +238,10 @@ export default function ArticlesCrudPage() {
                     </span>
                   </div>
                   <p className="text-[10px] text-slate-400 font-mono">/{item.slug}</p>
-                  {item.category && <p className="text-[10px] text-[#4f8be6] font-bold">Kategori: {item.category.name}</p>}
+                  <div className="flex flex-wrap gap-2">
+                    {item.category && <span className="text-[10px] text-[#4f8be6] font-bold">Kategori: {item.category.name}</span>}
+                    {item.isFeatured && <span className="text-[10px] text-[#F56B71] font-bold">Artikel Unggulan</span>}
+                  </div>
                   <p className="text-xs text-slate-500 leading-relaxed line-clamp-3">{item.excerpt || item.content}</p>
                 </div>
                 <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
@@ -301,6 +313,21 @@ export default function ArticlesCrudPage() {
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Urutan Tampil</label>
                     <input type="number" value={formData.sortOrder} onChange={(e) => setFormData({ ...formData, sortOrder: Number(e.target.value) })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors" />
                   </div>
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Urutan Unggulan</label>
+                    <input type="number" value={formData.featuredOrder} onChange={(e) => setFormData({ ...formData, featuredOrder: Number(e.target.value) })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors" />
+                    <p className="text-[10px] text-slate-400">Angka kecil tampil lebih dulu jika artikel dijadikan unggulan.</p>
+                  </div>
+                  <div className="sm:col-span-2 rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                    <BooleanRadio
+                      id="article-featured"
+                      label="Jadikan Artikel Unggulan?"
+                      value={formData.isFeatured}
+                      onChange={(value) => setFormData({ ...formData, isFeatured: value })}
+                      description="Artikel unggulan akan diprioritaskan di section Featured Article dan daftar artikel."
+                    />
+                  </div>
+
                   <div className="space-y-1 sm:col-span-2">
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">SEO Description</label>
                     <EnhancedTextarea id="article-seo-description" minRows={2} value={formData.seoDescription} onChange={(value) => setFormData({ ...formData, seoDescription: value })} maxLength={160} helperText="Idealnya 120-160 karakter untuk snippet pencarian." />

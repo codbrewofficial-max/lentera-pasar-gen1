@@ -212,12 +212,15 @@ model Article {
   seoDescription String?
   status         ArticleStatus @default(draft)
   sortOrder      Int           @default(0)
+  isFeatured     Boolean       @default(false)
+  featuredOrder  Int           @default(0)
   publishedAt    DateTime?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
   @@unique([websiteId, slug])
   @@index([websiteId, status, sortOrder])
+  @@index([websiteId, status, isFeatured, featuredOrder])
   @@index([websiteId, categoryId])
 }
 
@@ -228,6 +231,8 @@ model BusinessProfile {
   name         String
   tagline      String?
   description  String?
+  logoUrl      String?
+  logoAlt      String?
   vision       String?
   mission      String?
   timelineJson Json?
@@ -247,11 +252,14 @@ model Service {
   description String?
   imageUrl    String?
   sortOrder   Int      @default(0)
+  isFeatured  Boolean  @default(false)
+  featuredOrder Int    @default(0)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([websiteId, sortOrder])
+  @@index([websiteId, isFeatured, featuredOrder])
 }
 
 model Portfolio {
@@ -264,11 +272,14 @@ model Portfolio {
   description String?
   imageUrl    String?
   sortOrder   Int      @default(0)
+  isFeatured  Boolean  @default(false)
+  featuredOrder Int    @default(0)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([websiteId, sortOrder])
+  @@index([websiteId, isFeatured, featuredOrder])
   @@index([websiteId, categoryId])
 }
 

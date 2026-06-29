@@ -384,6 +384,8 @@ const articleContract = (article: any) => ({
   status: article.status,
   statusLabel: getArticleStatusLabel(article.status),
   sortOrder: article.sortOrder,
+  isFeatured: article.isFeatured ?? false,
+  featuredOrder: article.featuredOrder ?? 0,
   publishedAt: article.publishedAt,
   createdAt: article.createdAt,
   updatedAt: article.updatedAt
@@ -399,6 +401,8 @@ const publicArticleSummary = (article: any) => ({
   coverImageUrl: article.coverImageUrl,
   seoTitle: article.seoTitle,
   seoDescription: article.seoDescription,
+  isFeatured: article.isFeatured ?? false,
+  featuredOrder: article.featuredOrder ?? 0,
   publishedAt: article.publishedAt
 });
 
@@ -496,6 +500,8 @@ const businessProfileBody = z.object({
   name: z.string().min(2),
   tagline: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
+  logoUrl: z.string().nullable().optional(),
+  logoAlt: z.string().nullable().optional(),
   vision: z.string().nullable().optional(),
   mission: z.string().nullable().optional(),
   timelineJson: z.unknown().nullable().optional(),
@@ -510,6 +516,8 @@ const listItemBody = z.object({
   description: z.string().nullable().optional(),
   imageUrl: z.string().nullable().optional(),
   sortOrder: z.number().int().optional(),
+  isFeatured: z.boolean().optional(),
+  featuredOrder: z.number().int().optional(),
   isActive: z.boolean().optional()
 });
 const testimonialBody = z.object({
@@ -556,7 +564,9 @@ const articleBody = z.object({
   seoTitle: z.string().nullable().optional(),
   seoDescription: z.string().nullable().optional(),
   status: z.enum(["draft", "published"]).optional(),
-  sortOrder: z.number().int().optional()
+  sortOrder: z.number().int().optional(),
+  isFeatured: z.boolean().optional(),
+  featuredOrder: z.number().int().optional()
 });
 const createOwnerWebsiteBody = websiteBody;
 const primaryWebsiteBody = z.object({ websiteId: z.string().min(1) });
@@ -684,11 +694,11 @@ const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string;
   });
   if (!page) throw new AppError(404, "PAGE_NOT_FOUND", "Page not found");
   const [services, portfolios, testimonials, brands, articles, faqs, articleCategories, portfolioCategories] = await Promise.all([
-    prisma.service.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
-    prisma.portfolio.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" }, include: { category: true } }),
+    prisma.service.findMany({ where: { websiteId, isActive: true }, orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }] }),
+    prisma.portfolio.findMany({ where: { websiteId, isActive: true }, orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }], include: { category: true } }),
     prisma.testimonial.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
     prisma.brandPartner.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
-    prisma.article.findMany({ where: { websiteId, status: "published" }, orderBy: [{ sortOrder: "asc" }, { publishedAt: "desc" }], include: { category: true } }),
+    prisma.article.findMany({ where: { websiteId, status: "published" }, orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }, { publishedAt: "desc" }], include: { category: true } }),
     prisma.faq.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
     prisma.articleCategory.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
     prisma.portfolioCategory.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } })
@@ -1690,7 +1700,10 @@ const registerCrud = (
   const include = base === "portfolios" ? { category: true } : undefined;
   app.get(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
-    const rows = await (model as any).findMany({ where: { websiteId: website.id }, orderBy: { sortOrder: "asc" }, ...(include ? { include } : {}) });
+    const orderBy = base === "services" || base === "portfolios"
+      ? [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }]
+      : [{ sortOrder: "asc" }];
+    const rows = await (model as any).findMany({ where: { websiteId: website.id }, orderBy, ...(include ? { include } : {}) });
     return ok(reply, rows, `${base} loaded`);
   });
   app.post(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {
@@ -1770,6 +1783,8 @@ const articleData = (body: z.infer<typeof articleBody>, existing?: { publishedAt
   seoDescription: body.seoDescription || null,
   status: body.status || "draft",
   sortOrder: body.sortOrder ?? 0,
+  isFeatured: body.isFeatured ?? false,
+  featuredOrder: body.featuredOrder ?? 0,
   publishedAt: body.status === "published" ? existing?.publishedAt || new Date() : null
 });
 
@@ -1833,6 +1848,8 @@ const registerArticleRoutes = () => {
         seoDescription: body.seoDescription,
         status,
         sortOrder: body.sortOrder,
+        isFeatured: body.isFeatured,
+        featuredOrder: body.featuredOrder,
         publishedAt: status === "published" ? article.publishedAt || new Date() : null
       },
       include: { category: true }
@@ -2200,7 +2217,8 @@ const registerPublicRoutes = () => {
     if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
     const articles = await prisma.article.findMany({
       where: { websiteId: website.id, status: "published" },
-      orderBy: [{ sortOrder: "asc" }, { publishedAt: "desc" }]
+      orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }, { publishedAt: "desc" }],
+      include: { category: true }
     });
     return ok(reply, articles.map(publicArticleSummary), "Public articles loaded");
   });
@@ -2208,13 +2226,15 @@ const registerPublicRoutes = () => {
     const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" }, include: { businessProfile: true } });
     if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
     const article = await prisma.article.findFirst({
-      where: { websiteId: website.id, slug: request.params?.articleSlug, status: "published" }
+      where: { websiteId: website.id, slug: request.params?.articleSlug, status: "published" },
+      include: { category: true }
     });
     if (!article) throw new AppError(404, "ARTICLE_NOT_FOUND", "Published article not found");
     const relatedArticles = await prisma.article.findMany({
       where: { websiteId: website.id, status: "published", id: { not: article.id } },
-      orderBy: [{ sortOrder: "asc" }, { publishedAt: "desc" }],
-      take: 3
+      orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }, { publishedAt: "desc" }],
+      take: 3,
+      include: { category: true }
     });
     return ok(reply, {
       article: articleContract(article),

@@ -20,6 +20,22 @@ function imageOf(item: CrudItem) {
   return item.imageUrl || item.coverImageUrl || null;
 }
 
+function sortFeaturedFirst(items: CrudItem[]) {
+  return [...items].sort((a, b) => {
+    const featuredDelta = Number(Boolean(b.isFeatured)) - Number(Boolean(a.isFeatured));
+    if (featuredDelta !== 0) return featuredDelta;
+    const featuredOrderDelta = Number(a.featuredOrder || 0) - Number(b.featuredOrder || 0);
+    if (featuredOrderDelta !== 0) return featuredOrderDelta;
+    return Number(a.sortOrder || 0) - Number(b.sortOrder || 0);
+  });
+}
+
+function pickPreviewItems(items: CrudItem[], options?: { featuredOnly?: boolean; limit?: number }) {
+  const sorted = sortFeaturedFirst(items);
+  const filtered = options?.featuredOnly ? sorted.filter((item) => item.isFeatured) : sorted;
+  return filtered.slice(0, options?.limit || 6);
+}
+
 function metricKey(n: number, field: 'Label' | 'Value') {
   return `metric${['', 'One', 'Two', 'Three'][n]}${field}`;
 }
@@ -110,7 +126,9 @@ function PreviewCards({
   siteSlug,
   payload,
   emptyTitle,
-  emptyDescription
+  emptyDescription,
+  featuredOnly = false,
+  limit = 6
 }: {
   items: CrudItem[];
   type: 'services' | 'portfolios' | 'articles' | 'testimonials' | 'brands';
@@ -118,8 +136,10 @@ function PreviewCards({
   payload?: PublicPagePayload;
   emptyTitle?: string;
   emptyDescription?: string;
+  featuredOnly?: boolean;
+  limit?: number;
 }) {
-  const limited = items.slice(0, 6);
+  const limited = pickPreviewItems(items, { featuredOnly, limit });
 
   if (!limited.length) {
     return (
@@ -150,6 +170,9 @@ function PreviewCards({
               )}
             </div>
             <div className="p-5">
+              {item.isFeatured && (
+                <span className="mb-3 inline-flex rounded-full bg-rose-50 px-3 py-1 text-[11px] font-black uppercase tracking-wide text-rose-600">Unggulan</span>
+              )}
               <h3 className="text-lg font-black text-slate-950">{titleOf(item)}</h3>
               <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">
                 {item.description || item.excerpt || item.quote || 'Informasi singkat akan tampil di sini.'}
@@ -242,8 +265,10 @@ function ServicePreviewSection(props: SectionProps) {
           items={props.section.data?.services || []}
           type="services"
           siteSlug={props.siteSlug}
-          emptyTitle="Belum ada layanan"
-          emptyDescription="Owner belum menambahkan layanan. Setelah layanan diisi, daftar layanan akan tampil di sini."
+          featuredOnly
+          limit={3}
+          emptyTitle="Belum ada layanan unggulan"
+          emptyDescription="Tandai maksimal beberapa layanan sebagai unggulan di dashboard agar 3 layanan prioritas tampil di halaman utama."
         />
         <CtaButtons {...props} secondary={false} />
       </div>
@@ -261,8 +286,10 @@ function PortfolioPreviewSection(props: SectionProps) {
           items={props.section.data?.portfolios || []}
           type="portfolios"
           siteSlug={props.siteSlug}
-          emptyTitle="Belum ada portofolio"
-          emptyDescription="Owner belum menambahkan portofolio. Setelah diisi, contoh pekerjaan akan tampil di sini."
+          featuredOnly
+          limit={3}
+          emptyTitle="Belum ada portofolio unggulan"
+          emptyDescription="Tandai portofolio pilihan sebagai unggulan di dashboard agar 3 portofolio terbaik tampil di halaman utama."
         />
         <CtaButtons {...props} secondary={false} />
       </div>
@@ -436,7 +463,8 @@ function ArticlePreviewSection(props: SectionProps) {
 }
 
 function FeaturedArticleSection(props: SectionProps) {
-  const article = (props.section.data?.articles || [])[0];
+  const articles = sortFeaturedFirst(props.section.data?.articles || []);
+  const article = articles.find((item) => item.isFeatured) || articles[0];
   const c = props.section.content || {};
 
   return (

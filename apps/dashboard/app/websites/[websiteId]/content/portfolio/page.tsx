@@ -39,6 +39,8 @@ interface PortfolioItem {
   projectUrl?: string;
   clientName?: string;
   isActive: boolean;
+  isFeatured?: boolean;
+  featuredOrder?: number;
   sortOrder?: number;
 }
 
@@ -77,7 +79,9 @@ export default function PortfolioCrudPage() {
     imageUrl: "https://picsum.photos/seed/portfolio/800/600",
     projectUrl: "",
     clientName: "",
-    isActive: true
+    isActive: true,
+    isFeatured: false,
+    featuredOrder: 0
   });
   const [saving, setSaving] = useState(false);
 
@@ -126,7 +130,9 @@ export default function PortfolioCrudPage() {
       imageUrl: "https://picsum.photos/seed/" + Math.floor(Math.random() * 1000) + "/800/600",
       projectUrl: "",
       clientName: "",
-      isActive: true
+      isActive: true,
+      isFeatured: false,
+      featuredOrder: 0
     });
     setIsFormOpen(true);
   };
@@ -141,7 +147,9 @@ export default function PortfolioCrudPage() {
       imageUrl: item.imageUrl || "https://picsum.photos/seed/portfolio/800/600",
       projectUrl: item.projectUrl || "",
       clientName: item.clientName || "",
-      isActive: item.isActive ?? true
+      isActive: item.isActive ?? true,
+      isFeatured: item.isFeatured ?? false,
+      featuredOrder: item.featuredOrder ?? 0
     });
     setIsFormOpen(true);
   };
@@ -162,6 +170,8 @@ export default function PortfolioCrudPage() {
         description: formData.description,
         imageUrl: formData.imageUrl,
         sortOrder: editingItem?.sortOrder ?? 0,
+        isFeatured: formData.isFeatured,
+        featuredOrder: Number(formData.featuredOrder) || 0,
         isActive: formData.isActive
       };
 
@@ -230,6 +240,24 @@ export default function PortfolioCrudPage() {
             <span>{errorMsg}</span>
           </div>
         )}
+
+        <div className="rounded-3xl border border-[#649FF6]/25 bg-[#649FF6]/10 p-4 sm:p-5 shadow-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1">
+              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[#3f6fae]">Ringkasan Tampilan Home</p>
+              <h2 className="text-sm font-black text-slate-900">Bagian portfolio di halaman utama hanya menampilkan portfolio unggulan.</h2>
+              <p className="max-w-3xl text-xs leading-relaxed text-slate-600">
+                Pilih karya atau proyek terbaik sebagai unggulan. Website akan mengambil maksimal 3 portfolio unggulan dengan urutan angka terkecil terlebih dahulu.
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white px-4 py-3 text-xs text-slate-600 shadow-sm border border-white/70">
+              <p className="font-black text-slate-900">Aturan Home</p>
+              <p>Unggulan = Ya</p>
+              <p>Maksimal 3 item</p>
+              <p>Urutan 1 tampil lebih dulu</p>
+            </div>
+          </div>
+        </div>
 
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
@@ -308,6 +336,9 @@ export default function PortfolioCrudPage() {
                       >
                         {item.isActive ? "Aktif" : "Draft"}
                       </span>
+                      {item.isFeatured && (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#F56B71]/10 text-[#F56B71] border border-[#F56B71]/20">Unggulan</span>
+                      )}
                     </div>
 
                     {item.category && (
@@ -483,6 +514,28 @@ export default function PortfolioCrudPage() {
                     onChange={(value) => setFormData({ ...formData, description: value })}
                     helperText="Tulis cerita singkat agar portfolio terasa lebih meyakinkan bagi calon client."
                   />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                  <BooleanRadio
+                    id="port-featured"
+                    label="Jadikan Portfolio Unggulan?"
+                    value={formData.isFeatured}
+                    onChange={(value) => setFormData({ ...formData, isFeatured: value })}
+                    description="Pilih Ya agar portfolio ini bisa muncul di Home. Home hanya mengambil 3 portfolio unggulan teratas."
+                  />
+                  <div className="space-y-1">
+                    <label htmlFor="port-featured-order" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Urutan Unggulan</label>
+                    <input
+                      id="port-featured-order"
+                      type="number"
+                      min="0"
+                      value={formData.featuredOrder}
+                      onChange={(e) => setFormData({ ...formData, featuredOrder: Number(e.target.value) })}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
+                    />
+                    <p className="text-[10px] text-slate-400">Angka kecil tampil lebih dulu. Untuk Home, sistem hanya mengambil maksimal 3 portfolio unggulan.</p>
+                  </div>
                 </div>
 
                 {/* Status Toggle */}

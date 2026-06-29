@@ -25,6 +25,10 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
   const ctaHref = getSiteHref(siteSlug, cta?.path || '/contact');
   const businessName = payload.businessProfile?.name || payload.website.name;
   const tagline = payload.businessProfile?.tagline || 'Company Profile';
+  const logoUrl = typeof payload.businessProfile?.logoUrl === 'string' ? payload.businessProfile.logoUrl : '';
+  const logoAlt = typeof payload.businessProfile?.logoAlt === 'string' && payload.businessProfile.logoAlt.trim()
+    ? payload.businessProfile.logoAlt
+    : `Logo ${businessName}`;
   const whatsapp = normalizePhone(payload.businessProfile?.whatsapp);
   const email = payload.businessProfile?.contactEmail || payload.businessProfile?.email;
   const description =
@@ -36,9 +40,14 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
     <div className="min-h-screen bg-white text-slate-950">
       <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur">
         <div className="lp-container flex min-h-16 items-center justify-between gap-4 py-3">
-          <Link href={getSiteHref(siteSlug, '/')} className="min-w-0">
-            <span className="block truncate text-lg font-black tracking-tight text-slate-950">{businessName}</span>
-            <span className="block truncate text-xs font-semibold text-slate-500">{tagline}</span>
+          <Link href={getSiteHref(siteSlug, '/')} className="flex min-w-0 items-center gap-3">
+            {logoUrl && (
+              <img src={logoUrl} alt={logoAlt} className="h-11 w-11 shrink-0 rounded-2xl object-contain bg-white p-1 ring-1 ring-slate-200" />
+            )}
+            <span className="min-w-0">
+              <span className="block truncate text-lg font-black tracking-tight text-slate-950">{businessName}</span>
+              <span className="block truncate text-xs font-semibold text-slate-500">{tagline}</span>
+            </span>
           </Link>
 
           <nav className="hidden items-center gap-1 lg:flex" aria-label="Navigasi utama">
@@ -94,7 +103,10 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
       <footer className="border-t border-slate-200 bg-slate-950 text-white">
         <div className="lp-container grid gap-10 py-12 md:grid-cols-[1.4fr_1fr_1fr]">
           <div>
-            <h2 className="text-2xl font-black">{businessName}</h2>
+            <div className="flex items-center gap-3">
+              {logoUrl && <img src={logoUrl} alt={logoAlt} className="h-12 w-12 rounded-2xl bg-white object-contain p-1" />}
+              <h2 className="text-2xl font-black">{businessName}</h2>
+            </div>
             <p className="mt-3 max-w-xl text-sm leading-7 text-slate-300 line-clamp-5">{description}</p>
           </div>
 

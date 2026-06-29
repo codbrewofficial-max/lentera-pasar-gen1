@@ -24,6 +24,8 @@ interface BusinessProfile {
   name: string;
   tagline?: string | null;
   description?: string | null;
+  logoUrl?: string | null;
+  logoAlt?: string | null;
   vision?: string | null;
   mission?: string | null;
   timelineJson?: {
@@ -52,6 +54,8 @@ export default function BusinessProfilePage() {
   const [name, setName] = useState("");
   const [tagline, setTagline] = useState("");
   const [description, setDescription] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [logoAlt, setLogoAlt] = useState("");
   const [vision, setVision] = useState("");
   const [mission, setMission] = useState("");
   const [history, setHistory] = useState("");
@@ -74,6 +78,8 @@ export default function BusinessProfilePage() {
         setName(data.name || "");
         setTagline(data.tagline || "");
         setDescription(data.description || "");
+        setLogoUrl(data.logoUrl || "");
+        setLogoAlt(data.logoAlt || "");
         setVision(data.vision || "");
         setMission(data.mission || "");
         
@@ -112,6 +118,8 @@ export default function BusinessProfilePage() {
       name,
       tagline,
       description,
+      logoUrl: logoUrl || null,
+      logoAlt: logoAlt || null,
       vision,
       mission,
       timelineJson: {
@@ -222,6 +230,39 @@ export default function BusinessProfilePage() {
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
                 />
               </div>
+
+
+              <div className="space-y-1.5 md:col-span-2">
+                <label htmlFor="prof-logo-url" className="block text-sm font-semibold text-slate-700">URL Logo Bisnis</label>
+                <input
+                  id="prof-logo-url"
+                  type="url"
+                  placeholder="Tempel URL dari Media Library, contoh: http://localhost:4000/api/v1/public/media/media_xxx"
+                  value={logoUrl}
+                  onChange={(e) => setLogoUrl(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
+                />
+                <p className="text-xs text-slate-400 mt-1">Upload logo di Media Library, lalu salin URL-nya ke field ini. Logo akan tampil di navbar dan footer website publik.</p>
+              </div>
+
+              <div className="space-y-1.5 md:col-span-2">
+                <label htmlFor="prof-logo-alt" className="block text-sm font-semibold text-slate-700">Alt Text Logo</label>
+                <input
+                  id="prof-logo-alt"
+                  type="text"
+                  placeholder="Contoh: Logo Toko Roti Sedap"
+                  value={logoAlt}
+                  onChange={(e) => setLogoAlt(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
+                />
+              </div>
+
+              {logoUrl && (
+                <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-400">Preview Logo</p>
+                  <img src={logoUrl} alt={logoAlt || name || 'Logo bisnis'} className="max-h-20 rounded-xl bg-white object-contain p-2" />
+                </div>
+              )}
 
               <div className="space-y-1.5 md:col-span-2">
                 <label htmlFor="prof-desc" className="block text-sm font-semibold text-slate-700">Deskripsi Lengkap Bisnis</label>

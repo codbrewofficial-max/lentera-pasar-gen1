@@ -31,6 +31,8 @@ interface ServiceItem {
   description: string;
   icon: string;
   isActive: boolean;
+  isFeatured?: boolean;
+  featuredOrder?: number;
   sortOrder?: number;
   price?: number | string;
   imageUrl?: string;
@@ -67,6 +69,8 @@ export default function ServicesCrudPage() {
     description: "",
     icon: "Briefcase",
     isActive: true,
+    isFeatured: false,
+    featuredOrder: 0,
     price: "",
     imageUrl: ""
   });
@@ -110,6 +114,8 @@ export default function ServicesCrudPage() {
       description: "",
       icon: "Briefcase",
       isActive: true,
+      isFeatured: false,
+      featuredOrder: 0,
       price: "",
       imageUrl: ""
     });
@@ -123,6 +129,8 @@ export default function ServicesCrudPage() {
       description: item.description,
       icon: item.icon || "Briefcase",
       isActive: item.isActive ?? true,
+      isFeatured: item.isFeatured ?? false,
+      featuredOrder: item.featuredOrder ?? 0,
       price: item.price ? String(item.price) : "",
       imageUrl: item.imageUrl || ""
     });
@@ -144,6 +152,8 @@ export default function ServicesCrudPage() {
         description: formData.description,
         imageUrl: formData.imageUrl,
         sortOrder: editingItem?.sortOrder ?? 0,
+        isFeatured: formData.isFeatured,
+        featuredOrder: Number(formData.featuredOrder) || 0,
         isActive: formData.isActive
       };
 
@@ -216,6 +226,24 @@ export default function ServicesCrudPage() {
             <span>{errorMsg}</span>
           </div>
         )}
+
+        <div className="rounded-3xl border border-[#649FF6]/25 bg-[#649FF6]/10 p-4 sm:p-5 shadow-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1">
+              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[#3f6fae]">Ringkasan Tampilan Home</p>
+              <h2 className="text-sm font-black text-slate-900">Bagian layanan di halaman utama hanya menampilkan layanan unggulan.</h2>
+              <p className="max-w-3xl text-xs leading-relaxed text-slate-600">
+                Tandai layanan terbaik sebagai unggulan. Website akan mengambil maksimal 3 layanan unggulan dengan urutan angka terkecil terlebih dahulu.
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white px-4 py-3 text-xs text-slate-600 shadow-sm border border-white/70">
+              <p className="font-black text-slate-900">Aturan Home</p>
+              <p>Unggulan = Ya</p>
+              <p>Maksimal 3 item</p>
+              <p>Urutan 1 tampil lebih dulu</p>
+            </div>
+          </div>
+        </div>
 
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
@@ -292,6 +320,9 @@ export default function ServicesCrudPage() {
                       >
                         {item.isActive ? "Aktif" : "Nonaktif"}
                       </span>
+                      {item.isFeatured && (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#F56B71]/10 text-[#F56B71] border border-[#F56B71]/20">Unggulan</span>
+                      )}
                     </div>
 
                     <div className="space-y-1">
@@ -426,6 +457,28 @@ export default function ServicesCrudPage() {
                     onChange={(value) => setFormData({ ...formData, description: value })}
                     helperText="Jelaskan manfaat, proses, dan hasil yang akan diterima calon client."
                   />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                  <BooleanRadio
+                    id="srv-featured"
+                    label="Jadikan Layanan Unggulan?"
+                    value={formData.isFeatured}
+                    onChange={(value) => setFormData({ ...formData, isFeatured: value })}
+                    description="Pilih Ya agar layanan ini bisa muncul di Home. Home hanya mengambil 3 layanan unggulan teratas."
+                  />
+                  <div className="space-y-1">
+                    <label htmlFor="srv-featured-order" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Urutan Unggulan</label>
+                    <input
+                      id="srv-featured-order"
+                      type="number"
+                      min="0"
+                      value={formData.featuredOrder}
+                      onChange={(e) => setFormData({ ...formData, featuredOrder: Number(e.target.value) })}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
+                    />
+                    <p className="text-[10px] text-slate-400">Angka kecil tampil lebih dulu. Untuk Home, sistem hanya mengambil maksimal 3 layanan unggulan.</p>
+                  </div>
                 </div>
 
                 {/* Status Toggle */}
