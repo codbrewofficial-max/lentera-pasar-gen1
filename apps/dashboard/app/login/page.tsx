@@ -3,13 +3,14 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiCall } from "@/lib/api";
-import { Mail, Lock, Eye, EyeOff, AlertCircle, ArrowRight, Sparkles } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, AlertCircle, ArrowRight } from "lucide-react";
+import BrandMark from "@/components/brand/BrandMark";
 
 export default function LoginPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-slate-500 font-medium">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-emerald-600 border-t-transparent mb-4" />
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#649FF6] border-t-transparent mb-4" />
         <span>Menyiapkan portal masuk...</span>
       </div>
     }>
@@ -92,14 +93,15 @@ function LoginContent() {
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-slate-100 md:p-8" id="login-card">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center p-3 bg-emerald-50 rounded-xl mb-4 text-emerald-600">
-            <Sparkles className="h-8 w-8" aria-hidden="true" />
+          <div className="mb-4 flex justify-center">
+            <BrandMark />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl" id="login-title">
-            Lentera Pasar
-          </h1>
+          <h1 className="sr-only" id="login-title">Lentera Pasar</h1>
           <p className="mt-2 text-sm text-slate-500">
-            Kelola website bisnis Anda dengan mudah dan pantau perkembangannya.
+            Kelola website bisnis Anda dengan mudah, pantau lead, dan baca insight pengunjung.
+          </p>
+          <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#B283AF]">
+            LabKerKomIT Community
           </p>
         </div>
 
@@ -112,7 +114,7 @@ function LoginContent() {
         )}
 
         {successMsg && (
-          <div className="mb-5 p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-sm" id="login-success">
+          <div className="mb-5 p-4 bg-[#649FF6]/10 border border-[#649FF6]/25 rounded-xl text-[#3f6fae] text-sm" id="login-success">
             <span>{successMsg}</span>
           </div>
         )}
@@ -134,7 +136,7 @@ function LoginContent() {
                 placeholder="nama@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
               />
             </div>
           </div>
@@ -154,7 +156,7 @@ function LoginContent() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
               />
               <button
                 type="button"
@@ -171,7 +173,7 @@ function LoginContent() {
             id="login-submit-button"
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-semibold rounded-xl shadow-md shadow-emerald-600/10 hover:shadow-emerald-700/20 active:translate-y-[1px] transition flex items-center justify-center space-x-2"
+            className="w-full py-3 bg-[#649FF6] hover:bg-[#4f8be6] disabled:bg-[#8bb8fb] text-white font-semibold rounded-xl shadow-md shadow-[#649FF6]/10 hover:shadow-[#649FF6]/20 active:translate-y-[1px] transition flex items-center justify-center space-x-2"
           >
             {loading ? (
               <>
@@ -198,7 +200,7 @@ function LoginContent() {
               onClick={() => handleDemoLogin("owner@lenterapasar.test")}
               className="flex flex-col items-start p-2.5 text-left bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200/60 transition group"
             >
-              <span className="text-xs font-semibold text-slate-800 group-hover:text-emerald-600 transition-colors">
+              <span className="text-xs font-semibold text-slate-800 group-hover:text-[#649FF6] transition-colors">
                 Owner Bisnis (Demo)
               </span>
               <span className="text-[10px] text-slate-400 font-mono truncate w-full">
@@ -211,7 +213,7 @@ function LoginContent() {
               onClick={() => handleDemoLogin("internal@lenterapasar.test")}
               className="flex flex-col items-start p-2.5 text-left bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200/60 transition group"
             >
-              <span className="text-xs font-semibold text-slate-800 group-hover:text-emerald-600 transition-colors">
+              <span className="text-xs font-semibold text-slate-800 group-hover:text-[#649FF6] transition-colors">
                 Internal Tim (Demo)
               </span>
               <span className="text-[10px] text-slate-400 font-mono truncate w-full">

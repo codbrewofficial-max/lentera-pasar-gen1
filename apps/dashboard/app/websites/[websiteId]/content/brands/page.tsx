@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
+import BooleanRadio from "@/components/ui/BooleanRadio";
 import {
   Award,
   Plus,
@@ -175,8 +176,8 @@ export default function BrandCrudPage() {
       <div className="space-y-6" id="brands-crud-root">
         {/* Alerts */}
         {successMsg && (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-sm flex items-start space-x-3 animate-fadeIn">
-            <CheckCircle className="h-5 w-5 shrink-0 text-emerald-600 mt-0.5" />
+          <div className="p-4 bg-[#649FF6]/10 border border-[#649FF6]/25 rounded-2xl text-[#3f6fae] text-sm flex items-start space-x-3 animate-fadeIn">
+            <CheckCircle className="h-5 w-5 shrink-0 text-[#649FF6] mt-0.5" />
             <span>{successMsg}</span>
           </div>
         )}
@@ -199,13 +200,13 @@ export default function BrandCrudPage() {
               placeholder="Cari nama brand..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
             />
           </div>
 
           <button
             onClick={handleOpenAdd}
-            className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/10 transition active:translate-y-[1px]"
+            className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-4 py-2.5 bg-[#649FF6] hover:bg-[#4f8be6] text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/10 transition active:translate-y-[1px]"
             id="btn-add-brand"
           >
             <Plus className="h-4 w-4" />
@@ -233,7 +234,7 @@ export default function BrandCrudPage() {
             {!searchQuery && (
               <button
                 onClick={handleOpenAdd}
-                className="inline-flex items-center space-x-1 px-4 py-2 bg-emerald-50 text-emerald-800 border border-emerald-100 hover:bg-emerald-100 text-xs font-bold rounded-xl transition"
+                className="inline-flex items-center space-x-1 px-4 py-2 bg-[#649FF6]/10 text-[#3f6fae] border border-emerald-100 hover:bg-[#649FF6]/15 text-xs font-bold rounded-xl transition"
               >
                 <PlusCircle className="h-4 w-4" />
                 <span>Buat Rekanan Pertama</span>
@@ -252,7 +253,7 @@ export default function BrandCrudPage() {
                     <span
                       className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
                         item.isActive
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                          ? "bg-[#649FF6]/10 text-[#4f8be6] border border-emerald-100"
                           : "bg-slate-100 text-slate-500 border border-slate-200"
                       }`}
                     >
@@ -276,7 +277,7 @@ export default function BrandCrudPage() {
                         href={item.url || item.websiteUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[10px] text-emerald-600 hover:underline font-semibold font-mono"
+                        className="inline-flex items-center gap-1 text-[10px] text-[#649FF6] hover:underline font-semibold font-mono"
                       >
                         <Globe className="h-3 w-3" />
                         <span>Kunjungi Situs</span>
@@ -288,7 +289,7 @@ export default function BrandCrudPage() {
                 <div className="flex items-center justify-center gap-1 pt-3 border-t border-slate-50">
                   <button
                     onClick={() => handleOpenEdit(item)}
-                    className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-slate-50 rounded-lg transition"
+                    className="p-1.5 text-slate-400 hover:text-[#649FF6] hover:bg-slate-50 rounded-lg transition"
                     title="Edit Partner"
                   >
                     <Edit2 className="h-3.5 w-3.5" />
@@ -335,7 +336,7 @@ export default function BrandCrudPage() {
                     placeholder="Contoh: PT Semen Indonesia"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
                   />
                 </div>
 
@@ -351,7 +352,7 @@ export default function BrandCrudPage() {
                     placeholder="Contoh: https://picsum.photos/seed/logo/200/100"
                     value={formData.logoUrl}
                     onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors font-mono"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors font-mono"
                   />
                 </div>
 
@@ -366,23 +367,18 @@ export default function BrandCrudPage() {
                     placeholder="Contoh: https://www.semenindonesia.com"
                     value={formData.websiteUrl}
                     onChange={(e) => setFormData({ ...formData, websiteUrl: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors font-mono"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors font-mono"
                   />
                 </div>
 
                 {/* Status Toggle */}
-                <div className="flex items-center space-x-2 pt-2">
-                  <input
-                    id="brand-active"
-                    type="checkbox"
-                    checked={formData.isActive}
-                    onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                    className="h-4 w-4 text-emerald-600 focus:ring-emerald-500/20 border-slate-300 rounded"
-                  />
-                  <label htmlFor="brand-active" className="text-xs font-bold text-slate-700 cursor-pointer">
-                    Aktifkan Partner (Tampilkan di Beranda)
-                  </label>
-                </div>
+                <BooleanRadio
+                  id="brand-active"
+                  label="Tampilkan Partner di Website?"
+                  value={formData.isActive}
+                  onChange={(value) => setFormData({ ...formData, isActive: value })}
+                  description="Pilih Ya jika brand/partner ini boleh tampil di area trust proof website."
+                />
 
                 {/* Actions */}
                 <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
@@ -396,7 +392,7 @@ export default function BrandCrudPage() {
                   <button
                     type="submit"
                     disabled={saving}
-                    className="inline-flex items-center space-x-1 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white text-xs font-bold rounded-xl shadow-md transition"
+                    className="inline-flex items-center space-x-1 px-5 py-2 bg-[#649FF6] hover:bg-[#4f8be6] disabled:bg-[#8bb8fb] text-white text-xs font-bold rounded-xl shadow-md transition"
                   >
                     <Save className="h-4 w-4" />
                     <span>{saving ? (editingItem ? "Memperbarui..." : "Menyimpan...") : "Simpan Rekanan"}</span>

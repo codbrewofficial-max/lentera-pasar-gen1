@@ -1,1 +1,61 @@
 @import "tailwindcss";
+
+:root {
+  --lab-primary-1: #649FF6;
+  --lab-primary-2: #F56B71;
+  --lab-primary-3: #B283AF;
+  --lab-primary-1-dark: #4f8be6;
+  --lab-primary-2-dark: #e15a60;
+  --lab-primary-3-dark: #9f739d;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #f8fafc;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--lab-primary-1) 24%, transparent);
+}
+
+.lp-brand-gradient {
+  background-image: linear-gradient(135deg, var(--lab-primary-1), var(--lab-primary-3), var(--lab-primary-2));
+}
+
+.lp-focus-ring {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lab-primary-1) 24%, transparent);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideRight {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.18s ease-out;
+}
+
+.animate-slideRight {
+  animation: slideRight 0.2s ease-out;
+}

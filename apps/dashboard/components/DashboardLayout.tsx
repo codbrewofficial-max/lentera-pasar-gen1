@@ -12,7 +12,6 @@ import {
   LogOut, 
   Menu, 
   X, 
-  Sparkles,
   ChevronRight,
   ArrowLeft,
   Database,
@@ -26,6 +25,8 @@ import {
   Package,
   ScrollText
 } from "lucide-react";
+import BrandMark from "@/components/brand/BrandMark";
+import BrandSignature from "@/components/brand/BrandSignature";
 
 function getRoleLabel(role: string) {
   if (role === "internal_admin") return "Tim Internal";
@@ -221,10 +222,7 @@ export default function DashboardLayout({
       <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 shrink-0 sticky top-0 h-screen" id="desktop-sidebar">
         {/* Brand / Logo */}
         <div className="h-16 px-6 border-b border-slate-200 flex items-center justify-between">
-          <div className="flex items-center space-x-2 text-emerald-600 font-bold text-lg">
-            <Sparkles className="h-6 w-6" />
-            <span>Lentera Pasar</span>
-          </div>
+          <BrandMark />
         </div>
 
         {/* Global Navigation */}
@@ -240,11 +238,11 @@ export default function DashboardLayout({
                   onClick={() => router.push(item.href)}
                   className={`w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-sm font-medium transition ${
                     item.active
-                      ? "bg-emerald-50 text-emerald-700 font-semibold"
+                      ? "bg-[#649FF6]/10 text-[#4f8be6] font-semibold"
                       : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                   }`}
                 >
-                  <item.icon className={`h-5 w-5 ${item.active ? "text-emerald-600" : "text-slate-400"}`} />
+                  <item.icon className={`h-5 w-5 ${item.active ? "text-[#649FF6]" : "text-slate-400"}`} />
                   <span>{item.label}</span>
                 </button>
               ))}
@@ -264,11 +262,11 @@ export default function DashboardLayout({
                     onClick={() => router.push(item.href)}
                     className={`w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-sm font-medium transition ${
                       item.active
-                        ? "bg-emerald-50 text-emerald-700 font-semibold"
+                        ? "bg-[#649FF6]/10 text-[#4f8be6] font-semibold"
                         : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                     }`}
                   >
-                    <item.icon className={`h-5 w-5 ${item.active ? "text-emerald-600" : "text-slate-400"}`} />
+                    <item.icon className={`h-5 w-5 ${item.active ? "text-[#649FF6]" : "text-slate-400"}`} />
                     <span>{item.label}</span>
                   </button>
                 ))}
@@ -289,11 +287,11 @@ export default function DashboardLayout({
                     onClick={() => router.push(item.href)}
                     className={`w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-sm font-medium transition ${
                       item.active
-                        ? "bg-emerald-50 text-emerald-700 font-semibold"
+                        ? "bg-[#649FF6]/10 text-[#4f8be6] font-semibold"
                         : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                     }`}
                   >
-                    <item.icon className={`h-5 w-5 ${item.active ? "text-emerald-600" : "text-slate-400"}`} />
+                    <item.icon className={`h-5 w-5 ${item.active ? "text-[#649FF6]" : "text-slate-400"}`} />
                     <span>{item.label}</span>
                   </button>
                 ))}
@@ -306,7 +304,7 @@ export default function DashboardLayout({
         <div className="p-4 border-t border-slate-200 bg-slate-50 space-y-3">
           {/* User Info */}
           <div className="flex items-center space-x-3 px-2">
-            <div className="h-8 w-8 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center font-bold text-xs uppercase shrink-0">
+            <div className="h-8 w-8 bg-[#649FF6]/15 text-[#3f6fae] rounded-full flex items-center justify-center font-bold text-xs uppercase shrink-0">
               {userName.substring(0, 2)}
             </div>
             <div className="min-w-0 flex-1">
@@ -316,6 +314,8 @@ export default function DashboardLayout({
               </p>
             </div>
           </div>
+
+          <BrandSignature />
 
           {/* Logout */}
           <button
@@ -335,19 +335,16 @@ export default function DashboardLayout({
           <div className="flex items-center space-x-3">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="p-2 -ml-2 rounded-xl text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+              className="p-2 -ml-2 rounded-xl text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20"
               aria-label="Buka menu navigasi"
             >
               <Menu className="h-6 w-6" />
             </button>
-            <div className="flex items-center space-x-1 text-emerald-600 font-bold text-base">
-              <Sparkles className="h-5 w-5" />
-              <span>Lentera Pasar</span>
-            </div>
+            <BrandMark compact />
           </div>
 
           {/* User circle shortcut */}
-          <div className="h-8 w-8 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center font-bold text-xs uppercase">
+          <div className="h-8 w-8 bg-[#649FF6]/15 text-[#3f6fae] rounded-full flex items-center justify-center font-bold text-xs uppercase">
             {userName.substring(0, 2)}
           </div>
         </header>
@@ -371,10 +368,7 @@ export default function DashboardLayout({
                 <X className="h-5 w-5" />
               </button>
 
-              <div className="flex items-center space-x-2 text-emerald-600 font-bold text-lg mb-8">
-                <Sparkles className="h-6 w-6" />
-                <span>Lentera Pasar</span>
-              </div>
+              <BrandMark className="mb-8" />
 
               {/* Navigation lists */}
               <div className="flex-1 space-y-6 overflow-y-auto">
@@ -392,7 +386,7 @@ export default function DashboardLayout({
                         }}
                         className={`w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-sm font-medium transition ${
                           item.active
-                            ? "bg-emerald-50 text-emerald-700 font-semibold"
+                            ? "bg-[#649FF6]/10 text-[#4f8be6] font-semibold"
                             : "text-slate-600 hover:bg-slate-50"
                         }`}
                       >
@@ -418,7 +412,7 @@ export default function DashboardLayout({
                           }}
                           className={`w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-sm font-medium transition ${
                             item.active
-                              ? "bg-emerald-50 text-emerald-700 font-semibold"
+                              ? "bg-[#649FF6]/10 text-[#4f8be6] font-semibold"
                               : "text-slate-600 hover:bg-slate-50"
                           }`}
                         >
@@ -445,7 +439,7 @@ export default function DashboardLayout({
                           }}
                           className={`w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-sm font-medium transition ${
                             item.active
-                              ? "bg-emerald-50 text-emerald-700 font-semibold"
+                              ? "bg-[#649FF6]/10 text-[#4f8be6] font-semibold"
                               : "text-slate-600 hover:bg-slate-50"
                           }`}
                         >
@@ -461,7 +455,7 @@ export default function DashboardLayout({
               {/* User session panel */}
               <div className="pt-6 border-t border-slate-100 space-y-4">
                 <div className="flex items-center space-x-3">
-                  <div className="h-8 w-8 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center font-bold text-xs uppercase">
+                  <div className="h-8 w-8 bg-[#649FF6]/15 text-[#3f6fae] rounded-full flex items-center justify-center font-bold text-xs uppercase">
                     {userName.substring(0, 2)}
                   </div>
                   <div>
@@ -469,6 +463,8 @@ export default function DashboardLayout({
                     <p className="text-[10px] text-slate-400 uppercase">{getRoleLabel(userRole)}</p>
                   </div>
                 </div>
+
+                <BrandSignature />
 
                 <button
                   onClick={handleLogout}
@@ -493,7 +489,7 @@ export default function DashboardLayout({
                     if (backUrl) router.push(backUrl);
                     else router.back();
                   }}
-                  className="inline-flex items-center justify-center p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 active:translate-y-[1px] transition shrink-0"
+                  className="inline-flex items-center justify-center p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 active:translate-y-[1px] transition shrink-0"
                   aria-label="Kembali ke halaman sebelumnya"
                 >
                   <ArrowLeft className="h-4 w-4" />
@@ -506,7 +502,7 @@ export default function DashboardLayout({
                   <ChevronRight className="h-3 w-3 shrink-0" />
                   {websiteId ? (
                     <>
-                      <span className="cursor-pointer hover:text-emerald-600 truncate max-w-[120px]" onClick={() => router.push("/websites")}>
+                      <span className="cursor-pointer hover:text-[#649FF6] truncate max-w-[120px]" onClick={() => router.push("/websites")}>
                         Website Saya
                       </span>
                       <ChevronRight className="h-3 w-3 shrink-0" />

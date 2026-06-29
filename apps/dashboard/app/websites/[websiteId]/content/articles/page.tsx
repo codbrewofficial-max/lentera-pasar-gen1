@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
+import EnhancedTextarea from "@/components/ui/EnhancedTextarea";
 import { AlertCircle, CheckCircle, Edit2, FileText, Plus, Save, Search, Trash2, X } from "lucide-react";
 
 interface ArticleItem {
@@ -156,8 +157,8 @@ export default function ArticlesCrudPage() {
     <DashboardLayout title="Kelola Artikel" subtitle="Kelola artikel blog dan SEO basic website Anda" showBackButton={true} backUrl={`/websites/${websiteId}/overview`}>
       <div className="space-y-6" id="articles-crud-root">
         {successMsg && (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-sm flex items-start space-x-3">
-            <CheckCircle className="h-5 w-5 shrink-0 text-emerald-600 mt-0.5" />
+          <div className="p-4 bg-[#649FF6]/10 border border-[#649FF6]/25 rounded-2xl text-[#3f6fae] text-sm flex items-start space-x-3">
+            <CheckCircle className="h-5 w-5 shrink-0 text-[#649FF6] mt-0.5" />
             <span>{successMsg}</span>
           </div>
         )}
@@ -178,10 +179,10 @@ export default function ArticlesCrudPage() {
               placeholder="Cari artikel..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
             />
           </div>
-          <button onClick={openAdd} className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md transition">
+          <button onClick={openAdd} className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-4 py-2.5 bg-[#649FF6] hover:bg-[#4f8be6] text-white text-xs font-bold rounded-xl shadow-md transition">
             <Plus className="h-4 w-4" />
             <span>Tambah Artikel</span>
           </button>
@@ -206,7 +207,7 @@ export default function ArticlesCrudPage() {
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <h4 className="font-bold text-slate-900 text-sm leading-tight">{item.title}</h4>
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${item.status === "published" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-slate-100 text-slate-500 border-slate-200"}`}>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${item.status === "published" ? "bg-[#649FF6]/10 text-[#4f8be6] border-emerald-100" : "bg-slate-100 text-slate-500 border-slate-200"}`}>
                       {item.status === "published" ? "Published" : "Draft"}
                     </span>
                   </div>
@@ -214,7 +215,7 @@ export default function ArticlesCrudPage() {
                   <p className="text-xs text-slate-500 leading-relaxed line-clamp-3">{item.excerpt || item.content}</p>
                 </div>
                 <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                  <button onClick={() => openEdit(item)} className="p-2 text-slate-500 hover:text-emerald-600 hover:bg-slate-50 rounded-xl transition" title="Edit Artikel">
+                  <button onClick={() => openEdit(item)} className="p-2 text-slate-500 hover:text-[#649FF6] hover:bg-slate-50 rounded-xl transition" title="Edit Artikel">
                     <Edit2 className="h-4 w-4" />
                   </button>
                   <button onClick={() => setDeletingItem(item)} className="p-2 text-slate-500 hover:text-rose-600 hover:bg-slate-50 rounded-xl transition" title="Hapus Artikel">
@@ -239,47 +240,47 @@ export default function ArticlesCrudPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1 sm:col-span-2">
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Judul Artikel <span className="text-rose-500">*</span></label>
-                    <input value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value, slug: formData.slug || slugify(e.target.value) })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors" />
+                    <input value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value, slug: formData.slug || slugify(e.target.value) })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors" />
                   </div>
                   <div className="space-y-1">
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Slug <span className="text-rose-500">*</span></label>
-                    <input value={formData.slug} onChange={(e) => setFormData({ ...formData, slug: slugify(e.target.value) })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors" />
+                    <input value={formData.slug} onChange={(e) => setFormData({ ...formData, slug: slugify(e.target.value) })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors" />
                   </div>
                   <div className="space-y-1">
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Status</label>
-                    <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value as "draft" | "published" })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors">
+                    <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value as "draft" | "published" })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors">
                       <option value="draft">Draft</option>
                       <option value="published">Published</option>
                     </select>
                   </div>
                   <div className="space-y-1 sm:col-span-2">
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Ringkasan / Excerpt</label>
-                    <textarea rows={2} value={formData.excerpt} onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors" />
+                    <EnhancedTextarea id="article-excerpt" minRows={2} value={formData.excerpt} onChange={(value) => setFormData({ ...formData, excerpt: value })} maxLength={180} helperText="Ringkasan pendek ini dipakai untuk daftar artikel dan fallback SEO description." />
                   </div>
                   <div className="space-y-1 sm:col-span-2">
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Isi Artikel <span className="text-rose-500">*</span></label>
-                    <textarea rows={7} value={formData.content} onChange={(e) => setFormData({ ...formData, content: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors" />
+                    <EnhancedTextarea id="article-content" required minRows={8} value={formData.content} onChange={(value) => setFormData({ ...formData, content: value })} helperText="Gunakan paragraf pendek agar mudah dibaca di halaman publik." />
                   </div>
                   <div className="space-y-1 sm:col-span-2">
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">URL Cover Image</label>
-                    <input type="url" value={formData.coverImageUrl} onChange={(e) => setFormData({ ...formData, coverImageUrl: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors" />
+                    <input type="url" value={formData.coverImageUrl} onChange={(e) => setFormData({ ...formData, coverImageUrl: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors" />
                   </div>
                   <div className="space-y-1">
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">SEO Title</label>
-                    <input value={formData.seoTitle} onChange={(e) => setFormData({ ...formData, seoTitle: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors" />
+                    <input value={formData.seoTitle} onChange={(e) => setFormData({ ...formData, seoTitle: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors" />
                   </div>
                   <div className="space-y-1">
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Urutan Tampil</label>
-                    <input type="number" value={formData.sortOrder} onChange={(e) => setFormData({ ...formData, sortOrder: Number(e.target.value) })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors" />
+                    <input type="number" value={formData.sortOrder} onChange={(e) => setFormData({ ...formData, sortOrder: Number(e.target.value) })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors" />
                   </div>
                   <div className="space-y-1 sm:col-span-2">
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">SEO Description</label>
-                    <textarea rows={2} value={formData.seoDescription} onChange={(e) => setFormData({ ...formData, seoDescription: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors" />
+                    <EnhancedTextarea id="article-seo-description" minRows={2} value={formData.seoDescription} onChange={(value) => setFormData({ ...formData, seoDescription: value })} maxLength={160} helperText="Idealnya 120-160 karakter untuk snippet pencarian." />
                   </div>
                 </div>
                 <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
                   <button type="button" onClick={() => setIsFormOpen(false)} className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition">Batal</button>
-                  <button type="submit" disabled={saving} className="inline-flex items-center space-x-1 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white text-xs font-bold rounded-xl shadow-md transition">
+                  <button type="submit" disabled={saving} className="inline-flex items-center space-x-1 px-5 py-2 bg-[#649FF6] hover:bg-[#4f8be6] disabled:bg-[#8bb8fb] text-white text-xs font-bold rounded-xl shadow-md transition">
                     <Save className="h-4 w-4" />
                     <span>{saving ? (editingItem ? "Memperbarui..." : "Menyimpan...") : "Simpan Artikel"}</span>
                   </button>

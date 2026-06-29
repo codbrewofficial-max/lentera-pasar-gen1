@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
+import BooleanRadio from "@/components/ui/BooleanRadio";
+import EnhancedTextarea from "@/components/ui/EnhancedTextarea";
 import { AlertCircle, CheckCircle, ExternalLink, Info, Save } from "lucide-react";
 
 type PageSetupItem = {
@@ -121,7 +123,7 @@ export default function PageSetupPage() {
       backUrl={`/websites/${websiteId}/overview`}
     >
       <div className="space-y-6">
-        <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-900">
+        <div className="rounded-3xl border border-[#649FF6]/25 bg-[#649FF6]/10 p-5 text-sm text-emerald-900">
           <div className="flex items-start gap-3">
             <Info className="mt-0.5 h-5 w-5 shrink-0" />
             <div className="space-y-1">
@@ -135,7 +137,7 @@ export default function PageSetupPage() {
         </div>
 
         {successMsg && (
-          <div className="flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+          <div className="flex items-center gap-2 rounded-2xl border border-[#649FF6]/25 bg-[#649FF6]/10 p-4 text-sm text-[#3f6fae]">
             <CheckCircle className="h-5 w-5" />
             <span>{successMsg}</span>
           </div>
@@ -189,7 +191,7 @@ export default function PageSetupPage() {
                   <button
                     onClick={() => savePage(page)}
                     disabled={isSaving}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:bg-emerald-400"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#649FF6] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#4f8be6] disabled:bg-[#8bb8fb]"
                   >
                     {isSaving ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <Save className="h-4 w-4" />}
                     {isSaving ? "Menyimpan..." : "Simpan Halaman"}
@@ -202,7 +204,7 @@ export default function PageSetupPage() {
                     <input
                       value={page.navLabel || ""}
                       onChange={(e) => updatePage(page.pageKey, { navLabel: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:border-[#649FF6] focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20"
                     />
                   </label>
                   <label className="space-y-1.5">
@@ -210,7 +212,7 @@ export default function PageSetupPage() {
                     <input
                       value={page.footerLabel || ""}
                       onChange={(e) => updatePage(page.pageKey, { footerLabel: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:border-[#649FF6] focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20"
                     />
                   </label>
                   <label className="space-y-1.5">
@@ -219,7 +221,7 @@ export default function PageSetupPage() {
                       value={page.slug || ""}
                       disabled={isHome}
                       onChange={(e) => updatePage(page.pageKey, { slug: normalizeSlug(e.target.value) })}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 font-mono text-sm disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 font-mono text-sm disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 focus:border-[#649FF6] focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20"
                     />
                     <p className="text-[11px] text-slate-400">Tanpa slash. Contoh: layanan-kami. Home selalu memakai /.</p>
                   </label>
@@ -229,16 +231,17 @@ export default function PageSetupPage() {
                       type="number"
                       value={page.sortOrder}
                       onChange={(e) => updatePage(page.pageKey, { sortOrder: Number(e.target.value) })}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:border-[#649FF6] focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20"
                     />
                   </label>
                   <label className="space-y-1.5 md:col-span-2">
                     <span className="text-xs font-bold text-slate-600">Penjelasan Fungsi Halaman</span>
-                    <textarea
-                      rows={3}
+                    <EnhancedTextarea
+                      id={`purpose-${page.pageKey}`}
+                      minRows={3}
                       value={page.purpose || ""}
-                      onChange={(e) => updatePage(page.pageKey, { purpose: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                      onChange={(value) => updatePage(page.pageKey, { purpose: value })}
+                      helperText="Jelaskan fungsi halaman ini dengan bahasa yang mudah dipahami owner dan tim internal."
                     />
                   </label>
                   <label className="space-y-1.5">
@@ -246,32 +249,46 @@ export default function PageSetupPage() {
                     <input
                       value={page.seoTitle || ""}
                       onChange={(e) => updatePage(page.pageKey, { seoTitle: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:border-[#649FF6] focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20"
                     />
                   </label>
                   <label className="space-y-1.5">
                     <span className="text-xs font-bold text-slate-600">SEO Description</span>
-                    <input
+                    <EnhancedTextarea
+                      id={`seo-description-${page.pageKey}`}
+                      minRows={2}
                       value={page.seoDescription || ""}
-                      onChange={(e) => updatePage(page.pageKey, { seoDescription: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                      onChange={(value) => updatePage(page.pageKey, { seoDescription: value })}
+                      maxLength={160}
+                      helperText="Idealnya 120-160 karakter agar lebih rapi untuk SEO/snippet pencarian."
                     />
                   </label>
                 </div>
 
                 <div className="mt-5 grid gap-3 md:grid-cols-3">
-                  <label className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
-                    Publish Halaman
-                    <input type="checkbox" checked={Boolean(page.isPublished)} onChange={(e) => updatePage(page.pageKey, { isPublished: e.target.checked })} />
-                  </label>
-                  <label className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
-                    Tampil di Navbar
-                    <input type="checkbox" disabled={dynamic} checked={!dynamic && Boolean(page.isVisibleInNavbar)} onChange={(e) => updatePage(page.pageKey, { isVisibleInNavbar: e.target.checked })} />
-                  </label>
-                  <label className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
-                    Tampil di Footer
-                    <input type="checkbox" disabled={dynamic} checked={!dynamic && Boolean(page.isVisibleInFooter)} onChange={(e) => updatePage(page.pageKey, { isVisibleInFooter: e.target.checked })} />
-                  </label>
+                  <BooleanRadio
+                    id={`published-${page.pageKey}`}
+                    label="Publish Halaman"
+                    value={Boolean(page.isPublished)}
+                    onChange={(value) => updatePage(page.pageKey, { isPublished: value })}
+                    description="Jika Tidak, halaman tidak tampil di website publik."
+                  />
+                  <BooleanRadio
+                    id={`navbar-${page.pageKey}`}
+                    label="Tampil di Navbar"
+                    value={!dynamic && Boolean(page.isVisibleInNavbar)}
+                    onChange={(value) => updatePage(page.pageKey, { isVisibleInNavbar: value })}
+                    disabled={dynamic}
+                    description={dynamic ? "Detail artikel tidak masuk navbar." : "Pilih Ya jika menu ini tampil di atas website."}
+                  />
+                  <BooleanRadio
+                    id={`footer-${page.pageKey}`}
+                    label="Tampil di Footer"
+                    value={!dynamic && Boolean(page.isVisibleInFooter)}
+                    onChange={(value) => updatePage(page.pageKey, { isVisibleInFooter: value })}
+                    disabled={dynamic}
+                    description={dynamic ? "Detail artikel tidak masuk footer." : "Pilih Ya jika menu ini tampil di footer."}
+                  />
                 </div>
 
                 {dynamic && (

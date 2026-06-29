@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
+import BooleanRadio from "@/components/ui/BooleanRadio";
+import EnhancedTextarea from "@/components/ui/EnhancedTextarea";
 import {
   Edit3,
   Save,
@@ -47,6 +49,17 @@ type NavigationContract = {
 };
 
 const isCtaUrlField = (key: string) => /(cta|button|link).*url/i.test(key);
+const isBooleanLikeField = (field: SchemaField, value: unknown) => {
+  const key = field.key || "";
+  const rawValue = String(value ?? field.defaultValue ?? "").toLowerCase();
+  return (
+    /^(show|hide|enable|disable|is|has|use|display)/i.test(key) ||
+    rawValue === "true" ||
+    rawValue === "false"
+  );
+};
+const toBooleanValue = (value: unknown) => String(value ?? "").toLowerCase() === "true";
+const fromBooleanValue = (value: boolean) => (value ? "true" : "false");
 const targetPrefix = (key: string) => key.replace(/Url$/i, "");
 const targetTypeKey = (key: string) => `${targetPrefix(key)}TargetType`;
 const targetPageKey = (key: string) => `${targetPrefix(key)}TargetPageKey`;
@@ -179,7 +192,7 @@ export default function EditSectionContentPage() {
             placeholder={field.placeholder || "https://..."}
             value={formData[fKey] || ""}
             onChange={(e) => handleInputChange(fKey, e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors text-sm font-mono text-xs"
+            className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors text-sm font-mono text-xs"
           />
         </div>
       );
@@ -192,14 +205,14 @@ export default function EditSectionContentPage() {
     const pageTargets = navigationTargets.filter((target) => target.type === "page");
 
     return (
-      <div className="space-y-3 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4">
+      <div className="space-y-3 rounded-2xl border border-[#649FF6]/20 bg-[#649FF6]/10 p-4">
         <div className="grid gap-3 md:grid-cols-2">
           <label className="space-y-1.5">
             <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Jenis Tujuan</span>
             <select
               value={targetType}
               onChange={(e) => handleTargetChange(fKey, { [typeKey]: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-[#649FF6] focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20"
             >
               <option value="page">Halaman Website</option>
               <option value="whatsapp">WhatsApp Bisnis</option>
@@ -213,7 +226,7 @@ export default function EditSectionContentPage() {
               <select
                 value={formData[pageKeyName] || "contact"}
                 onChange={(e) => handleTargetChange(fKey, { [pageKeyName]: e.target.value, [typeKey]: "page" })}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-[#649FF6] focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20"
               >
                 {pageTargets.map((target) => (
                   <option key={target.pageKey} value={target.pageKey}>{target.label}</option>
@@ -230,7 +243,7 @@ export default function EditSectionContentPage() {
                 value={formData[customKey] || ""}
                 onChange={(e) => handleTargetChange(fKey, { [customKey]: e.target.value, [typeKey]: "custom" })}
                 placeholder="https://contoh.com"
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-mono focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-mono focus:border-[#649FF6] focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20"
               />
             </label>
           )}
@@ -259,7 +272,7 @@ export default function EditSectionContentPage() {
           <AlertCircle className="h-12 w-12 text-amber-500 mx-auto" />
           <h3 className="text-lg font-bold text-slate-800">Tampilan Belum Dipilih</h3>
           <p className="text-sm text-slate-500">Anda harus memilih tampilan template terlebih dahulu sebelum dapat mengisi konten.</p>
-          <button onClick={() => router.push(`/websites/${websiteId}/sections/${slotKey}/choose`)} className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl">
+          <button onClick={() => router.push(`/websites/${websiteId}/sections/${slotKey}/choose`)} className="px-5 py-2.5 bg-[#649FF6] hover:bg-[#4f8be6] text-white text-xs font-semibold rounded-xl">
             Pilih Tampilan Sekarang
           </button>
         </div>
@@ -277,7 +290,7 @@ export default function EditSectionContentPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8" id="edit-content-layout">
         <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 p-6 md:p-8 shadow-sm space-y-6">
           <div className="flex items-center space-x-2 text-slate-800">
-            <Edit3 className="h-5 w-5 text-emerald-600" />
+            <Edit3 className="h-5 w-5 text-[#649FF6]" />
             <span className="font-bold text-sm uppercase tracking-wide text-slate-400">Isi Form Konten</span>
           </div>
 
@@ -303,14 +316,14 @@ export default function EditSectionContentPage() {
                   </label>
 
                   {field.type === "textarea" ? (
-                    <textarea
+                    <EnhancedTextarea
                       id={fieldId}
                       required={isFieldRequired}
-                      rows={4}
+                      minRows={4}
                       placeholder={field.placeholder || `Masukkan isian ${field.label}...`}
                       value={formData[fKey] || ""}
-                      onChange={(e) => handleInputChange(fKey, e.target.value)}
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors text-sm"
+                      onChange={(value) => handleInputChange(fKey, value)}
+                      helperText={field.helpText || "Tulis dengan bahasa yang mudah dipahami calon pelanggan."}
                     />
                   ) : field.type === "image_url" ? (
                     <div className="space-y-2">
@@ -323,7 +336,7 @@ export default function EditSectionContentPage() {
                           placeholder={field.placeholder || "https://picsum.photos/seed/.../800/600"}
                           value={formData[fKey] || ""}
                           onChange={(e) => handleInputChange(fKey, e.target.value)}
-                          className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors text-sm font-mono text-xs"
+                          className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors text-sm font-mono text-xs"
                         />
                       </div>
                       <button type="button" onClick={() => handleInputChange(fKey, `https://picsum.photos/seed/${fKey + Date.now()}/800/600`)} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-[10px] font-bold text-slate-600 transition">
@@ -332,6 +345,13 @@ export default function EditSectionContentPage() {
                     </div>
                   ) : field.type === "url" ? (
                     renderUrlField(field, fieldId)
+                  ) : isBooleanLikeField(field, formData[fKey]) ? (
+                    <BooleanRadio
+                      id={fieldId}
+                      value={toBooleanValue(formData[fKey])}
+                      onChange={(value) => handleInputChange(fKey, fromBooleanValue(value))}
+                      description="Pilih Ya atau Tidak agar owner tidak perlu mengetik true/false."
+                    />
                   ) : (
                     <input
                       id={fieldId}
@@ -340,7 +360,7 @@ export default function EditSectionContentPage() {
                       placeholder={field.placeholder || `Masukkan isian ${field.label}...`}
                       value={formData[fKey] || ""}
                       onChange={(e) => handleInputChange(fKey, e.target.value)}
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors text-sm"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors text-sm"
                     />
                   )}
 
@@ -353,7 +373,7 @@ export default function EditSectionContentPage() {
               <button type="button" onClick={() => router.push(`/websites/${websiteId}/pages/${currentPageKey}`)} className="px-5 py-2.5 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition">
                 Kembali
               </button>
-              <button type="submit" disabled={saving} className="inline-flex items-center justify-center space-x-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/10 hover:shadow-emerald-700/20 transition active:translate-y-[1px]" id="btn-save-content">
+              <button type="submit" disabled={saving} className="inline-flex items-center justify-center space-x-2 px-6 py-2.5 bg-[#649FF6] hover:bg-[#4f8be6] disabled:bg-[#8bb8fb] text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/10 hover:shadow-emerald-700/20 transition active:translate-y-[1px]" id="btn-save-content">
                 {saving ? <><div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /><span>Sedang Menyimpan...</span></> : <><Save className="h-4 w-4" /><span>Simpan Konten Section</span></>}
               </button>
             </div>
@@ -366,7 +386,7 @@ export default function EditSectionContentPage() {
             <p className="text-xs text-slate-400 leading-relaxed mb-4">{section.slotDescription}</p>
             <div className="border-t border-slate-800 pt-3 space-y-2">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">ID Slot Teknis</span>
-              <span className="font-mono text-xs text-emerald-400 bg-slate-850 px-2 py-1 rounded block w-max select-all border border-slate-800">{slotKey}</span>
+              <span className="font-mono text-xs text-[#B283AF] bg-slate-850 px-2 py-1 rounded block w-max select-all border border-slate-800">{slotKey}</span>
             </div>
           </div>
 
