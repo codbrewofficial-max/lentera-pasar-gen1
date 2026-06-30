@@ -285,6 +285,18 @@ function companyDataFor(payload: PublicPagePayload): CompanyData {
 function timelineFor(payload: PublicPagePayload, section: PublicSection): TimelineItem[] {
   const content = contentOf(section);
   const business = businessOf(payload);
+  const timelineRows = (section.data?.timelines || [])
+    .filter((item) => item.isActive !== false)
+    .sort((a, b) => numberValue(a.sortOrder, 0) - numberValue(b.sortOrder, 0));
+
+  if (timelineRows.length) {
+    return timelineRows.map((item, index) => ({
+      year: text(item.year, String(index + 1).padStart(2, "0")),
+      title: text(item.title, `Milestone ${index + 1}`),
+      description: text(item.description, "Deskripsi milestone belum diisi."),
+    }));
+  }
+
   if (Array.isArray(content.timeline)) {
     return content.timeline.map((item: any, index: number) => ({
       year: text(item.year, String(index + 1).padStart(2, "0")),
@@ -292,6 +304,7 @@ function timelineFor(payload: PublicPagePayload, section: PublicSection): Timeli
       description: text(item.description, "Deskripsi milestone belum diisi."),
     }));
   }
+
   return [
     {
       year: text(business.establishedYear, text(content.yearOne, "Awal")),
@@ -326,6 +339,24 @@ function valuesFor(section: PublicSection): ValueItem[] {
 function teamFor(payload: PublicPagePayload, section: PublicSection): TeamItem[] {
   const content = contentOf(section);
   const business = businessOf(payload);
+  const teamRows = (section.data?.teamMembers || [])
+    .filter((item) => item.isActive !== false)
+    .sort((a, b) => numberValue(a.sortOrder, 0) - numberValue(b.sortOrder, 0));
+
+  if (teamRows.length) {
+    return teamRows.map((item, index) => ({
+      id: String(item.id || `team-${index + 1}`),
+      name: text(item.name, `Anggota Tim ${index + 1}`),
+      role: text(item.role, "Tim Profesional"),
+      bio: text(item.bio, "Profil tim belum diisi."),
+      imageUrl: text(item.imageUrl, `https://picsum.photos/seed/formal-team-${index + 1}/400/400`),
+      social: {
+        linkedin: text(item.linkedinUrl, text(item.linkedin)),
+        twitter: text(item.twitterUrl, text(item.twitter)),
+      },
+    }));
+  }
+
   if (Array.isArray(content.team)) {
     return content.team.map((item: any, index: number) => ({
       id: text(item.id, `team-${index + 1}`),
@@ -336,6 +367,7 @@ function teamFor(payload: PublicPagePayload, section: PublicSection): TeamItem[]
       social: { linkedin: text(item.linkedin), twitter: text(item.twitter) },
     }));
   }
+
   return [
     {
       id: "team-main",

@@ -283,6 +283,7 @@ export default function TeamMemberCrudPage() {
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Bio Singkat</label>
                   <EnhancedTextarea
+                    id="team-member-bio"
                     minRows={3}
                     placeholder="Pengalaman, keahlian, atau peran dalam bisnis..."
                     value={formData.bio}

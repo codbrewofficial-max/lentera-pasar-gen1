@@ -24,7 +24,8 @@ import {
   ScrollText,
   HelpCircle,
   Image as ImageIcon,
-  Tags
+  Tags,
+  CalendarDays
 } from "lucide-react";
 import BrandMark from "@/components/brand/BrandMark";
 import BrandSignature from "@/components/brand/BrandSignature";
@@ -254,6 +255,20 @@ export default function DashboardLayout({
               icon: Tags,
               href: `/websites/${websiteId}/content/portfolio-categories`,
               active: pathname?.includes(`/websites/${websiteId}/content/portfolio-categories`) || false
+            },
+            {
+              label: "Perjalanan Bisnis",
+              description: "Milestone/sejarah yang tampil di halaman About.",
+              icon: CalendarDays,
+              href: `/websites/${websiteId}/content/timeline`,
+              active: pathname?.includes(`/websites/${websiteId}/content/timeline`) || false
+            },
+            {
+              label: "Anggota Tim",
+              description: "Profil tim inti yang tampil di halaman About.",
+              icon: Users,
+              href: `/websites/${websiteId}/content/team-members`,
+              active: pathname?.includes(`/websites/${websiteId}/content/team-members`) || false
             },
             {
               label: "FAQ",

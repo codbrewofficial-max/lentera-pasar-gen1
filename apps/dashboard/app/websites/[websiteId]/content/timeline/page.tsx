@@ -279,6 +279,7 @@ export default function TimelineCrudPage() {
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Deskripsi Singkat</label>
                   <EnhancedTextarea
+                    id="timeline-description"
                     minRows={3}
                     placeholder="Jelaskan pencapaian atau momen penting di tahun ini..."
                     value={formData.description}
