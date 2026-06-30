@@ -1,12 +1,17 @@
 import type { PublicSection } from "@/lib/types";
 import { abstractCompanyProfileTemplate } from "./abstract/template";
 import { casualCompanyProfileTemplate } from "./casual/template";
+import { cleanCompanyProfileTemplate } from "./clean/template";
 import { formalCompanyProfileTemplate } from "./formal/template";
 import { premiumCompanyProfileTemplate } from "./premium/template";
 import { COMPANY_PROFILE_DEFAULT_SLOT_COMPONENTS } from "./slots";
 import type { CompanyProfileTemplateDefinition, CompanyProfileTemplateKey } from "./types";
 
 const TEMPLATE_KEY_ALIASES: Record<string, CompanyProfileTemplateKey> = {
+  company_profile_clean: "company_profile_clean",
+  "company-profile-clean": "company_profile_clean",
+  clean: "company_profile_clean",
+
   company_profile_formal: "company_profile_formal",
   "company-profile-formal": "company_profile_formal",
   formal: "company_profile_formal",
@@ -25,6 +30,7 @@ const TEMPLATE_KEY_ALIASES: Record<string, CompanyProfileTemplateKey> = {
 };
 
 export const companyProfileTemplateRegistry: Record<CompanyProfileTemplateKey, CompanyProfileTemplateDefinition> = {
+  company_profile_clean: cleanCompanyProfileTemplate,
   company_profile_formal: formalCompanyProfileTemplate,
   company_profile_abstract: abstractCompanyProfileTemplate,
   company_profile_casual: casualCompanyProfileTemplate,

@@ -801,41 +801,55 @@ function ContactCtaSection(props: SectionProps) {
   );
 }
 
+// Company Profile Clean — komponen generik/default untuk Website Type Company Profile.
+// Dipakai langsung saat owner memilih tema "Clean", dan dipakai otomatis sebagai fallback
+// untuk tema lain (Abstract/Casual/Premium) selama tema tersebut belum punya kode visual
+// sendiri hasil porting Google AI Studio. Lihat templates/company-profile/clean/template.ts.
+export const companyProfileCleanComponents: Record<string, SectionComponent> = {
+  CompanyProfileCleanHomeHero: HeroSection,
+  CompanyProfileCleanHomeProfileSummary: ProfileSummarySection,
+  CompanyProfileCleanHomeServicePreview: ServicePreviewSection,
+  CompanyProfileCleanHomePortfolioPreview: PortfolioPreviewSection,
+  CompanyProfileCleanHomeTrustProof: TrustProofSection,
+  CompanyProfileCleanHomeCtaContact: CtaContactSection,
+
+  CompanyProfileCleanAboutOrganizationProfile: TextImageSection,
+  CompanyProfileCleanAboutHistoryTimeline: TextImageSection,
+  CompanyProfileCleanAboutVisionMission: TextImageSection,
+  CompanyProfileCleanAboutValueStatement: TextImageSection,
+  CompanyProfileCleanAboutTeamHighlight: TextImageSection,
+
+  CompanyProfileCleanServicesHero: PageHeroSection,
+  CompanyProfileCleanServicesGrid: ServiceGridSection,
+  CompanyProfileCleanServicesProcess: TextImageSection,
+  CompanyProfileCleanServicesBenefits: TextImageSection,
+  CompanyProfileCleanServicesFaq: ServiceFaqSection,
+
+  CompanyProfileCleanPortfolioHero: PageHeroSection,
+  CompanyProfileCleanPortfolioCategory: PortfolioCategorySection,
+  CompanyProfileCleanPortfolioGrid: PortfolioGridSection,
+  CompanyProfileCleanPortfolioCaseHighlight: TextImageSection,
+  CompanyProfileCleanPortfolioCta: CtaContactSection,
+
+  CompanyProfileCleanArticlesHero: PageHeroSection,
+  CompanyProfileCleanFeaturedArticle: FeaturedArticleSection,
+  CompanyProfileCleanArticlePreview: ArticlePreviewSection,
+
+  CompanyProfileCleanArticleDetailHero: ArticleDetailHeroSection,
+  CompanyProfileCleanArticleContent: ArticleContentSection,
+  CompanyProfileCleanRelatedArticles: RelatedArticlesSection,
+  CompanyProfileCleanArticleCta: CtaContactSection,
+
+  CompanyProfileCleanContactHero: PageHeroSection,
+  CompanyProfileCleanContactInformation: ContactInformationSection,
+  CompanyProfileCleanMapsLocation: MapsLocationSection,
+  CompanyProfileCleanContactFaq: ContactFaqSection,
+  CompanyProfileCleanContactCta: ContactCtaSection
+};
+
 const registry: Record<string, SectionComponent> = {
   ...formalSectionComponents,
-  HeroSection,
-  ProfileSummarySection,
-  ServicePreviewSection,
-  PortfolioPreviewSection,
-  TrustProofSection,
-  CtaContactSection,
-  OrganizationProfileSection: TextImageSection,
-  HistoryTimelineSection: TextImageSection,
-  VisionMissionSection: TextImageSection,
-  ValueStatementSection: TextImageSection,
-  TeamHighlightSection: TextImageSection,
-  ServiceHeroSection: PageHeroSection,
-  ServiceGridSection,
-  ServiceProcessSection: TextImageSection,
-  ServiceBenefitsSection: TextImageSection,
-  ServiceFaqSection,
-  PortfolioHeroSection: PageHeroSection,
-  PortfolioCategorySection,
-  PortfolioGridSection,
-  CaseHighlightSection: TextImageSection,
-  PortfolioCtaSection: CtaContactSection,
-  ArticleHeroSection: PageHeroSection,
-  FeaturedArticleSection,
-  ArticlePreviewSection,
-  ArticleDetailHeroSection,
-  ArticleContentSection,
-  RelatedArticlesSection,
-  ArticleCtaSection,
-  ContactHeroSection: PageHeroSection,
-  ContactInformationSection,
-  MapsLocationSection,
-  ContactFaqSection,
-  ContactCtaSection,
+  ...companyProfileCleanComponents
 };
 
 export function RenderSections({ siteSlug, payload }: { siteSlug: string; payload: PublicPagePayload }) {

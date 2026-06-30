@@ -46,7 +46,7 @@ Public API hanya mengembalikan website `published`. Website `draft` mengembalika
           "slotKey": "home.hero",
           "slotLabel": "Hero",
           "sectionKey": "hero-clean",
-          "component": "HeroSection",
+          "component": "CompanyProfileCleanHomeHero",
           "variant": "clean",
           "content": {},
           "tracking": {

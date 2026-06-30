@@ -128,7 +128,7 @@ Section item:
     "id": "template_id",
     "sectionKey": "hero-clean",
     "name": "Hero Clean",
-    "component": "HeroSection",
+    "component": "CompanyProfileCleanHomeHero",
     "variant": "clean",
     "schema": [],
     "defaultContent": {}
@@ -160,7 +160,7 @@ Template item:
   "websiteType": "company_profile",
   "websiteTypeLabel": "Company Profile",
   "name": "Hero Clean",
-  "component": "HeroSection",
+  "component": "CompanyProfileCleanHomeHero",
   "variant": "clean",
   "schema": [
     {

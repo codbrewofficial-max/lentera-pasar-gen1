@@ -11,7 +11,7 @@ Template Pack JSON mendaftarkan section melalui:
   "templateKey": "company_profile_formal",
   "sectionKey": "company_profile_formal.home.hero",
   "slotKey": "home.hero",
-  "component": "HeroSection",
+  "component": "CompanyProfileCleanHomeHero",
   "variant": "default"
 }
 ```
