@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { faqData, FaqItem } from '@/lib/dummy-data';
+import { faqData, FaqItem } from '../../lib/dummy-data';
 import { HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
 
 export interface CasualServicesFaqProps {

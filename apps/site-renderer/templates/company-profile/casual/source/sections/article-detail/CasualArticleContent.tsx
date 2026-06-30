@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { articlesData } from '@/lib/dummy-data';
+import { articlesData } from '../../lib/dummy-data';
 import { Copy, Share2, Twitter, Facebook, CheckCircle2 } from 'lucide-react';
 
 export interface CasualArticleContentProps {

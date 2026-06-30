@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { articlesData } from '@/lib/dummy-data';
+import { articlesData } from '../../lib/dummy-data';
 import { Calendar, User, ArrowLeft, Bookmark } from 'lucide-react';
 import Link from 'next/link';
 

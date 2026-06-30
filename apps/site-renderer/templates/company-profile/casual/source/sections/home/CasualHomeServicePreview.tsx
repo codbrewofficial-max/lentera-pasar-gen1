@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ArrowRight, Sparkles, Instagram, Laptop, Camera } from 'lucide-react';
-import { servicesData, ServiceItem } from '@/lib/dummy-data';
+import { servicesData, ServiceItem } from '../../lib/dummy-data';
 
 export interface CasualHomeServicePreviewProps {
   title?: string;

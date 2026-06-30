@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { teamMembers, TeamMember } from '@/lib/dummy-data';
+import { teamMembers, TeamMember } from '../../lib/dummy-data';
 import { Mail, ArrowUpRight, Github, Heart } from 'lucide-react';
 
 export interface CasualAboutTeamHighlightProps {

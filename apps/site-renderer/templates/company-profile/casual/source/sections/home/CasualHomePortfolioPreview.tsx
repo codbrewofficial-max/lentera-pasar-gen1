@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ArrowRight, Star } from 'lucide-react';
-import { portfolioData, PortfolioItem } from '@/lib/dummy-data';
+import { portfolioData, PortfolioItem } from '../../lib/dummy-data';
 
 export interface CasualHomePortfolioPreviewProps {
   title?: string;

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { portfolioData, PortfolioItem } from '@/lib/dummy-data';
+import { portfolioData, PortfolioItem } from '../../lib/dummy-data';
 import { Filter, ArrowRight, Sparkles } from 'lucide-react';
 
 export interface CasualPortfolioGridProps {

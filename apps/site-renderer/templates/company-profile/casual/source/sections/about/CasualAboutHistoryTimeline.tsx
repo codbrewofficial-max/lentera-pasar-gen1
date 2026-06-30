@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { timelineData, TimelineItem } from '@/lib/dummy-data';
+import { timelineData, TimelineItem } from '../../lib/dummy-data';
 import { Award, Milestone, Calendar, Sparkles } from 'lucide-react';
 
 export interface CasualAboutHistoryTimelineProps {

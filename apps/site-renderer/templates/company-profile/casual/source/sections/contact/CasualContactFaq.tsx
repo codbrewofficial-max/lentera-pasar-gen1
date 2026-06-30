@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
-import { FaqItem } from '@/lib/dummy-data';
+import { FaqItem } from '../../lib/dummy-data';
 
 export interface CasualContactFaqProps {
   title?: string;

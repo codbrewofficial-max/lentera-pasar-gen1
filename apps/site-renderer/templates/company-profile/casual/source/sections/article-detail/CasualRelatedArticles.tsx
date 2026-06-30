@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { articlesData, ArticleItem } from '@/lib/dummy-data';
+import { articlesData, ArticleItem } from '../../lib/dummy-data';
 import { ArrowRight } from 'lucide-react';
 
 export interface CasualRelatedArticlesProps {
