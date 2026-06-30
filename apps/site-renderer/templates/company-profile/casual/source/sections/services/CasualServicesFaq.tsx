@@ -1,17 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import { faqData } from '@/lib/dummy-data';
+import { faqData, FaqItem } from '@/lib/dummy-data';
 import { HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
 
 export interface CasualServicesFaqProps {
   title?: string;
   description?: string;
+  faqs?: FaqItem[];
 }
 
 export function CasualServicesFaq({
   title = 'Ada Pertanyaan? Kami Punya Jawaban!',
   description = 'Punya ganjalan atau rasa penasaran soal cara kerja, pembayaran, atau detail teknis? Kami kumpulkan beberapa pertanyaan yang paling sering diajukan klien kami di bawah ini.',
+  faqs = faqData,
 }: CasualServicesFaqProps) {
   
   const [openIndex, setOpenIndex] = useState<number | null>(0);
@@ -43,7 +45,7 @@ export function CasualServicesFaq({
 
         {/* Interactive FAQ Accordion List */}
         <div className="space-y-4 max-w-3xl mx-auto">
-          {faqData.map((faq, index) => {
+          {faqs.map((faq, index) => {
             const isOpen = openIndex === index;
             return (
               <div

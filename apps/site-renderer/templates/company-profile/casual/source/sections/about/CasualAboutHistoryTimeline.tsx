@@ -1,17 +1,19 @@
 'use client';
 
 import React from 'react';
-import { timelineData } from '@/lib/dummy-data';
+import { timelineData, TimelineItem } from '@/lib/dummy-data';
 import { Award, Milestone, Calendar, Sparkles } from 'lucide-react';
 
 export interface CasualAboutHistoryTimelineProps {
   title?: string;
   description?: string;
+  items?: TimelineItem[];
 }
 
 export function CasualAboutHistoryTimeline({
   title = 'Perjalanan Seru Kami',
   description = 'Mulai dari ngumpul santai di kedai kopi hingga menjadi partner resmi pertumbuhan ratusan UMKM di tanah air. Berikut adalah babak-babak penting dalam kisah kami.',
+  items = timelineData,
 }: CasualAboutHistoryTimelineProps) {
   
   const getYearColor = (index: number) => {
@@ -51,7 +53,7 @@ export function CasualAboutHistoryTimeline({
           <div className="absolute left-8 md:left-1/2 md:-translate-x-1/2 top-4 bottom-4 w-1 bg-gray-200/80 rounded-full" />
 
           <div className="space-y-12">
-            {timelineData.map((item, index) => {
+            {items.map((item, index) => {
               const isEven = index % 2 === 0;
               return (
                 <div

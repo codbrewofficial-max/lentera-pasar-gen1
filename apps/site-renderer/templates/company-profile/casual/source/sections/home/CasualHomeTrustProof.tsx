@@ -3,6 +3,13 @@
 import React from 'react';
 import { Star, MessageSquare, Quote, ThumbsUp, Heart } from 'lucide-react';
 
+export interface CasualTestimonialItem {
+  quote: string;
+  author: string;
+  role: string;
+  avatar: string;
+}
+
 export interface CasualHomeTrustProofProps {
   title?: string;
   description?: string;
@@ -12,6 +19,7 @@ export interface CasualHomeTrustProofProps {
   metricTwoValue?: string;
   metricThreeLabel?: string;
   metricThreeValue?: string;
+  testimonials?: CasualTestimonialItem[];
 }
 
 export function CasualHomeTrustProof({
@@ -23,31 +31,32 @@ export function CasualHomeTrustProof({
   metricTwoValue = '4.9/5',
   metricThreeLabel = 'Rata-rata Kenaikan Omset',
   metricThreeValue = '35%+',
+  testimonials: testimonialsProp,
 }: CasualHomeTrustProofProps) {
   
-  const testimonials = [
+  const badgeColors = ['bg-[#F56B71]/10 text-[#F56B71]', 'bg-[#649FF6]/10 text-[#649FF6]', 'bg-[#B283AF]/10 text-[#B283AF]'];
+  const defaultTestimonials = [
     {
       quote: 'Semenjak feed Instagram dirapihin sama Ruang Karsa, DM pesanan catering Dapur Mama Selera melonjak tajam! Pelanggan bilang fotonya menggugah selera banget.',
       author: 'Ibu Ratna',
       role: 'Owner Dapur Mama Selera',
       avatar: 'https://picsum.photos/seed/ratna/100/100',
-      badgeColor: 'bg-[#F56B71]/10 text-[#F56B71]',
     },
     {
       quote: 'Desain logo dan botol kopi susu kami disukai anak-anak muda Bandung. Sangat casual, friendly, dan khas anak nongkrong banget! Sukses terus Ruang Karsa.',
       author: 'Mas Budi',
       role: 'Founder Kopi Kenangan Senja',
       avatar: 'https://picsum.photos/seed/budi/100/100',
-      badgeColor: 'bg-[#649FF6]/10 text-[#649FF6]',
     },
     {
       quote: 'Jasa pembuatan website-nya gercep dan edukatif. Dibimbing dari nol sampai paham cara upload katalog tenun sendiri. Sangat recommended buat UMKM gaptek!',
       author: 'Mbak Dewi',
       role: 'Pemilik Tenun Karsa Jaya',
       avatar: 'https://picsum.photos/seed/dewi/100/100',
-      badgeColor: 'bg-[#B283AF]/10 text-[#B283AF]',
     }
   ];
+
+  const testimonials = (testimonialsProp && testimonialsProp.length > 0 ? testimonialsProp : defaultTestimonials);
 
   return (
     <section id="CasualHomeTrustProof" className="py-20 bg-gradient-to-b from-white to-[#649FF6]/5 relative overflow-hidden">
@@ -143,7 +152,7 @@ export function CasualHomeTrustProof({
                   <h4 className="font-sans font-bold text-sm text-gray-950 leading-tight">
                     {test.author}
                   </h4>
-                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-1 inline-block ${test.badgeColor}`}>
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-1 inline-block ${badgeColors[index % badgeColors.length]}`}>
                     {test.role}
                   </span>
                 </div>

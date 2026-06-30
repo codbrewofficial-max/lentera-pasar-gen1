@@ -6,6 +6,7 @@ import { PublicEmptyState } from '@/components/layout/PublicState';
 import { ContactForm } from './ContactForm';
 import { getCompanyProfileTemplateDebugLabel, resolveCompanyProfileSectionComponentName } from '@/templates/company-profile/registry';
 import { formalSectionComponents } from '@/templates/company-profile/formal/sections';
+import { casualSectionComponents } from '@/templates/company-profile/casual/sections';
 
 type SectionProps = { siteSlug: string; payload: PublicPagePayload; section: PublicSection };
 type SectionComponent = (props: SectionProps) => ReactNode;
@@ -849,6 +850,7 @@ export const companyProfileCleanComponents: Record<string, SectionComponent> = {
 
 const registry: Record<string, SectionComponent> = {
   ...formalSectionComponents,
+  ...casualSectionComponents,
   ...companyProfileCleanComponents
 };
 

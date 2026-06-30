@@ -2,23 +2,25 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { articlesData } from '@/lib/dummy-data';
+import { articlesData, ArticleItem } from '@/lib/dummy-data';
 import { ArrowRight } from 'lucide-react';
 
 export interface CasualRelatedArticlesProps {
   title?: string;
   description?: string;
   currentSlug?: string;
+  articles?: ArticleItem[];
 }
 
 export function CasualRelatedArticles({
   title = 'Inspirasi Terkait yang Tak Kalah Seru',
   description = 'Lanjutkan petualangan belajarmu dengan membaca beberapa tips penting lainnya langsung dari dapur kreativitas tim Ruang Karsa.',
   currentSlug = '5-tips-branding-umkm-kuliner',
+  articles = articlesData,
 }: CasualRelatedArticlesProps) {
   
   // Filter out current active article and pick other articles
-  const related = articlesData.filter(art => art.slug !== currentSlug).slice(0, 2);
+  const related = articles.filter(art => art.slug !== currentSlug).slice(0, 2);
 
   return (
     <section id="CasualRelatedArticles" className="py-16 bg-gray-50 border-t border-gray-100 relative overflow-hidden">

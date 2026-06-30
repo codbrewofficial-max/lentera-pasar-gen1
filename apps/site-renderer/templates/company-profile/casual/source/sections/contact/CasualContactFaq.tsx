@@ -2,31 +2,34 @@
 
 import React, { useState } from 'react';
 import { HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { FaqItem } from '@/lib/dummy-data';
 
 export interface CasualContactFaqProps {
   title?: string;
   description?: string;
+  faqs?: FaqItem[];
 }
 
 export function CasualContactFaq({
   title = 'Tanya Jawab Seputar Pemesanan & Kontak',
   description = 'Punya kebingungan sebelum memencet tombol sapa kami? Bacalah beberapa rangkuman penjelasan singkat tentang sistem diskusi dan pemesanan di studio kami.',
+  faqs,
 }: CasualContactFaqProps) {
   
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
-  const localFaq = [
+  const localFaq: FaqItem[] = faqs && faqs.length > 0 ? faqs : [
     {
-      q: 'Apakah sesi konsultasi awal benar-benar gratis?',
-      a: 'Ya, 100% gratis tanpa komitmen apapun! Sesi obrolan 30 menit dirancang agar kita bisa saling kenal, bertukar ide kreatif, dan melihat kecocokan visi sebelum sepakat berkontrak.'
+      question: 'Apakah sesi konsultasi awal benar-benar gratis?',
+      answer: 'Ya, 100% gratis tanpa komitmen apapun! Sesi obrolan 30 menit dirancang agar kita bisa saling kenal, bertukar ide kreatif, dan melihat kecocokan visi sebelum sepakat berkontrak.'
     },
     {
-      q: 'Bagaimana cara pembayaran jika sudah sepakat bekerja sama?',
-      a: 'Pembayaran bisa ditransfer via bank komersial reguler atau e-wallet nasional. Kami biasanya menerapkan DP (Down Payment) sebesar 50% di awal kontrak, dan pelunasan 50% sisanya setelah revisi final selesai dan sebelum aset dikirim.'
+      question: 'Bagaimana cara pembayaran jika sudah sepakat bekerja sama?',
+      answer: 'Pembayaran bisa ditransfer via bank komersial reguler atau e-wallet nasional. Kami biasanya menerapkan DP (Down Payment) sebesar 50% di awal kontrak, dan pelunasan 50% sisanya setelah revisi final selesai dan sebelum aset dikirim.'
     },
     {
-      q: 'Bisakah saya berkunjung langsung ke studio?',
-      a: 'Tentu saja! Kantor kami berlokasi di kawasan Dipati Ukur Bandung yang sejuk. Harap membuat janji temu terlebih dahulu minimal 1 hari sebelumnya lewat WhatsApp, agar tim desainer kami bisa menjadwalkan waktu menyambutmu dengan kopi hangat.'
+      question: 'Bisakah saya berkunjung langsung ke studio?',
+      answer: 'Tentu saja! Kantor kami berlokasi di kawasan Dipati Ukur Bandung yang sejuk. Harap membuat janji temu terlebih dahulu minimal 1 hari sebelumnya lewat WhatsApp, agar tim desainer kami bisa menjadwalkan waktu menyambutmu dengan kopi hangat.'
     }
   ];
 
@@ -71,7 +74,7 @@ export function CasualContactFaq({
                   <div className="flex gap-3.5 items-start">
                     <HelpCircle className="w-5.5 h-5.5 text-[#B283AF] shrink-0 mt-0.5" />
                     <span className="font-sans font-bold text-base text-gray-900 leading-tight">
-                      {faq.q}
+                      {faq.question}
                     </span>
                   </div>
                   <div className="shrink-0 w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-400">
@@ -88,7 +91,7 @@ export function CasualContactFaq({
                     id={`contact-faq-answer-${index}`}
                     className="px-6 pb-7 sm:px-7 sm:pb-8 text-sm text-gray-600 leading-relaxed font-sans border-t border-gray-150 pt-4 bg-white/50 animate-in fade-in duration-200"
                   >
-                    {faq.a}
+                    {faq.answer}
                   </div>
                 )}
               </div>

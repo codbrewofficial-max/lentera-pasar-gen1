@@ -2,21 +2,23 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { articlesData } from '@/lib/dummy-data';
+import { articlesData, ArticleItem } from '@/lib/dummy-data';
 import { ArrowRight, Bookmark, Calendar, User } from 'lucide-react';
 
 export interface CasualFeaturedArticleProps {
   title?: string;
   description?: string;
+  article?: ArticleItem;
 }
 
 export function CasualFeaturedArticle({
   title = 'Artikel Sorotan Terpopuler Pekan Ini',
   description = 'Rangkuman ide terpanas yang paling banyak didiskusikan pemilik usaha lokal saat ini. Baca selengkapnya untuk memperkaya wawasan taktik jualan tokomu.',
+  article: featuredArticle,
 }: CasualFeaturedArticleProps) {
   
   // Showcase the first article as featured
-  const featured = articlesData[0];
+  const featured = featuredArticle || articlesData[0];
 
   return (
     <section id="CasualFeaturedArticle" className="py-16 bg-white relative overflow-hidden">

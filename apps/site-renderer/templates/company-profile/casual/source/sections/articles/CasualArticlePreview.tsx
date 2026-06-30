@@ -2,21 +2,23 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { articlesData } from '@/lib/dummy-data';
+import { articlesData, ArticleItem } from '@/lib/dummy-data';
 import { ArrowRight, Calendar, User } from 'lucide-react';
 
 export interface CasualArticlePreviewProps {
   title?: string;
   description?: string;
+  articles?: ArticleItem[];
 }
 
 export function CasualArticlePreview({
   title = 'Artikel & Inspirasi Menarik Lainnya',
   description = 'Jelajahi kumpulan wawasan praktis dari studio kami. Kami membagikan tips gratis seputar fotografi produk, copywriting sosmed, dan branding secara konsisten.',
+  articles = articlesData,
 }: CasualArticlePreviewProps) {
   
   // Show all articles in the general feed list
-  const list = articlesData;
+  const list = articles;
 
   const getBorderColor = (idx: number) => {
     const borders = ['hover:border-[#649FF6]/40', 'hover:border-[#F56B71]/40', 'hover:border-[#B283AF]/40'];

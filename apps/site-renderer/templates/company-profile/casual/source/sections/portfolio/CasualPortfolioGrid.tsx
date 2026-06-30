@@ -1,17 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import { portfolioData } from '@/lib/dummy-data';
+import { portfolioData, PortfolioItem } from '@/lib/dummy-data';
 import { Filter, ArrowRight, Sparkles } from 'lucide-react';
 
 export interface CasualPortfolioGridProps {
   title?: string;
   description?: string;
+  portfolios?: PortfolioItem[];
 }
 
 export function CasualPortfolioGrid({
   title = 'Inspirasi Karya Pilihan',
   description = 'Gunakan filter di bawah ini untuk menjelajahi karya tim kreatif kami. Temukan konsep visual yang paling cocok dengan kepribadian dan nilai unik dari tokomu.',
+  portfolios = portfolioData,
 }: CasualPortfolioGridProps) {
   
   const [activeCategory, setActiveCategory] = useState<string>('Semua');
@@ -19,8 +21,8 @@ export function CasualPortfolioGrid({
   const categories = ['Semua', 'Branding & Kemasan', 'Sosial Media', 'Website Desain', 'Kampanye Foto'];
 
   const filteredPortfolios = activeCategory === 'Semua'
-    ? portfolioData
-    : portfolioData.filter(item => item.category === activeCategory);
+    ? portfolios
+    : portfolios.filter(item => item.category === activeCategory);
 
   return (
     <section id="CasualPortfolioGrid" className="py-20 bg-white relative overflow-hidden">

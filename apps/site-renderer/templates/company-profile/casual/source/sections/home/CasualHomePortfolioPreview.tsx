@@ -3,13 +3,14 @@
 import React from 'react';
 import Link from 'next/link';
 import { ArrowRight, Star } from 'lucide-react';
-import { portfolioData } from '@/lib/dummy-data';
+import { portfolioData, PortfolioItem } from '@/lib/dummy-data';
 
 export interface CasualHomePortfolioPreviewProps {
   title?: string;
   description?: string;
   ctaLabel?: string;
   ctaUrl?: string;
+  portfolios?: PortfolioItem[];
 }
 
 export function CasualHomePortfolioPreview({
@@ -17,10 +18,11 @@ export function CasualHomePortfolioPreview({
   description = 'Intip beberapa kolaborasi terseru kami bersama para pemilik UMKM keren. Tiap brand punya cerita unik yang diterjemahkan ke dalam karya visual autentik.',
   ctaLabel = 'Lihat Semua Portofolio',
   ctaUrl = '/portfolio',
+  portfolios = portfolioData,
 }: CasualHomePortfolioPreviewProps) {
   
   // Only preview first 3 portfolios on Home
-  const displayedPortfolios = portfolioData.slice(0, 3);
+  const displayedPortfolios = portfolios.slice(0, 3);
 
   return (
     <section id="CasualHomePortfolioPreview" className="py-20 bg-white relative overflow-hidden">

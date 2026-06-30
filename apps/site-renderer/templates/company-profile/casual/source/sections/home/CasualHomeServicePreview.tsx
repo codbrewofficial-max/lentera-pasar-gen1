@@ -3,13 +3,14 @@
 import React from 'react';
 import Link from 'next/link';
 import { ArrowRight, Sparkles, Instagram, Laptop, Camera } from 'lucide-react';
-import { servicesData } from '@/lib/dummy-data';
+import { servicesData, ServiceItem } from '@/lib/dummy-data';
 
 export interface CasualHomeServicePreviewProps {
   title?: string;
   description?: string;
   ctaLabel?: string;
   ctaUrl?: string;
+  services?: ServiceItem[];
 }
 
 export function CasualHomeServicePreview({
@@ -17,6 +18,7 @@ export function CasualHomeServicePreview({
   description = 'Pilih paket layanan yang paling sesuai dengan kebutuhan tokomu saat ini. Mulai dari bikin identitas brand dari nol, rapihin sosmed, sampai bangun website jualan.',
   ctaLabel = 'Lihat Semua Layanan',
   ctaUrl = '/services',
+  services = servicesData,
 }: CasualHomeServicePreviewProps) {
   
   // Mapping of icons dynamically
@@ -72,7 +74,7 @@ export function CasualHomeServicePreview({
 
         {/* Services Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {servicesData.map((service, idx) => (
+          {services.map((service, idx) => (
             <div
               key={service.id}
               className="bg-white rounded-[32px] p-6 border border-gray-100 shadow-sm hover:shadow-md hover:translate-y-[-4px] transition-all duration-300 flex flex-col justify-between group"

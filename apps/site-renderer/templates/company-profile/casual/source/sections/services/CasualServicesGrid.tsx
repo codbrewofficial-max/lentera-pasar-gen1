@@ -3,16 +3,18 @@
 import React from 'react';
 import Link from 'next/link';
 import { ArrowRight, CheckCircle2, Sparkles, Instagram, Laptop, Camera } from 'lucide-react';
-import { servicesData } from '@/lib/dummy-data';
+import { servicesData, ServiceItem } from '@/lib/dummy-data';
 
 export interface CasualServicesGridProps {
   title?: string;
   description?: string;
+  services?: ServiceItem[];
 }
 
 export function CasualServicesGrid({
   title = 'Pilihan Solusi yang Pas Buatmu',
   description = 'Mulai dari bisnis rumahan mikro sampai studio berkembang, kami punya opsi paket jitu yang transparan tanpa biaya siluman. Simak daftar layanan andalan kami di bawah ini.',
+  services = servicesData,
 }: CasualServicesGridProps) {
   
   // Mapping of icons dynamically
@@ -99,7 +101,7 @@ export function CasualServicesGrid({
 
         {/* Detailed Service Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 max-w-5xl mx-auto">
-          {servicesData.map((service, idx) => (
+          {services.map((service, idx) => (
             <div
               key={service.id}
               className={`bg-gray-50 rounded-[40px] p-8 sm:p-10 border-2 border-transparent transition-all duration-300 ${getBorderColor(idx)} hover:bg-white hover:shadow-xl flex flex-col justify-between group`}

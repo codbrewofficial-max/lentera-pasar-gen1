@@ -1,19 +1,21 @@
 'use client';
 
 import React from 'react';
-import { teamMembers } from '@/lib/dummy-data';
+import { teamMembers, TeamMember } from '@/lib/dummy-data';
 import { Mail, ArrowUpRight, Github, Heart } from 'lucide-react';
 
 export interface CasualAboutTeamHighlightProps {
   title?: string;
   description?: string;
   imageUrl?: string;
+  members?: TeamMember[];
 }
 
 export function CasualAboutTeamHighlight({
   title = 'Para Pembuat Keajaiban Visual Kami',
   description = 'Di balik setiap logo yang lucu, caption sosmed yang menarik, dan situs web yang responsif, ada tim desainer, copywriter, dan fotografer yang mencurahkan seluruh energi kreatifnya untuk kemajuan bisnismu.',
   imageUrl = 'https://picsum.photos/seed/team-hero/1200/600',
+  members = teamMembers,
 }: CasualAboutTeamHighlightProps) {
   
   const getBorderColor = (idx: number) => {
@@ -69,7 +71,7 @@ export function CasualAboutTeamHighlight({
 
         {/* Team Members Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {teamMembers.map((member, idx) => (
+          {members.map((member, idx) => (
             <div
               key={member.id}
               className={`bg-gray-50 rounded-[32px] p-6 border-2 border-transparent transition-all duration-300 ${getBorderColor(idx)} group hover:bg-white hover:shadow-lg`}
