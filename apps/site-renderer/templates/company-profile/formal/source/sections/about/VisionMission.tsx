@@ -7,6 +7,8 @@ interface VisionMissionProps {
   title?: string;
   subtitle?: string;
   badge?: string;
+  visionTitle?: string;
+  missionTitle?: string;
   vision?: string;
   mission?: string[];
 }
@@ -15,6 +17,8 @@ export const VisionMission: React.FC<VisionMissionProps> = ({
   title = "Visi & Misi Korporasi",
   subtitle = "Prinsip strategis yang menjadi landasan kami dalam mendampingi kebutuhan pelanggan.",
   badge = "Arah Strategis",
+  visionTitle = "Visi",
+  missionTitle = "Misi",
   vision = defaultCompanyData.vision,
   mission = defaultCompanyData.mission,
 }) => {
@@ -29,7 +33,7 @@ export const VisionMission: React.FC<VisionMissionProps> = ({
               <div className="w-12 h-12 rounded bg-[#649FF6]/10 text-[#649FF6] flex items-center justify-center border border-[#649FF6]/20">
                 <Eye className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-semibold text-slate-900 tracking-tight">Visi</h3>
+              <h3 className="text-xl font-semibold text-slate-900 tracking-tight">{visionTitle}</h3>
             </div>
             <p className="text-slate-600 font-light leading-relaxed text-sm md:text-base">{vision}</p>
           </div>
@@ -39,7 +43,7 @@ export const VisionMission: React.FC<VisionMissionProps> = ({
               <div className="w-12 h-12 rounded bg-[#F56B71]/10 text-[#F56B71] flex items-center justify-center border border-[#F56B71]/20">
                 <Target className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-semibold text-slate-900 tracking-tight">Misi</h3>
+              <h3 className="text-xl font-semibold text-slate-900 tracking-tight">{missionTitle}</h3>
             </div>
             <ul className="space-y-4">
               {mission.map((item, idx) => (

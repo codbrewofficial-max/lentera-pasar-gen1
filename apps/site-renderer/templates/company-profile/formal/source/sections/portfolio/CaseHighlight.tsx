@@ -10,6 +10,7 @@ interface CaseHighlightProps {
   subtitle?: string;
   badge?: string;
   project?: PortfolioItem;
+  imageUrl?: string;
 }
 
 export const CaseHighlight: React.FC<CaseHighlightProps> = ({
@@ -17,6 +18,7 @@ export const CaseHighlight: React.FC<CaseHighlightProps> = ({
   subtitle = "Sorotan pekerjaan yang menunjukkan pendekatan dan hasil layanan kami.",
   badge = "Case Highlight",
   project = portfolioData[0],
+  imageUrl,
 }) => {
   if (!project) return null;
   return (
@@ -25,7 +27,7 @@ export const CaseHighlight: React.FC<CaseHighlightProps> = ({
         <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="secondary" />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center bg-white border border-slate-100 rounded-lg shadow-sm overflow-hidden">
           <div className="relative h-full min-h-[360px] bg-slate-100">
-            <img src={project.imageUrl} alt={project.title} className="absolute inset-0 w-full h-full object-cover" referrerPolicy="no-referrer" />
+            <img src={imageUrl || project.imageUrl} alt={project.title} className="absolute inset-0 w-full h-full object-cover" referrerPolicy="no-referrer" />
             <div className="absolute top-4 left-4"><Badge variant="accent" className="bg-slate-900/80 text-white border-transparent backdrop-blur-sm">{project.category}</Badge></div>
           </div>
           <div className="p-8 md:p-10">

@@ -3,15 +3,20 @@ import { User, Calendar, ArrowRight, CheckCircle, HelpCircle, ShieldCheck } from
 import { PortfolioItem } from "../../lib/types";
 import { Card } from "../../shared/Card";
 import { Badge } from "../../shared/Badge";
+import { SectionHeading } from "../../shared/SectionHeading";
 
 interface PortfolioGridProps {
   portfolios: PortfolioItem[];
   activeCategory: string;
+  title?: string;
+  subtitle?: string;
 }
 
 export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
   portfolios,
   activeCategory,
+  title,
+  subtitle,
 }) => {
   // Filter portfolios locally if not already handled
   const filtered = activeCategory === "Semua" 
@@ -28,6 +33,11 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
 
   return (
     <section id="portfolio-grid-section" className="py-8 bg-white">
+      {(title || subtitle) && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10">
+          <SectionHeading title={title || ""} subtitle={subtitle} badgeVariant="accent" />
+        </div>
+      )}
       <div className="space-y-16">
         {filtered.map((project) => (
           <div

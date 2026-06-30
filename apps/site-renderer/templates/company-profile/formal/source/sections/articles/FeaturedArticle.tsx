@@ -8,12 +8,20 @@ import { Button } from "../../shared/Button";
 interface FeaturedArticleProps {
   article: ArticleItem;
   articlesHref?: string;
+  title?: string;
+  subtitle?: string;
 }
 
-export const FeaturedArticle: React.FC<FeaturedArticleProps> = ({ article, articlesHref = "/articles" }) => {
+export const FeaturedArticle: React.FC<FeaturedArticleProps> = ({ article, articlesHref = "/articles", title, subtitle }) => {
   return (
     <section id="articles-featured" className="py-12 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {(title || subtitle) && (
+          <div className="border-b border-slate-100 pb-4 mb-10">
+            {title && <h3 className="text-lg font-semibold text-slate-900 tracking-tight">{title}</h3>}
+            {subtitle && <p className="mt-1 text-sm text-slate-500 font-light">{subtitle}</p>}
+          </div>
+        )}
         
         {/* Large Featured Card Block */}
         <div className="border border-slate-100 rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow grid grid-cols-1 lg:grid-cols-12 gap-8 p-6 md:p-8">

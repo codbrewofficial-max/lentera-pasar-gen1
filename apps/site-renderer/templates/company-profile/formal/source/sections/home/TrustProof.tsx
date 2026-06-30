@@ -10,6 +10,7 @@ export interface HomeTrustProofProps {
   subtitle?: string;
   badge?: string;
   testimonials?: TestimonialItem[];
+  metrics?: { label: string; value: string }[];
 }
 
 export const TrustProof: React.FC<HomeTrustProofProps> = ({
@@ -17,6 +18,7 @@ export const TrustProof: React.FC<HomeTrustProofProps> = ({
   subtitle = "Mengapa dewan komisaris, direksi operasional, dan manajer kepatuhan di Indonesia mengandalkan keahlian kami.",
   badge = "Jaminan Mutu",
   testimonials = testimonialData,
+  metrics = [],
 }) => {
   // Testimonial/trust proof maksimal 5 item
   const limitedTestimonials = testimonials.slice(0, 5);
@@ -31,6 +33,17 @@ export const TrustProof: React.FC<HomeTrustProofProps> = ({
           badge={badge}
           badgeVariant="primary"
         />
+
+        {metrics.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10">
+            {metrics.map((metric, idx) => (
+              <Card key={idx} className="p-5 md:p-6 bg-white border border-slate-100 text-center" hoverEffect={false}>
+                <div className="text-xl md:text-2xl font-semibold text-[#649FF6] font-mono">{metric.value}</div>
+                <div className="mt-1 text-xs md:text-sm text-slate-500 font-light">{metric.label}</div>
+              </Card>
+            ))}
+          </div>
+        )}
 
         {/* Testimonials Grid Layout - 3 columns, then wrapped nicely */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

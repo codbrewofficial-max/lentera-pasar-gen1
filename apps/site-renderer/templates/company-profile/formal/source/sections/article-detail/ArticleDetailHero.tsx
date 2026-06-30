@@ -8,9 +8,10 @@ interface ArticleDetailHeroProps {
   article: ArticleItem;
   backHref?: string;
   showPublishedDate?: boolean;
+  showCoverImage?: boolean;
 }
 
-export const ArticleDetailHero: React.FC<ArticleDetailHeroProps> = ({ article, backHref = "/articles", showPublishedDate = true }) => {
+export const ArticleDetailHero: React.FC<ArticleDetailHeroProps> = ({ article, backHref = "/articles", showPublishedDate = true, showCoverImage = false }) => {
   return (
     <section id="article-detail-hero-section" className="bg-slate-900 text-white py-12 md:py-20 relative overflow-hidden">
       <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#649FF6_1px,transparent_1px)] [background-size:24px_24px]" />
@@ -35,6 +36,11 @@ export const ArticleDetailHero: React.FC<ArticleDetailHeroProps> = ({ article, b
           </div>
         </div>
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight leading-tight text-white mb-6">{article.title}</h1>
+        {showCoverImage && article.coverImageUrl && (
+          <div className="relative aspect-[16/8] w-full rounded-lg overflow-hidden bg-slate-800 mb-8">
+            <img src={article.coverImageUrl} alt={article.title} className="absolute inset-0 w-full h-full object-cover" referrerPolicy="no-referrer" />
+          </div>
+        )}
         <div className="flex items-center space-x-4 border-t border-slate-800 pt-6">
           <div className="w-11 h-11 rounded-full overflow-hidden bg-slate-800 border border-slate-700">
             <img src={article.author.avatarUrl} alt={article.author.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />

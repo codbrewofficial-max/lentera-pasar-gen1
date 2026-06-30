@@ -451,12 +451,18 @@ export function FormalHomePortfolioPreview(props: FormalSectionProps) {
 export function FormalHomeTrustProof(props: FormalSectionProps) {
   const content = contentOf(props.section);
   const testimonials = (props.section.data?.testimonials || []).slice(0, 5).map(mapTestimonial);
+  const metrics = [
+    { label: text(content.metricOneLabel), value: text(content.metricOneValue) },
+    { label: text(content.metricTwoLabel), value: text(content.metricTwoValue) },
+    { label: text(content.metricThreeLabel), value: text(content.metricThreeValue) },
+  ].filter((m) => m.label && m.value);
 
   return (
     <AiHomeTrustProof
       title={text(content.title, "Dipercaya oleh Pelanggan Kami")}
       subtitle={text(content.description, "Testimoni aktif akan tampil maksimal 5 item di bagian ini.")}
       testimonials={testimonials}
+      metrics={metrics}
     />
   );
 }
@@ -505,12 +511,10 @@ export function FormalAboutHistoryTimeline(props: FormalSectionProps) {
 export function FormalAboutVisionMission(props: FormalSectionProps) {
   const content = contentOf(props.section);
   const company = companyDataFor(props.payload);
-  // Catatan: desain Formal dari Google AI Studio meng-hardcode label "Visi" dan "Misi"
-  // di dalam JSX (bukan sebagai prop), jadi field schema visionTitle/missionTitle
-  // tidak punya slot binding nyata di desain ini tanpa redesign. Hanya vision & mission
-  // (isi teksnya) yang benar-benar bisa di-bind ke section heading bawaan komponen.
   return (
     <AiAboutVisionMission
+      visionTitle={text(content.visionTitle, "Visi")}
+      missionTitle={text(content.missionTitle, "Misi")}
       vision={text(content.vision, company.vision)}
       mission={text(content.mission) ? text(content.mission).split("\n").map((line) => line.trim()).filter(Boolean) : company.mission}
     />
@@ -535,6 +539,7 @@ export function FormalAboutTeamHighlight(props: FormalSectionProps) {
       title={text(content.title, "Tim Profesional Kami")}
       subtitle={text(content.description, "Orang-orang di balik layanan yang membantu pelanggan mendapatkan solusi terbaik.")}
       members={teamFor(props.section)}
+      imageUrl={contentImage(content)}
     />
   );
 }
@@ -570,18 +575,20 @@ export function FormalPortfolioHero(props: FormalSectionProps) {
 }
 
 export function FormalPortfolioCategory(props: FormalSectionProps) {
+  const content = contentOf(props.section);
   const categories = ["Semua", ...new Set((props.section.data?.portfolioCategories || []).map((item) => titleOf(item)))];
-  return <AiPortfolioCategory categories={categories.length > 1 ? categories : ["Semua"]} activeCategory="Semua" />;
+  return <AiPortfolioCategory categories={categories.length > 1 ? categories : ["Semua"]} activeCategory="Semua" title={text(content.title)} subtitle={text(content.description)} />;
 }
 
 export function FormalPortfolioGrid(props: FormalSectionProps) {
-  return <AiPortfolioGrid portfolios={(props.section.data?.portfolios || []).map(mapPortfolio)} activeCategory="Semua" />;
+  const content = contentOf(props.section);
+  return <AiPortfolioGrid portfolios={(props.section.data?.portfolios || []).map(mapPortfolio)} activeCategory="Semua" title={text(content.title)} subtitle={text(content.description)} />;
 }
 
 export function FormalPortfolioCaseHighlight(props: FormalSectionProps) {
   const content = contentOf(props.section);
   const project = props.section.data?.portfolios?.[0] ? mapPortfolio(props.section.data.portfolios[0], 0) : undefined;
-  return <AiPortfolioCaseHighlight title={text(content.title, "Studi Kasus Pilihan")} subtitle={text(content.description, "Sorotan pekerjaan yang menunjukkan pendekatan dan hasil layanan kami.")} project={project} />;
+  return <AiPortfolioCaseHighlight title={text(content.title, "Studi Kasus Pilihan")} subtitle={text(content.description, "Sorotan pekerjaan yang menunjukkan pendekatan dan hasil layanan kami.")} project={project} imageUrl={contentImage(content)} />;
 }
 
 export function FormalPortfolioCta(props: FormalSectionProps) {
@@ -595,32 +602,32 @@ export function FormalArticlesHero(props: FormalSectionProps) {
 }
 
 export function FormalFeaturedArticle(props: FormalSectionProps) {
+  const content = contentOf(props.section);
   const articles = articlesFor(props);
   const article = articles.find((item, index) => props.section.data?.articles?.[index]?.isFeatured) || articles[0];
-  return article ? <AiFeaturedArticle article={article} articlesHref={pageHref(props.siteSlug, "/articles")} /> : null;
+  return article ? <AiFeaturedArticle article={article} articlesHref={pageHref(props.siteSlug, "/articles")} title={text(content.title)} subtitle={text(content.description)} /> : null;
 }
 
 export function FormalArticlePreview(props: FormalSectionProps) {
-  return <AiArticlePreview articles={articlesFor(props)} articlesHref={pageHref(props.siteSlug, "/articles")} />;
+  const content = contentOf(props.section);
+  return <AiArticlePreview articles={articlesFor(props)} articlesHref={pageHref(props.siteSlug, "/articles")} title={text(content.title, "Semua Publikasi Kami")} />;
 }
 
 export function FormalArticleDetailHero(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiArticleDetailHero article={currentArticleFor(props)} backHref={pageHref(props.siteSlug, "/articles")} showPublishedDate={boolValue(content.showPublishedDate, true)} />;
+  return <AiArticleDetailHero article={currentArticleFor(props)} backHref={pageHref(props.siteSlug, "/articles")} showPublishedDate={boolValue(content.showPublishedDate, true)} showCoverImage={boolValue(content.showCoverImage, false)} />;
 }
 
 export function FormalArticleContent(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  // Catatan: desain ArticleContent dari Google AI Studio tidak punya elemen cover image
-  // sama sekali (hero gelap tanpa gambar), jadi field schema showCoverImage di slot ini
-  // memang tidak punya efek visual di tema Formal tanpa redesign.
   return <AiArticleContent article={currentArticleFor(props)} maxWidth={text(content.contentMaxWidth, "normal")} showShareCta={boolValue(content.showShareHint, false)} />;
 }
 
 export function FormalRelatedArticles(props: FormalSectionProps) {
+  const content = contentOf(props.section);
   const article = currentArticleFor(props);
   const related = (props.section.data?.relatedArticles || []).map((item, index) => mapArticle(item, props.payload, index));
-  return <AiRelatedArticles articles={related} currentSlug={article.slug} baseHref={pageHref(props.siteSlug, "/articles")} />;
+  return <AiRelatedArticles articles={related} currentSlug={article.slug} baseHref={pageHref(props.siteSlug, "/articles")} title={text(content.title, "Analisis & Pemikiran Terkait")} subtitle={text(content.description, "Baca ulasan lain yang masih relevan dengan topik ini.")} />;
 }
 
 export function FormalArticleCta(props: FormalSectionProps) {
@@ -635,11 +642,16 @@ export function FormalContactHero(props: FormalSectionProps) {
 
 export function FormalContactInformation(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  // Catatan: komponen ContactInformation dari Google AI Studio selalu menampilkan
-  // WhatsApp/Email/Alamat sekaligus (tidak ada prop toggle per item di desainnya),
-  // jadi field schema showWhatsapp/showEmail/showAddress belum bisa dikontrol tanpa
-  // redesign komponen. Title & description tetap mengikuti config.
-  return <AiContactInformation title={text(content.title, "Saluran Hubung Resmi")} subtitle={text(content.description, "Gunakan informasi kontak resmi untuk menghubungi bisnis ini.")} company={companyDataFor(props.payload)} />;
+  return (
+    <AiContactInformation
+      title={text(content.title, "Saluran Hubung Resmi")}
+      subtitle={text(content.description, "Gunakan informasi kontak resmi untuk menghubungi bisnis ini.")}
+      company={companyDataFor(props.payload)}
+      showAddress={boolValue(content.showAddress, true)}
+      showEmail={boolValue(content.showEmail, true)}
+      showWhatsapp={boolValue(content.showWhatsapp, true)}
+    />
+  );
 }
 
 export function FormalMapsLocation(props: FormalSectionProps) {

@@ -10,6 +10,8 @@ interface TeamHighlightProps {
   subtitle?: string;
   badge?: string;
   members?: TeamItem[];
+  imageUrl?: string;
+  imageAlt?: string;
 }
 
 export const TeamHighlight: React.FC<TeamHighlightProps> = ({
@@ -17,11 +19,18 @@ export const TeamHighlight: React.FC<TeamHighlightProps> = ({
   subtitle = "Tim pakar lintas disiplin yang memiliki kompetensi formal tinggi dan pengalaman praktis.",
   badge = "Konsultan Ahli",
   members = defaultTeamData,
+  imageUrl,
+  imageAlt = "Tim Kami",
 }) => {
   return (
     <section id="about-team-highlight" className="py-16 md:py-24 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="accent" />
+        {imageUrl && (
+          <div className="relative aspect-[21/9] w-full rounded overflow-hidden bg-slate-100 mb-10">
+            <img src={imageUrl} alt={imageAlt} className="object-cover w-full h-full" referrerPolicy="no-referrer" />
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {members.map((member) => (
             <Card key={member.id} className="flex flex-col h-full bg-white border border-slate-100 overflow-hidden" hoverEffect={true}>

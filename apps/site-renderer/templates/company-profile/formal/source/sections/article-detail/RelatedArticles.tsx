@@ -11,15 +11,23 @@ interface RelatedArticlesProps {
   articles: ArticleItem[];
   currentSlug: string;
   baseHref?: string;
+  title?: string;
+  subtitle?: string;
 }
 
-export const RelatedArticles: React.FC<RelatedArticlesProps> = ({ articles, currentSlug, baseHref = "/articles" }) => {
+export const RelatedArticles: React.FC<RelatedArticlesProps> = ({
+  articles,
+  currentSlug,
+  baseHref = "/articles",
+  title = "Analisis & Pemikiran Terkait",
+  subtitle = "Baca ulasan lain yang masih relevan dengan topik ini.",
+}) => {
   const filtered = articles.filter((a) => a.slug !== currentSlug).slice(0, 3);
   if (filtered.length === 0) return null;
   return (
     <section id="article-detail-related-section" className="py-12 md:py-16 bg-slate-50/50 border-t border-slate-150">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <SectionHeading title="Analisis & Pemikiran Terkait" subtitle="Baca ulasan lain yang masih relevan dengan topik ini." badge="Artikel Terkait" badgeVariant="primary" align="left" className="mb-8" />
+        <SectionHeading title={title} subtitle={subtitle} badge="Artikel Terkait" badgeVariant="primary" align="left" className="mb-8" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {filtered.map((item) => (
             <Card key={item.slug} className="flex flex-col h-full bg-white border border-slate-100 shadow-sm">

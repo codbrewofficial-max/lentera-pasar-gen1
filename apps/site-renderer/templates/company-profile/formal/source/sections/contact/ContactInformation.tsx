@@ -10,6 +10,9 @@ interface ContactInformationProps {
   subtitle?: string;
   badge?: string;
   company?: CompanyData;
+  showAddress?: boolean;
+  showEmail?: boolean;
+  showWhatsapp?: boolean;
 }
 
 export const ContactInformation: React.FC<ContactInformationProps> = ({
@@ -17,6 +20,9 @@ export const ContactInformation: React.FC<ContactInformationProps> = ({
   subtitle = "Hubungi koordinator sekretariat atau ajukan janji pertemuan.",
   badge = "Informasi Kontak",
   company = defaultCompanyData,
+  showAddress = true,
+  showEmail = true,
+  showWhatsapp = true,
 }) => {
   const cleanPhone = company.contact.phone.replace(/[^0-9+]/g, "");
   const cleanWa = company.contact.whatsapp.replace(/[^0-9]/g, "");
@@ -25,23 +31,29 @@ export const ContactInformation: React.FC<ContactInformationProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="primary" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+          {showAddress && (
           <Card className="p-8 bg-slate-50/50 border border-slate-100 flex flex-col items-start h-full">
             <div className="bg-[#649FF6]/10 text-[#649FF6] w-12 h-12 flex items-center justify-center rounded mb-6 border border-[#649FF6]/20"><MapPin className="w-5 h-5" /></div>
             <h3 className="text-sm md:text-base font-semibold text-slate-900 mb-3 tracking-tight">Alamat Korespondensi</h3>
             <p className="text-xs md:text-sm text-slate-600 font-light leading-relaxed">{company.contact.address}</p>
           </Card>
+          )}
+          {showEmail && (
           <Card className="p-8 bg-slate-50/50 border border-slate-100 flex flex-col items-start h-full">
             <div className="bg-[#649FF6]/10 text-[#649FF6] w-12 h-12 flex items-center justify-center rounded mb-6 border border-[#649FF6]/20"><Mail className="w-5 h-5" /></div>
             <h3 className="text-sm md:text-base font-semibold text-slate-900 mb-3 tracking-tight">Surel / Email Resmi</h3>
             <p className="text-xs md:text-sm text-slate-600 font-mono mb-2"><a href={`mailto:${company.contact.email}`} className="hover:text-[#649FF6] transition-colors">{company.contact.email}</a></p>
             <p className="text-[10px] text-slate-400 font-sans mt-auto leading-none">Respons surat resmi dikoordinasikan sesuai jam operasional.</p>
           </Card>
+          )}
           <Card className="p-8 bg-slate-50/50 border border-slate-100 flex flex-col items-start h-full">
             <div className="bg-[#649FF6]/10 text-[#649FF6] w-12 h-12 flex items-center justify-center rounded mb-6 border border-[#649FF6]/20"><Phone className="w-5 h-5" /></div>
             <h3 className="text-sm md:text-base font-semibold text-slate-900 mb-3 tracking-tight">Telepon & WhatsApp</h3>
             <div className="space-y-1">
               <p className="text-xs md:text-sm text-slate-600 font-mono">Tel: <a href={`tel:${cleanPhone}`} className="hover:text-[#649FF6] transition-colors">{company.contact.phone}</a></p>
+              {showWhatsapp && (
               <p className="text-xs md:text-sm text-slate-600 font-mono">WA: <a href={`https://wa.me/${cleanWa}`} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline transition-colors font-semibold">{company.contact.whatsapp}</a></p>
+              )}
             </div>
           </Card>
           <Card className="p-8 bg-slate-50/50 border border-slate-100 flex flex-col items-start h-full">

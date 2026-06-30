@@ -9,15 +9,16 @@ import { Button } from "../../shared/Button";
 interface ArticlePreviewProps {
   articles: ArticleItem[];
   articlesHref?: string;
+  title?: string;
 }
 
-export const ArticlePreview: React.FC<ArticlePreviewProps> = ({ articles, articlesHref = "/articles" }) => {
+export const ArticlePreview: React.FC<ArticlePreviewProps> = ({ articles, articlesHref = "/articles", title = "Semua Publikasi Kami" }) => {
   return (
     <section id="articles-list-section" className="py-12 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div className="border-b border-slate-100 pb-4 mb-10">
-          <h3 className="text-lg font-semibold text-slate-900 tracking-tight">Semua Publikasi Kami</h3>
+          <h3 className="text-lg font-semibold text-slate-900 tracking-tight">{title}</h3>
         </div>
 
         {/* Articles Grid */}
