@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { MessageSquare, Mail, MapPin, Send, CheckCircle2, Sparkles } from 'lucide-react';
+import { MessageSquare, Mail, MapPin, Send, CheckCircle2, Sparkles, AlertCircle } from 'lucide-react';
+import { submitContact } from '@/lib/api';
 
 export interface CasualContactInformationProps {
   title?: string;
@@ -9,6 +10,13 @@ export interface CasualContactInformationProps {
   showWhatsapp?: string;
   showEmail?: string;
   showAddress?: string;
+  siteSlug?: string;
+  pageKey?: string;
+  slotKey?: string;
+  whatsappHref?: string;
+  whatsappLabel?: string;
+  email?: string;
+  address?: string;
 }
 
 export function CasualContactInformation({
@@ -17,6 +25,13 @@ export function CasualContactInformation({
   showWhatsapp = 'true',
   showEmail = 'true',
   showAddress = 'true',
+  siteSlug,
+  pageKey = 'contact',
+  slotKey = 'contact.contact_information',
+  whatsappHref = 'https://wa.me/628123456789',
+  whatsappLabel = '+62 812-3456-7890',
+  email = 'halo@ruangkarsa.id',
+  address = 'Jl. Dipati Ukur No. 102, Coblong, Bandung, Jawa Barat 40132',
 }: CasualContactInformationProps) {
   
   const isShowWhatsapp = showWhatsapp === 'true' || showWhatsapp === 'Boolean(true)' || showWhatsapp === 'TRUE';
@@ -31,20 +46,54 @@ export function CasualContactInformation({
     message: ''
   });
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const getTrackingContext = () => {
+    if (typeof window === 'undefined') return undefined;
+    return {
+      visitorId: window.localStorage.getItem('LP_VISITOR_ID') || null,
+      sessionId: window.localStorage.getItem('LP_SESSION_ID') || null,
+      referrer: document.referrer || null,
+      utm: Object.fromEntries(new URLSearchParams(window.location.search).entries())
+    };
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.message) {
       alert('Mohon isi semua kolom bertanda bintang (*) ya Kak!');
       return;
     }
-    // Simulate submission success
-    setSubmitted(true);
+    if (!siteSlug) {
+      setErrorMessage('Formulir belum bisa dipakai: siteSlug tidak ditemukan.');
+      return;
+    }
+
+    setSubmitting(true);
+    setErrorMessage('');
+
+    try {
+      await submitContact(siteSlug, {
+        name: formData.name,
+        email: formData.email,
+        message: formData.message,
+        interest: formData.service,
+        sourcePage: pageKey,
+        sourceSection: slotKey,
+        tracking: getTrackingContext()
+      });
+      setSubmitted(true);
+    } catch (error: any) {
+      setErrorMessage(error?.message || 'Pesan belum berhasil dikirim. Silakan coba lagi ya.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -83,7 +132,7 @@ export function CasualContactInformation({
               {/* WhatsApp Row */}
               {isShowWhatsapp && (
                 <a
-                  href="https://wa.me/628123456789"
+                  href={whatsappHref}
                   target="_blank"
                   rel="noreferrer"
                   className="flex items-start gap-4 p-5 rounded-3xl border border-gray-100 bg-gray-50 hover:bg-white hover:border-[#649FF6]/40 hover:shadow-md transition-all group"
@@ -97,7 +146,7 @@ export function CasualContactInformation({
                       WhatsApp Chat
                     </h4>
                     <p className="font-sans text-xs sm:text-sm text-gray-600 mt-1">
-                      +62 812-3456-7890
+                      {whatsappLabel}
                     </p>
                   </div>
                 </a>
@@ -106,7 +155,7 @@ export function CasualContactInformation({
               {/* Email Row */}
               {isShowEmail && (
                 <a
-                  href="mailto:halo@ruangkarsa.id"
+                  href={`mailto:${email}`}
                   className="flex items-start gap-4 p-5 rounded-3xl border border-gray-100 bg-gray-50 hover:bg-white hover:border-[#F56B71]/40 hover:shadow-md transition-all group"
                 >
                   <div className="w-12 h-12 rounded-2xl bg-red-100 flex items-center justify-center text-[#F56B71] shrink-0">
@@ -118,7 +167,7 @@ export function CasualContactInformation({
                       Kirim Surat Elektronik
                     </h4>
                     <p className="font-sans text-xs sm:text-sm text-gray-600 mt-1">
-                      halo@ruangkarsa.id
+                      {email}
                     </p>
                   </div>
                 </a>
@@ -136,7 +185,7 @@ export function CasualContactInformation({
                       Mampir Ngopi
                     </h4>
                     <p className="font-sans text-xs sm:text-sm text-gray-600 mt-1 leading-relaxed">
-                      Jl. Dipati Ukur No. 102, Coblong, Bandung, Jawa Barat 40132
+                      {address}
                     </p>
                   </div>
                 </div>
@@ -183,6 +232,13 @@ export function CasualContactInformation({
                       Semua data terkirim langsung ke dashboard Lentera Pasar kamu secara instan.
                     </p>
                   </div>
+
+                  {errorMessage && (
+                    <div className="flex items-start gap-2 bg-red-50 text-red-700 text-xs font-sans font-semibold p-4 rounded-2xl">
+                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <span>{errorMessage}</span>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     {/* Name */}
@@ -257,10 +313,11 @@ export function CasualContactInformation({
                   <div>
                     <button
                       type="submit"
-                      className="w-full inline-flex items-center justify-center gap-2 bg-[#649FF6] text-white py-4 px-6 rounded-2xl text-sm font-bold shadow-md shadow-[#649FF6]/10 hover:bg-[#649FF6]/90 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer"
+                      disabled={submitting}
+                      className="w-full inline-flex items-center justify-center gap-2 bg-[#649FF6] text-white py-4 px-6 rounded-2xl text-sm font-bold shadow-md shadow-[#649FF6]/10 hover:bg-[#649FF6]/90 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
                     >
                       <Send className="w-4 h-4" />
-                      <span>Kirim Pesan Sekarang</span>
+                      <span>{submitting ? 'Mengirim Pesan...' : 'Kirim Pesan Sekarang'}</span>
                     </button>
                   </div>
                 </form>

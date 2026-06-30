@@ -534,6 +534,8 @@ export function CasualContactHeroSection(props: CasualSectionProps) {
 
 export function CasualContactInformationSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
+  const business = businessOf(props.payload);
+  const waNumber = text(business.whatsapp, text(business.phone)).replace(/[^0-9]/g, "");
   return (
     <CasualContactInformation
       title={text(content.title)}
@@ -541,6 +543,13 @@ export function CasualContactInformationSection(props: CasualSectionProps) {
       showWhatsapp={boolValue(content.showWhatsapp, true) ? "true" : "false"}
       showEmail={boolValue(content.showEmail, true) ? "true" : "false"}
       showAddress={boolValue(content.showAddress, true) ? "true" : "false"}
+      siteSlug={props.siteSlug}
+      pageKey={props.payload.page.pageKey}
+      slotKey={props.section.slotKey}
+      whatsappHref={waNumber ? `https://wa.me/${waNumber}` : undefined}
+      whatsappLabel={text(business.whatsapp, text(business.phone)) || undefined}
+      email={text(business.email) || undefined}
+      address={text(business.address) || undefined}
     />
   );
 }
