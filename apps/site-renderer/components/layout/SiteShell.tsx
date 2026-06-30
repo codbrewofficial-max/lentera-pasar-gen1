@@ -10,6 +10,8 @@ import { Header as CasualSiteHeader } from '@/templates/company-profile/casual/s
 import { Footer as CasualSiteFooter } from '@/templates/company-profile/casual/source/shared/Footer';
 import { Header as PremiumSiteHeader } from '@/templates/company-profile/premium/source/shared/Header';
 import { Footer as PremiumSiteFooter } from '@/templates/company-profile/premium/source/shared/Footer';
+import { Header as AbstractSiteHeader } from '@/templates/company-profile/abstract/source/shared/Header';
+import { Footer as AbstractSiteFooter } from '@/templates/company-profile/abstract/source/shared/Footer';
 
 type Props = {
   siteSlug: string;
@@ -33,11 +35,11 @@ function normalizePhone(value?: unknown) {
 // tema). Kalau belum ada satupun section yang pakai Template Pack bertema (mis. masih
 // fallback Clean / Abstract / Premium yang belum punya kode visual sendiri), header/footer
 // generik tetap dipakai supaya tidak nampilkan chrome tema yang salah.
-function resolveActiveTheme(payload: Props['payload']): 'formal' | 'casual' | 'premium' | null {
+function resolveActiveTheme(payload: Props['payload']): 'formal' | 'casual' | 'premium' | 'abstract' | null {
   const sections = payload.page?.sections || [];
   for (const section of sections) {
     const theme = (section.templateTheme || '').toLowerCase();
-    if (theme === 'formal' || theme === 'casual' || theme === 'premium') return theme;
+    if (theme === 'formal' || theme === 'casual' || theme === 'premium' || theme === 'abstract') return theme;
   }
   return null;
 }
@@ -117,6 +119,23 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
           phone={payload.businessProfile?.phone || '-'}
           email={email || 'email@contoh.com'}
           logoUrl={logoUrl || undefined}
+        />
+      </div>
+    );
+  }
+
+  if (activeTheme === 'abstract') {
+    return (
+      <div className="min-h-screen bg-[#0d0d0d] text-white">
+        <AbstractSiteHeader getHref={getHref} businessName={businessName} logoUrl={logoUrl || undefined} />
+        <main>{children}</main>
+        <AbstractSiteFooter
+          getHref={getHref}
+          businessName={businessName}
+          description={description}
+          address={payload.businessProfile?.address || 'Alamat belum diisi.'}
+          phone={payload.businessProfile?.phone || '-'}
+          email={email || 'email@contoh.com'}
         />
       </div>
     );

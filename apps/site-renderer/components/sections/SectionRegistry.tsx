@@ -8,6 +8,7 @@ import { getCompanyProfileTemplateDebugLabel, resolveCompanyProfileSectionCompon
 import { formalSectionComponents } from '@/templates/company-profile/formal/sections';
 import { casualSectionComponents } from '@/templates/company-profile/casual/sections';
 import { premiumSectionComponents } from '@/templates/company-profile/premium/sections';
+import { abstractSectionComponents } from '@/templates/company-profile/abstract/sections';
 
 type SectionProps = { siteSlug: string; payload: PublicPagePayload; section: PublicSection };
 type SectionComponent = (props: SectionProps) => ReactNode;
@@ -853,6 +854,7 @@ const registry: Record<string, SectionComponent> = {
   ...formalSectionComponents,
   ...casualSectionComponents,
   ...premiumSectionComponents,
+  ...abstractSectionComponents,
   ...companyProfileCleanComponents
 };
 
