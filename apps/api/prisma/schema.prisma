@@ -76,6 +76,8 @@ model Website {
   brandPartners   BrandPartner[]
   articles        Article[]
   faqs            Faq[]
+  timelines       BusinessTimeline[]
+  teamMembers     TeamMember[]
   mediaAssets     MediaAsset[]
   articleCategories ArticleCategory[]
   portfolioCategories PortfolioCategory[]
@@ -385,6 +387,38 @@ model MediaAsset {
   @@index([websiteId, mimeType])
 }
 
+model BusinessTimeline {
+  id          String   @id @default(cuid())
+  websiteId   String
+  website     Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  year        String
+  title       String
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([websiteId, sortOrder])
+  @@index([websiteId, isActive])
+}
+
+model TeamMember {
+  id          String   @id @default(cuid())
+  websiteId   String
+  website     Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  name        String
+  role        String?
+  bio         String?
+  imageUrl    String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([websiteId, sortOrder])
+  @@index([websiteId, isActive])
+}
 
 model Lead {
   id            String     @id @default(cuid())

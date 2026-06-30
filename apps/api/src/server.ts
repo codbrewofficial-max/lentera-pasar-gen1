@@ -537,6 +537,22 @@ const brandBody = z.object({
   sortOrder: z.number().int().optional(),
   isActive: z.boolean().optional()
 });
+const timelineBody = z.object({
+  year: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().nullable().optional(),
+  sortOrder: z.number().int().optional(),
+  isActive: z.boolean().optional()
+});
+
+const teamMemberBody = z.object({
+  name: z.string().min(1),
+  role: z.string().nullable().optional(),
+  bio: z.string().nullable().optional(),
+  imageUrl: z.string().nullable().optional(),
+  sortOrder: z.number().int().optional(),
+  isActive: z.boolean().optional()
+});
 
 const faqBody = z.object({
   question: z.string().min(1),
@@ -694,7 +710,7 @@ const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string;
     }
   });
   if (!page) throw new AppError(404, "PAGE_NOT_FOUND", "Page not found");
-  const [services, portfolios, testimonials, brands, articles, faqs, articleCategories, portfolioCategories] = await Promise.all([
+  const [services, portfolios, testimonials, brands, articles, faqs, articleCategories, portfolioCategories, timelines, teamMembers] = await Promise.all([
     prisma.service.findMany({ where: { websiteId, isActive: true }, orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }] }),
     prisma.portfolio.findMany({ where: { websiteId, isActive: true }, orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }], include: { category: true } }),
     prisma.testimonial.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
@@ -702,7 +718,9 @@ const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string;
     prisma.article.findMany({ where: { websiteId, status: "published" }, orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }, { publishedAt: "desc" }], include: { category: true } }),
     prisma.faq.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
     prisma.articleCategory.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
-    prisma.portfolioCategory.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } })
+    prisma.portfolioCategory.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.businessTimeline.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.teamMember.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } })
   ]);
   const navigation = await buildNavigationContract(websiteId);
   return {
@@ -759,7 +777,9 @@ const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string;
             faqs: faqs.map(faqContract),
             articleCategories: articleCategories.map(categoryContract),
             portfolioCategories: portfolioCategories.map(categoryContract),
-            articles: articles.map(publicArticleSummary)
+            articles: articles.map(publicArticleSummary),
+            timelines,
+            teamMembers,
           }
         }))
     }
@@ -2652,6 +2672,167 @@ export const buildApp = async () => {
   registerCrud("portfolios", listItemBody);
   registerCrud("testimonials", testimonialBody);
   registerCrud("brand-partners", brandBody);
+
+  const registerTimelineRoutes = () => {
+    const base = "timelines";
+    app.get(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {
+      const { website } = await getWebsiteForAccess(request);
+      const rows = await prisma.businessTimeline.findMany({
+        where: { websiteId: website.id },
+        orderBy: { sortOrder: "asc" }
+      });
+      return ok(reply, rows, "timelines loaded");
+    });
+
+    app.post(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {
+      const { user, website } = await getWebsiteForAccess(request);
+      const body = timelineBody.parse(request.body);
+      const row = await prisma.businessTimeline.create({
+        data: { ...body, websiteId: website.id }
+      });
+      await createAuditLog(request, {
+        action: "timelines.created",
+        actor: user,
+        websiteId: website.id,
+        entityType: "timeline",
+        entityId: row.id,
+        summary: "Timeline item created",
+        metadata: { year: row.year, title: row.title }
+      });
+      return ok(reply, row, "timeline created", 201);
+    });
+
+    app.get(`/api/v1/websites/:websiteId/${base}/:timelineId`, async (request: Req, reply) => {
+      const { website } = await getWebsiteForAccess(request);
+      const row = await prisma.businessTimeline.findFirst({
+        where: { id: (request.params as any).timelineId, websiteId: website.id }
+      });
+      if (!row) throw new AppError(404, "ITEM_NOT_FOUND", "Timeline item not found");
+      return ok(reply, row, "timeline loaded");
+    });
+
+    app.patch(`/api/v1/websites/:websiteId/${base}/:timelineId`, async (request: Req, reply) => {
+      const { user, website } = await getWebsiteForAccess(request);
+      const body = timelineBody.partial().parse(request.body);
+      const existing = await prisma.businessTimeline.findFirst({
+        where: { id: (request.params as any).timelineId, websiteId: website.id }
+      });
+      if (!existing) throw new AppError(404, "ITEM_NOT_FOUND", "Timeline item not found");
+      const row = await prisma.businessTimeline.update({ where: { id: existing.id }, data: body });
+      await createAuditLog(request, {
+        action: "timelines.updated",
+        actor: user,
+        websiteId: website.id,
+        entityType: "timeline",
+        entityId: row.id,
+        summary: "Timeline item updated",
+        metadata: { changedFields: Object.keys(body) }
+      });
+      return ok(reply, row, "timeline updated");
+    });
+
+    app.delete(`/api/v1/websites/:websiteId/${base}/:timelineId`, async (request: Req, reply) => {
+      const { user, website } = await getWebsiteForAccess(request);
+      const existing = await prisma.businessTimeline.findFirst({
+        where: { id: (request.params as any).timelineId, websiteId: website.id }
+      });
+      if (!existing) throw new AppError(404, "ITEM_NOT_FOUND", "Timeline item not found");
+      await prisma.businessTimeline.delete({ where: { id: existing.id } });
+      await createAuditLog(request, {
+        action: "timelines.deleted",
+        actor: user,
+        websiteId: website.id,
+        entityType: "timeline",
+        entityId: existing.id,
+        summary: "Timeline item deleted",
+        metadata: { year: existing.year, title: existing.title }
+      });
+      return ok(reply, true, "timeline deleted");
+    });
+  };
+
+  // --- Team Member CRUD ---
+  const registerTeamMemberRoutes = () => {
+    const base = "team-members";
+    app.get(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {
+      const { website } = await getWebsiteForAccess(request);
+      const rows = await prisma.teamMember.findMany({
+        where: { websiteId: website.id },
+        orderBy: { sortOrder: "asc" }
+      });
+      return ok(reply, rows, "team members loaded");
+    });
+
+    app.post(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {
+      const { user, website } = await getWebsiteForAccess(request);
+      const body = teamMemberBody.parse(request.body);
+      const row = await prisma.teamMember.create({
+        data: { ...body, websiteId: website.id }
+      });
+      await createAuditLog(request, {
+        action: "team-members.created",
+        actor: user,
+        websiteId: website.id,
+        entityType: "team_member",
+        entityId: row.id,
+        summary: "Team member created",
+        metadata: { name: row.name }
+      });
+      return ok(reply, row, "team member created", 201);
+    });
+
+    app.get(`/api/v1/websites/:websiteId/${base}/:teamMemberId`, async (request: Req, reply) => {
+      const { website } = await getWebsiteForAccess(request);
+      const row = await prisma.teamMember.findFirst({
+        where: { id: (request.params as any).teamMemberId, websiteId: website.id }
+      });
+      if (!row) throw new AppError(404, "ITEM_NOT_FOUND", "Team member not found");
+      return ok(reply, row, "team member loaded");
+    });
+
+    app.patch(`/api/v1/websites/:websiteId/${base}/:teamMemberId`, async (request: Req, reply) => {
+      const { user, website } = await getWebsiteForAccess(request);
+      const body = teamMemberBody.partial().parse(request.body);
+      const existing = await prisma.teamMember.findFirst({
+        where: { id: (request.params as any).teamMemberId, websiteId: website.id }
+      });
+      if (!existing) throw new AppError(404, "ITEM_NOT_FOUND", "Team member not found");
+      const row = await prisma.teamMember.update({ where: { id: existing.id }, data: body });
+      await createAuditLog(request, {
+        action: "team-members.updated",
+        actor: user,
+        websiteId: website.id,
+        entityType: "team_member",
+        entityId: row.id,
+        summary: "Team member updated",
+        metadata: { changedFields: Object.keys(body) }
+      });
+      return ok(reply, row, "team member updated");
+    });
+
+    app.delete(`/api/v1/websites/:websiteId/${base}/:teamMemberId`, async (request: Req, reply) => {
+      const { user, website } = await getWebsiteForAccess(request);
+      const existing = await prisma.teamMember.findFirst({
+        where: { id: (request.params as any).teamMemberId, websiteId: website.id }
+      });
+      if (!existing) throw new AppError(404, "ITEM_NOT_FOUND", "Team member not found");
+      await prisma.teamMember.delete({ where: { id: existing.id } });
+      await createAuditLog(request, {
+        action: "team-members.deleted",
+        actor: user,
+        websiteId: website.id,
+        entityType: "team_member",
+        entityId: existing.id,
+        summary: "Team member deleted",
+        metadata: { name: existing.name }
+      });
+      return ok(reply, true, "team member deleted");
+    });
+  };
+
+  registerTimelineRoutes();
+  registerTeamMemberRoutes();
+
   registerArticleRoutes();
   registerStage9cContentRoutes();
   registerPublicRoutes();
