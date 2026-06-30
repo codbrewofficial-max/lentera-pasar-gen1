@@ -1,11 +1,17 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import type { PublicPagePayload } from '@/lib/types';
 import { getSiteHref } from '@/lib/links';
+import { FormalSiteHeader } from '@/templates/company-profile/formal/source/layout/FormalSiteHeader';
+import { FormalSiteFooter } from '@/templates/company-profile/formal/source/layout/FormalSiteFooter';
+import { Header as CasualSiteHeader } from '@/templates/company-profile/casual/source/shared/Header';
+import { Footer as CasualSiteFooter } from '@/templates/company-profile/casual/source/shared/Footer';
 
 type Props = {
   siteSlug: string;
-  payload: Pick<PublicPagePayload, 'website' | 'businessProfile' | 'navigation'>;
+  payload: Pick<PublicPagePayload, 'website' | 'businessProfile' | 'navigation'> & {
+    page?: Pick<PublicPagePayload['page'], 'sections'>;
+  };
   children: ReactNode;
 };
 
@@ -16,6 +22,20 @@ function normalizePhone(value?: unknown) {
   if (!digits) return raw;
   if (digits.startsWith('0')) return `62${digits.slice(1)}`;
   return digits;
+}
+
+// Tema "aktif" untuk satu website ditentukan dari templateTheme section manapun yang
+// sudah pakai Template Pack (semua section dalam satu website seharusnya konsisten satu
+// tema). Kalau belum ada satupun section yang pakai Template Pack bertema (mis. masih
+// fallback Clean / Abstract / Premium yang belum punya kode visual sendiri), header/footer
+// generik tetap dipakai supaya tidak nampilkan chrome tema yang salah.
+function resolveActiveTheme(payload: Props['payload']): 'formal' | 'casual' | null {
+  const sections = payload.page?.sections || [];
+  for (const section of sections) {
+    const theme = (section.templateTheme || '').toLowerCase();
+    if (theme === 'formal' || theme === 'casual') return theme;
+  }
+  return null;
 }
 
 export function SiteShell({ siteSlug, payload, children }: Props) {
@@ -35,6 +55,50 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
     payload.businessProfile?.description ||
     payload.businessProfile?.tagline ||
     'Website company profile yang menampilkan profil, layanan, portofolio, artikel, dan kontak bisnis.';
+
+  const activeTheme = resolveActiveTheme(payload);
+  const getHref = (path: string) => getSiteHref(siteSlug, path);
+
+  if (activeTheme === 'formal') {
+    return (
+      <div className="min-h-screen bg-white text-slate-950">
+        <FormalSiteHeader siteSlug={siteSlug} getHref={getHref} businessName={businessName} taglineLabel={tagline} logoUrl={logoUrl || undefined} />
+        <main className="pt-[72px]">{children}</main>
+        <FormalSiteFooter
+          getHref={getHref}
+          businessName={businessName}
+          taglineLabel={tagline}
+          logoUrl={logoUrl || undefined}
+          description={description}
+          establishedYear={typeof payload.businessProfile?.establishedYear === 'string' ? payload.businessProfile.establishedYear : undefined}
+          founderName={typeof payload.businessProfile?.founderName === 'string' ? payload.businessProfile.founderName : undefined}
+          address={payload.businessProfile?.address || 'Alamat belum diisi.'}
+          email={email || 'email@contoh.com'}
+          phone={payload.businessProfile?.phone || '-'}
+          workingHours={payload.businessProfile?.workingHours || payload.businessProfile?.operationalHours || 'Jam operasional belum diisi.'}
+        />
+      </div>
+    );
+  }
+
+  if (activeTheme === 'casual') {
+    return (
+      <div className="min-h-screen bg-white text-gray-950">
+        <CasualSiteHeader getHref={getHref} businessName={businessName} taglineLabel={tagline} logoUrl={logoUrl || undefined} />
+        <main>{children}</main>
+        <CasualSiteFooter
+          getHref={getHref}
+          businessName={businessName}
+          description={description}
+          address={payload.businessProfile?.address || 'Alamat belum diisi.'}
+          phone={payload.businessProfile?.phone || '-'}
+          email={email || 'email@contoh.com'}
+          whatsappHref={whatsapp ? `https://wa.me/${whatsapp}` : ctaHref}
+          logoUrl={logoUrl || undefined}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white text-slate-950">

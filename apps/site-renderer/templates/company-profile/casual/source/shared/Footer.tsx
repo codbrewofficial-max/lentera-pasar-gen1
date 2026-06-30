@@ -4,7 +4,29 @@ import React from 'react';
 import Link from 'next/link';
 import { Sparkles, Heart, Instagram, Mail, Phone, MapPin, MessageSquare } from 'lucide-react';
 
-export function Footer() {
+export interface CasualFooterProps {
+  getHref: (path: string) => string;
+  businessName: string;
+  description?: string;
+  address: string;
+  phone: string;
+  email: string;
+  whatsappHref: string;
+  instagramUrl?: string;
+  logoUrl?: string;
+}
+
+export function Footer({
+  getHref,
+  businessName,
+  description = 'Partner kreatif andalan UMKM Indonesia. Membantu menaikkan kelas brand lokal dengan identitas visual yang seru dan menyenangkan.',
+  address,
+  phone,
+  email,
+  whatsappHref,
+  instagramUrl = 'https://instagram.com',
+  logoUrl,
+}: CasualFooterProps) {
   const currentYear = new Date().getFullYear();
 
   return (
@@ -17,25 +39,29 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           {/* Brand Col */}
           <div className="md:col-span-1 space-y-4">
-            <Link id="footer-logo-link" href="/" className="flex items-center gap-2 group">
-              <div className="w-9 h-9 rounded-xl bg-[#649FF6] flex items-center justify-center shadow-md group-hover:rotate-6 transition-transform">
-                <Sparkles className="w-4 h-4 text-white" />
-              </div>
+            <Link id="footer-logo-link" href={getHref('/')} className="flex items-center gap-2 group">
+              {logoUrl ? (
+                <img src={logoUrl} alt={businessName} className="w-9 h-9 rounded-xl object-cover" referrerPolicy="no-referrer" />
+              ) : (
+                <div className="w-9 h-9 rounded-xl bg-[#649FF6] flex items-center justify-center shadow-md group-hover:rotate-6 transition-transform">
+                  <Sparkles className="w-4 h-4 text-white" />
+                </div>
+              )}
               <span className="font-sans font-bold text-lg text-gray-950 tracking-tight">
-                Ruang Karsa
+                {businessName}
               </span>
             </Link>
             <p className="text-sm text-gray-600 leading-relaxed">
-              Partner kreatif andalan UMKM Indonesia. Membantu menaikkan kelas brand lokal dengan identitas visual yang seru dan menyenangkan.
+              {description}
             </p>
             <div className="flex items-center gap-3 pt-2">
-              <a href="https://instagram.com" target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-500 hover:text-[#B283AF] hover:scale-110 shadow-sm border border-gray-100 transition-all">
+              <a href={instagramUrl} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-500 hover:text-[#B283AF] hover:scale-110 shadow-sm border border-gray-100 transition-all">
                 <Instagram className="w-4 h-4" />
               </a>
-              <a href="mailto:halo@ruangkarsa.id" className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-500 hover:text-[#649FF6] hover:scale-110 shadow-sm border border-gray-100 transition-all">
+              <a href={`mailto:${email}`} className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-500 hover:text-[#649FF6] hover:scale-110 shadow-sm border border-gray-100 transition-all">
                 <Mail className="w-4 h-4" />
               </a>
-              <a href="https://wa.me/628123456789" target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-500 hover:text-[#F56B71] hover:scale-110 shadow-sm border border-gray-100 transition-all">
+              <a href={whatsappHref} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-500 hover:text-[#F56B71] hover:scale-110 shadow-sm border border-gray-100 transition-all">
                 <MessageSquare className="w-4 h-4" />
               </a>
             </div>
@@ -48,22 +74,22 @@ export function Footer() {
             </h4>
             <ul className="space-y-2.5 text-sm">
               <li>
-                <Link href="/" className="text-gray-600 hover:text-[#649FF6] transition-colors">
+                <Link href={getHref('/')} className="text-gray-600 hover:text-[#649FF6] transition-colors">
                   Home
                 </Link>
               </li>
               <li>
-                <Link href="/about" className="text-gray-600 hover:text-[#649FF6] transition-colors">
+                <Link href={getHref('/about')} className="text-gray-600 hover:text-[#649FF6] transition-colors">
                   Tentang Kami
                 </Link>
               </li>
               <li>
-                <Link href="/services" className="text-gray-600 hover:text-[#649FF6] transition-colors">
+                <Link href={getHref('/services')} className="text-gray-600 hover:text-[#649FF6] transition-colors">
                   Layanan Kami
                 </Link>
               </li>
               <li>
-                <Link href="/portfolio" className="text-gray-600 hover:text-[#649FF6] transition-colors">
+                <Link href={getHref('/portfolio')} className="text-gray-600 hover:text-[#649FF6] transition-colors">
                   Portofolio Kreatif
                 </Link>
               </li>
@@ -77,12 +103,12 @@ export function Footer() {
             </h4>
             <ul className="space-y-2.5 text-sm">
               <li>
-                <Link href="/articles" className="text-gray-600 hover:text-[#649FF6] transition-colors">
+                <Link href={getHref('/articles')} className="text-gray-600 hover:text-[#649FF6] transition-colors">
                   Tips & Artikel
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="text-gray-600 hover:text-[#649FF6] transition-colors">
+                <Link href={getHref('/contact')} className="text-gray-600 hover:text-[#649FF6] transition-colors">
                   Kontak & Lokasi
                 </Link>
               </li>
@@ -107,15 +133,15 @@ export function Footer() {
             <ul className="space-y-3 text-sm text-gray-600">
               <li className="flex items-start gap-2.5">
                 <MapPin className="w-4.5 h-4.5 text-[#F56B71] shrink-0 mt-0.5" />
-                <span>Jl. Dipati Ukur No. 102, Bandung, Jawa Barat 40132</span>
+                <span>{address}</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <Phone className="w-4.5 h-4.5 text-[#649FF6] shrink-0" />
-                <span>+62 812-3456-7890</span>
+                <span>{phone}</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <Mail className="w-4.5 h-4.5 text-[#B283AF] shrink-0" />
-                <span>halo@ruangkarsa.id</span>
+                <span>{email}</span>
               </li>
             </ul>
           </div>
@@ -124,7 +150,7 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="mt-12 pt-8 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-gray-500">
           <div>
-            &copy; {currentYear} Ruang Karsa Studio. Hak Cipta Dilindungi.
+            &copy; {currentYear} {businessName}. Hak Cipta Dilindungi.
           </div>
           <div className="flex items-center gap-1.5 text-gray-400">
             <span>Dibuat dengan</span>

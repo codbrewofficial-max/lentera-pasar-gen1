@@ -5,24 +5,31 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X, Sparkles, ArrowRight } from 'lucide-react';
 
-export function Header() {
+export interface CasualHeaderProps {
+  getHref: (path: string) => string;
+  businessName: string;
+  taglineLabel?: string;
+  logoUrl?: string;
+}
+
+export function Header({ getHref, businessName, taglineLabel = 'Casual Theme', logoUrl }: CasualHeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
   const navigation = [
-    { name: 'Home', href: '/' },
-    { name: 'Tentang Kami', href: '/about' },
-    { name: 'Layanan', href: '/services' },
-    { name: 'Portofolio', href: '/portfolio' },
-    { name: 'Artikel', href: '/articles' },
-    { name: 'Hubungi Kami', href: '/contact' },
-  ];
+    { name: 'Home', path: '/' },
+    { name: 'Tentang Kami', path: '/about' },
+    { name: 'Layanan', path: '/services' },
+    { name: 'Portofolio', path: '/portfolio' },
+    { name: 'Artikel', path: '/articles' },
+    { name: 'Hubungi Kami', path: '/contact' },
+  ].map((item) => ({ ...item, href: getHref(item.path) }));
 
   const isActive = (href: string) => {
-    if (href === '/') {
-      return pathname === '/';
+    if (href === getHref('/')) {
+      return pathname === href;
     }
-    return pathname.startsWith(href);
+    return pathname?.startsWith(href);
   };
 
   return (
@@ -31,16 +38,20 @@ export function Header() {
         <div className="flex justify-between h-20 items-center">
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">
-            <Link id="logo-link" href="/" className="flex items-center gap-2 group">
-              <div className="w-10 h-10 rounded-2xl bg-[#649FF6] flex items-center justify-center shadow-lg shadow-[#649FF6]/20 group-hover:scale-105 transition-transform duration-300">
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
+            <Link id="logo-link" href={getHref('/')} className="flex items-center gap-2 group">
+              {logoUrl ? (
+                <img src={logoUrl} alt={businessName} className="w-10 h-10 rounded-2xl object-cover" referrerPolicy="no-referrer" />
+              ) : (
+                <div className="w-10 h-10 rounded-2xl bg-[#649FF6] flex items-center justify-center shadow-lg shadow-[#649FF6]/20 group-hover:scale-105 transition-transform duration-300">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+              )}
               <div className="flex flex-col">
                 <span className="font-sans font-bold text-lg text-gray-950 tracking-tight leading-none">
-                  Ruang Karsa
+                  {businessName}
                 </span>
                 <span className="text-[10px] font-mono text-[#F56B71] font-semibold tracking-wider uppercase mt-1">
-                  Casual Theme
+                  {taglineLabel}
                 </span>
               </div>
             </Link>
@@ -68,7 +79,7 @@ export function Header() {
           <div className="hidden md:flex items-center gap-4">
             <Link
               id="header-cta"
-              href="/contact"
+              href={getHref('/contact')}
               className="inline-flex items-center gap-2 bg-[#F56B71] text-white px-5 py-2.5 rounded-full text-sm font-semibold shadow-md hover:bg-[#F56B71]/90 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
             >
               Konsultasi Gratis
@@ -115,7 +126,7 @@ export function Header() {
             <div className="pt-4 border-t border-gray-100">
               <Link
                 id="mobile-header-cta"
-                href="/contact"
+                href={getHref('/contact')}
                 onClick={() => setIsOpen(false)}
                 className="flex items-center justify-center gap-2 bg-[#F56B71] text-white w-full py-3.5 rounded-2xl text-base font-semibold shadow-md hover:bg-[#F56B71]/90 transition-all duration-200"
               >
