@@ -1,3 +1,5 @@
+'use client';
+
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import type { PublicPagePayload } from '@/lib/types';
@@ -6,6 +8,8 @@ import { FormalSiteHeader } from '@/templates/company-profile/formal/source/layo
 import { FormalSiteFooter } from '@/templates/company-profile/formal/source/layout/FormalSiteFooter';
 import { Header as CasualSiteHeader } from '@/templates/company-profile/casual/source/shared/Header';
 import { Footer as CasualSiteFooter } from '@/templates/company-profile/casual/source/shared/Footer';
+import { Header as PremiumSiteHeader } from '@/templates/company-profile/premium/source/shared/Header';
+import { Footer as PremiumSiteFooter } from '@/templates/company-profile/premium/source/shared/Footer';
 
 type Props = {
   siteSlug: string;
@@ -29,11 +33,11 @@ function normalizePhone(value?: unknown) {
 // tema). Kalau belum ada satupun section yang pakai Template Pack bertema (mis. masih
 // fallback Clean / Abstract / Premium yang belum punya kode visual sendiri), header/footer
 // generik tetap dipakai supaya tidak nampilkan chrome tema yang salah.
-function resolveActiveTheme(payload: Props['payload']): 'formal' | 'casual' | null {
+function resolveActiveTheme(payload: Props['payload']): 'formal' | 'casual' | 'premium' | null {
   const sections = payload.page?.sections || [];
   for (const section of sections) {
     const theme = (section.templateTheme || '').toLowerCase();
-    if (theme === 'formal' || theme === 'casual') return theme;
+    if (theme === 'formal' || theme === 'casual' || theme === 'premium') return theme;
   }
   return null;
 }
@@ -94,6 +98,24 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
           phone={payload.businessProfile?.phone || '-'}
           email={email || 'email@contoh.com'}
           whatsappHref={whatsapp ? `https://wa.me/${whatsapp}` : ctaHref}
+          logoUrl={logoUrl || undefined}
+        />
+      </div>
+    );
+  }
+
+  if (activeTheme === 'premium') {
+    return (
+      <div className="min-h-screen bg-[#0E0E0F] text-white">
+        <PremiumSiteHeader getHref={getHref} businessName={businessName} logoUrl={logoUrl || undefined} />
+        <main>{children}</main>
+        <PremiumSiteFooter
+          getHref={getHref}
+          businessName={businessName}
+          description={description}
+          address={payload.businessProfile?.address || 'Alamat belum diisi.'}
+          phone={payload.businessProfile?.phone || '-'}
+          email={email || 'email@contoh.com'}
           logoUrl={logoUrl || undefined}
         />
       </div>
