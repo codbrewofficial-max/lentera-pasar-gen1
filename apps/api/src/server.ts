@@ -2260,9 +2260,11 @@ const registerPublicRoutes = () => {
       })
       : [];
     const relatedArticles = [...sameCategoryArticles, ...fallbackArticles].slice(0, 3);
+    const articleDetailPage = await buildPublicPage(website.id, { pageKey: "article_detail" }).catch(() => null);
     return ok(reply, {
       article: articleContract(article),
       relatedArticles: relatedArticles.map(publicArticleSummary),
+      articleDetailSections: articleDetailPage?.page?.sections || [],
       website: websiteSummary(website),
       businessProfile: website.businessProfile,
       seo: {

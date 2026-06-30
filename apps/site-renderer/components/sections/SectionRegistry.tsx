@@ -5,6 +5,7 @@ import { CtaLink } from '@/components/tracking/CtaLink';
 import { PublicEmptyState } from '@/components/layout/PublicState';
 import { ContactForm } from './ContactForm';
 import { getCompanyProfileTemplateDebugLabel, resolveCompanyProfileSectionComponentName } from '@/templates/company-profile/registry';
+import { formalSectionComponents } from '@/templates/company-profile/formal/sections';
 
 type SectionProps = { siteSlug: string; payload: PublicPagePayload; section: PublicSection };
 type SectionComponent = (props: SectionProps) => ReactNode;
@@ -801,6 +802,7 @@ function ContactCtaSection(props: SectionProps) {
 }
 
 const registry: Record<string, SectionComponent> = {
+  ...formalSectionComponents,
   HeroSection,
   ProfileSummarySection,
   ServicePreviewSection,
@@ -868,6 +870,15 @@ export function RenderSections({ siteSlug, payload }: { siteSlug: string; payloa
 }
 
 export function RenderArticleDetail({ siteSlug, detail }: { siteSlug: string; detail: ArticleDetailPayload }) {
+  const assignedSections = (detail.articleDetailSections || []).map((section) => ({
+    ...section,
+    data: {
+      ...(section.data || {}),
+      article: detail.article,
+      relatedArticles: detail.relatedArticles
+    }
+  }));
+
   const payload: PublicPagePayload = {
     website: detail.website,
     seo: detail.seo,
@@ -877,9 +888,13 @@ export function RenderArticleDetail({ siteSlug, detail }: { siteSlug: string; de
       pageKey: 'article_detail',
       title: detail.article.title,
       slug: detail.article.slug,
-      sections: []
+      sections: assignedSections
     }
   };
+
+  if (assignedSections.length) {
+    return <RenderSections siteSlug={siteSlug} payload={payload} />;
+  }
 
   const heroSection: PublicSection = {
     id: 'article-detail-hero',
