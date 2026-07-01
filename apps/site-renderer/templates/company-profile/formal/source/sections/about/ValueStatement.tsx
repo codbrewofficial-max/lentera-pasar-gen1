@@ -35,7 +35,7 @@ export const ValueStatement: React.FC<ValueStatementProps> = ({
           {values.map((val, idx) => (
             <Card key={`${val.title}-${idx}`} className="p-8 bg-white border border-slate-100 h-full" hoverEffect={true}>
               <div className="bg-slate-50 w-12 h-12 flex items-center justify-center rounded mb-6 border border-slate-100">
-                {iconMap[val.iconName] || iconMap.Shield}
+                {idx+1}
               </div>
               <h3 className="text-base font-semibold text-slate-900 mb-3 tracking-tight">{val.title}</h3>
               <p className="text-sm text-slate-600 font-light leading-relaxed">{val.description}</p>
