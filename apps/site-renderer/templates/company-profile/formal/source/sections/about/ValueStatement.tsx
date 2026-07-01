@@ -17,6 +17,7 @@ interface ValueStatementProps {
   subtitle?: string;
   badge?: string;
   values?: ValueItem[];
+  valueFour?: string;
 }
 
 export const ValueStatement: React.FC<ValueStatementProps> = ({
@@ -24,6 +25,7 @@ export const ValueStatement: React.FC<ValueStatementProps> = ({
   subtitle = "Prinsip kerja yang menjaga kualitas layanan dan kepercayaan pelanggan.",
   badge = "Nilai Inti",
   values = defaultValuesData,
+  valueFour,
 }) => {
   return (
     <section id="about-value-statement" className="py-16 md:py-24 bg-slate-50">

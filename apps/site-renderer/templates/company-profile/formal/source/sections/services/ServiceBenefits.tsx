@@ -9,6 +9,7 @@ interface ServiceBenefitsProps {
   subtitle?: string;
   badge?: string;
   benefits?: BenefitItem[];
+  benefitFour?: string;
 }
 
 export const ServiceBenefits: React.FC<ServiceBenefitsProps> = ({
@@ -16,6 +17,7 @@ export const ServiceBenefits: React.FC<ServiceBenefitsProps> = ({
   subtitle = "Keunggulan yang membantu pelanggan mengambil keputusan dengan lebih yakin.",
   badge = "Manfaat Layanan",
   benefits = defaultBenefitData,
+  benefitFour,
 }) => {
   return (
     <section id="services-benefits" className="py-16 md:py-24 bg-white">

@@ -3,7 +3,7 @@ import { Star, Quote } from "lucide-react";
 import { testimonialData } from "../../data/companyProfileData";
 import { SectionHeading } from "../../shared/SectionHeading";
 import { Card } from "../../shared/Card";
-import type { TestimonialItem } from "../../lib/types";
+import type { TestimonialItem, BrandItem } from "../../lib/types";
 
 export interface HomeTrustProofProps {
   title?: string;
@@ -11,6 +11,7 @@ export interface HomeTrustProofProps {
   badge?: string;
   testimonials?: TestimonialItem[];
   metrics?: { label: string; value: string }[];
+  brands?: BrandItem[];
 }
 
 export const TrustProof: React.FC<HomeTrustProofProps> = ({
@@ -19,9 +20,12 @@ export const TrustProof: React.FC<HomeTrustProofProps> = ({
   badge = "Jaminan Mutu",
   testimonials = testimonialData,
   metrics = [],
+  brands = [],
 }) => {
-  // Testimonial/trust proof maksimal 5 item
-  const limitedTestimonials = testimonials.slice(0, 5);
+  // Komponen ini murni menampilkan apa yang dikirim (maksimal 3 kartu); logika memilih
+  // mana yang "featured/unggulan" dari CRUD dilakukan di layer binding (components.tsx),
+  // supaya komponen visual tidak perlu tahu soal nama field CRUD seperti isFeatured.
+  const limitedTestimonials = testimonials.slice(0, 3);
 
   return (
     <section id="home-trust-proof" className="py-16 md:py-24 bg-slate-50/50">
@@ -45,8 +49,8 @@ export const TrustProof: React.FC<HomeTrustProofProps> = ({
           </div>
         )}
 
-        {/* Testimonials Grid Layout - 3 columns, then wrapped nicely */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {/* Testimonials Grid Layout - maksimal 3 item */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {limitedTestimonials.map((test) => (
             <Card
               key={test.id}
@@ -97,14 +101,20 @@ export const TrustProof: React.FC<HomeTrustProofProps> = ({
           ))}
         </div>
 
-        {/* Subtle trust badge list */}
-        <div className="mt-16 pt-8 border-t border-slate-100 flex flex-wrap justify-center items-center gap-x-12 gap-y-6 opacity-60">
-          <span className="text-xs font-mono font-bold text-slate-400 tracking-widest uppercase">Kemitraan Terintegrasi</span>
-          <span className="text-sm font-semibold font-sans text-slate-500">KEMENKUMHAM RI</span>
-          <span className="text-sm font-semibold font-sans text-slate-500">OJK - PORTAL KEPATUHAN</span>
-          <span className="text-sm font-semibold font-sans text-slate-500">BKPM - INVEST INDONESIA</span>
-          <span className="text-sm font-semibold font-sans text-slate-500">IKATAN KONSULTAN PAJAK</span>
-        </div>
+        {/* Brand / Partner logos dari data CRUD, hanya tampil kalau ada datanya */}
+        {brands.length > 0 && (
+          <div className="mt-16 pt-8 border-t border-slate-100 flex flex-wrap justify-center items-center gap-x-12 gap-y-6">
+            {brands.map((brand) => (
+              <div key={brand.id} className="flex items-center justify-center grayscale opacity-70 hover:opacity-100 hover:grayscale-0 transition-all">
+                {brand.logoUrl ? (
+                  <img src={brand.logoUrl} alt={brand.name} className="h-8 md:h-10 w-auto object-contain" referrerPolicy="no-referrer" />
+                ) : (
+                  <span className="text-sm font-semibold font-sans text-slate-500">{brand.name}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
 
       </div>
     </section>

@@ -495,7 +495,6 @@ export function FormalAboutOrganizationProfile(props: FormalSectionProps) {
       paragraphs={[text(content.description, company.description)]}
       imageUrl={contentImage(content, company.aboutImage)}
       imageAlt={company.name}
-      locationValue={company.contact.address}
     />
   );
 }

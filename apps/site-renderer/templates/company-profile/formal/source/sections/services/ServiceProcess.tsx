@@ -8,6 +8,7 @@ interface ServiceProcessProps {
   subtitle?: string;
   badge?: string;
   steps?: ProcessStep[];
+  stepFour?: string;
 }
 
 export const ServiceProcess: React.FC<ServiceProcessProps> = ({
@@ -15,6 +16,7 @@ export const ServiceProcess: React.FC<ServiceProcessProps> = ({
   subtitle = "Setiap pekerjaan dijalankan melalui tahapan yang rapi agar pelanggan memahami proses sejak awal.",
   badge = "Proses Kerja",
   steps = defaultProcessSteps,
+  stepFour,
 }) => {
   return (
     <section id="services-process" className="py-16 md:py-24 bg-slate-50">

@@ -35,10 +35,9 @@ export interface TestimonialItem {
 }
 
 export interface BrandItem {
-  id: String 
-  name: String
-  logoUrl?: String
-  url?: String
+  id: string;
+  name: string;
+  logoUrl?: string;
 }
 
 export interface TimelineItem {
