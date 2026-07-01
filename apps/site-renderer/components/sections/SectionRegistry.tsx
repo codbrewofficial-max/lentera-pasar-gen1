@@ -858,6 +858,11 @@ const registry: Record<string, SectionComponent> = {
   ...companyProfileCleanComponents
 };
 
+/** Resolve a component by name for preview rendering. Returns null if not found. */
+export function resolveSectionComponent(componentName: string): SectionComponent | null {
+  return registry[componentName] || null;
+}
+
 export function RenderSections({ siteSlug, payload }: { siteSlug: string; payload: PublicPagePayload }) {
   const sections = payload.page.sections || [];
 
