@@ -24,8 +24,6 @@ export interface FormalSiteFooterProps {
   websiteUrl?: string;
 }
 
-
-
 export const FormalSiteFooter: React.FC<FormalSiteFooterProps> = ({
   getHref,
   businessName,
@@ -43,6 +41,7 @@ export const FormalSiteFooter: React.FC<FormalSiteFooterProps> = ({
   linkedinUrl,
   twitterUrl,
   websiteUrl,
+  navItems
 }) => {
   const currentYear = new Date().getFullYear();
   const DEFAULT_QUICK_LINKS: FooterNavItem[] = [

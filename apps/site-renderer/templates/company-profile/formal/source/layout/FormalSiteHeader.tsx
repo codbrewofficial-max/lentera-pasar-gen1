@@ -20,14 +20,15 @@ export interface FormalSiteHeaderProps {
   ctaPath?: string;
 }
 
-
-
 export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
   siteSlug,
   getHref,
   businessName,
   taglineLabel = "Consulting Group",
   logoUrl,
+  navItems,
+  ctaLabel,
+  ctaPath
 }) => {
 
   const DEFAULT_NAV_LINKS: NavItem[] = [
@@ -143,7 +144,7 @@ export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
         )}
       >
         <div className="px-4 pt-4 pb-6 space-y-3">
-          {NAV_LINKS.map((link) => {
+          {resolvedLinks.map((link) => {
             const active = isLinkActive(link.path);
             return (
               <Link

@@ -5,14 +5,19 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X, Sparkles, ArrowRight } from 'lucide-react';
 
+export interface NavItem { pageKey: string; label: string; path: string; }
+
 export interface CasualHeaderProps {
   getHref: (path: string) => string;
   businessName: string;
   taglineLabel?: string;
   logoUrl?: string;
+  navItems?: NavItem[];
+  ctaLabel?: string;
+  ctaPath?: string;
 }
 
-export function Header({ getHref, businessName, taglineLabel = 'Casual Theme', logoUrl }: CasualHeaderProps) {
+export function Header({ getHref, businessName, taglineLabel = 'Casual Theme', logoUrl, navItems, ctaLabel, ctaPath }: CasualHeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
@@ -81,10 +86,10 @@ export function Header({ getHref, businessName, taglineLabel = 'Casual Theme', l
           <div className="hidden md:flex items-center gap-4">
             <Link
               id="header-cta"
-              href={getHref(ctaPath)}
+              href={getHref('/contact')}
               className="inline-flex items-center gap-2 bg-[#F56B71] text-white px-5 py-2.5 rounded-full text-sm font-semibold shadow-md hover:bg-[#F56B71]/90 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
             >
-              Konsultasi Gratis
+              {ctaLabel}
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -128,11 +133,11 @@ export function Header({ getHref, businessName, taglineLabel = 'Casual Theme', l
             <div className="pt-4 border-t border-gray-100">
               <Link
                 id="mobile-header-cta"
-                href={getHref(ctaPath)}
+                href={getHref('/contact')}
                 onClick={() => setIsOpen(false)}
                 className="flex items-center justify-center gap-2 bg-[#F56B71] text-white w-full py-3.5 rounded-2xl text-base font-semibold shadow-md hover:bg-[#F56B71]/90 transition-all duration-200"
               >
-                Konsultasi Gratis
+                {ctaLabel}
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
