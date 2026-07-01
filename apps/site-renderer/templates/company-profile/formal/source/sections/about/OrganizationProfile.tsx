@@ -48,17 +48,6 @@ export const OrganizationProfile: React.FC<OrganizationProfileProps> = ({
                 <p key={index}>{paragraph}</p>
               ))}
             </div>
-
-            {/* Bagian Sertifikasi */}
-            <div className="flex items-start space-x-3 pt-4">
-              <div className="bg-[#F56B71]/10 text-[#F56B71] p-2.5 rounded flex-shrink-0">
-                <Award className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-sm font-semibold text-slate-900">{certificationTitle}</h4>
-                <p className="text-xs text-slate-500 font-mono mt-0.5">{certificationValue}</p>
-              </div>
-            </div>
           </div>
 
           {/* Kolom Kanan: Gambar */}

@@ -14,10 +14,10 @@ import {
   CheckCircle,
   Save,
   X,
-  PlusCircle,
   Eye,
   Settings,
-  User
+  User,
+  RefreshCw
 } from "lucide-react";
 
 interface WebsiteItem {
@@ -32,6 +32,13 @@ interface WebsiteItem {
   ownerName?: string;
   pagesCount?: number;
   sectionsCount?: number;
+}
+
+interface SyncResult {
+  pagesAdded: number;
+  sectionsAdded: number;
+  totalPages: number;
+  totalSections: number;
 }
 
 export default function InternalWebsitesPage() {
@@ -59,6 +66,11 @@ export default function InternalWebsitesPage() {
   // Delete State
   const [deletingWeb, setDeletingWeb] = useState<WebsiteItem | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Sync State
+  const [syncingId, setSyncingId] = useState<string | number | null>(null);
+  const [syncConfirmWeb, setSyncConfirmWeb] = useState<WebsiteItem | null>(null);
+  const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
 
   const fetchWebsites = async () => {
     setLoading(true);
@@ -163,6 +175,28 @@ export default function InternalWebsitesPage() {
       setErrorMsg(err.error?.message || "Gagal menghapus website.");
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleSync = async () => {
+    if (!syncConfirmWeb) return;
+    setSyncingId(syncConfirmWeb.id);
+    setSyncConfirmWeb(null);
+    setErrorMsg("");
+    try {
+      const res = await apiCall<SyncResult>("POST", `internal/websites/${syncConfirmWeb.id}/sync-structure`);
+      setSyncResult(res.data || null);
+      const added = (res.data?.pagesAdded || 0) + (res.data?.sectionsAdded || 0);
+      showSuccess(
+        added > 0
+          ? `Sinkronisasi berhasil! ${res.data?.pagesAdded} halaman baru + ${res.data?.sectionsAdded} section baru ditambahkan ke website ${syncConfirmWeb.name}.`
+          : `Website ${syncConfirmWeb.name} sudah sinkron — tidak ada halaman atau section yang perlu ditambahkan.`
+      );
+      fetchWebsites();
+    } catch (err: any) {
+      setErrorMsg(err.error?.message || "Gagal menyinkronkan struktur website.");
+    } finally {
+      setSyncingId(null);
     }
   };
 
@@ -304,6 +338,14 @@ export default function InternalWebsitesPage() {
                   >
                     <Settings className="h-3.5 w-3.5" />
                     <span>Masuk Editor</span>
+                  </button>
+                  <button
+                    onClick={() => setSyncConfirmWeb(web)}
+                    disabled={syncingId === web.id}
+                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition disabled:opacity-50"
+                    title="Sinkronisasi Struktur"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${syncingId === web.id ? "animate-spin text-blue-500" : ""}`} />
                   </button>
                   <button
                     onClick={() => handleOpenEdit(web)}
@@ -454,6 +496,50 @@ export default function InternalWebsitesPage() {
             </div>
           </div>
         )}
+        {/* Sync Confirmation Modal */}
+        {syncConfirmWeb && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl p-6 shadow-xl w-full max-w-sm border border-slate-100 space-y-5 animate-scaleUp">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center flex-shrink-0">
+                  <RefreshCw className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base">Sinkronisasi Struktur</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">Website: <span className="font-semibold text-slate-700">{syncConfirmWeb.name}</span></p>
+                </div>
+              </div>
+              <div className="bg-blue-50 rounded-2xl p-4 space-y-2 text-xs text-blue-800">
+                <p className="font-semibold">Apa yang akan terjadi:</p>
+                <ul className="space-y-1 text-blue-700 leading-relaxed">
+                  <li>✓ Halaman baru yang belum ada akan ditambahkan (misal: halaman Portfolio Detail)</li>
+                  <li>✓ Section slot baru yang belum ada akan ditambahkan ke setiap halaman</li>
+                  <li>✓ Data yang sudah ada <strong>tidak akan dihapus atau diubah</strong></li>
+                  <li>✓ Konten, template, dan konfigurasi section yang sudah diisi owner tetap aman</li>
+                </ul>
+              </div>
+              <p className="text-xs text-slate-500">
+                Proses ini aman dan non-destruktif. Jalankan setiap kali ada pembaruan struktur website (halaman atau section baru) dari tim engineering.
+              </p>
+              <div className="flex justify-end gap-2 pt-1">
+                <button
+                  onClick={() => setSyncConfirmWeb(null)}
+                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleSync}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-md shadow-blue-600/10"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Jalankan Sinkronisasi
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </DashboardLayout>
   );

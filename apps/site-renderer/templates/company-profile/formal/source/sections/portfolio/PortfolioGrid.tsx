@@ -62,57 +62,23 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
                   </div>
                 </div>
 
-                {project.clientName && (
+                {/* {project.clientName && (
                   <div className="text-xs text-slate-500 font-mono mb-4">
                     <span className="font-semibold text-slate-700">{project.clientName}</span>
                   </div>
-                )}
-
-                <h3 className="text-xl font-semibold text-slate-900 mb-4 tracking-tight leading-snug">
-                  {project.title}
-                </h3>
-                
-                <p className="text-sm md:text-base text-slate-600 font-light leading-relaxed mb-6">
-                  {project.description}
-                </p>
+                )} */}
               </div>
             </div>
 
             {/* Deep technical details (Challenge, Solution, Result) - right */}
             <div className="lg:col-span-7 bg-slate-50/50 rounded-lg p-6 md:p-8 border border-slate-100 flex flex-col justify-between space-y-6">
+              <h3 className="text-xl font-semibold text-slate-900 mb-4 tracking-tight leading-snug">
+                {project.title}
+              </h3>
               
-              {/* Challenge block */}
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2 text-xs font-semibold text-[#F56B71] uppercase tracking-wider font-mono">
-                  <HelpCircle className="w-4 h-4" />
-                  <span>Tantangan Utama Klien:</span>
-                </div>
-                <p className="text-xs md:text-sm text-slate-600 font-light leading-relaxed">
-                  {project.challenge}
-                </p>
-              </div>
-
-              {/* Solution block */}
-              <div className="space-y-2 pt-4 border-t border-slate-100">
-                <div className="flex items-center space-x-2 text-xs font-semibold text-[#649FF6] uppercase tracking-wider font-mono">
-                  <ShieldCheck className="w-4 h-4" />
-                  <span>Solusi &amp; Intervensi Integra:</span>
-                </div>
-                <p className="text-xs md:text-sm text-slate-600 font-light leading-relaxed">
-                  {project.solution}
-                </p>
-              </div>
-
-              {/* Result block */}
-              <div className="space-y-2 pt-4 border-t border-slate-100">
-                <div className="flex items-center space-x-2 text-xs font-semibold text-emerald-600 uppercase tracking-wider font-mono">
-                  <CheckCircle className="w-4 h-4" />
-                  <span>Hasil Terukur (Results):</span>
-                </div>
-                <p className="text-xs md:text-sm text-slate-700 font-medium leading-relaxed bg-emerald-50 text-emerald-900 px-4 py-2.5 rounded border border-emerald-100">
-                  {project.result}
-                </p>
-              </div>
+              <p className="text-sm md:text-base text-slate-600 font-light leading-relaxed mb-6">
+                {project.description}
+              </p>
 
             </div>
           </div>

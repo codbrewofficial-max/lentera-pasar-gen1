@@ -32,7 +32,7 @@ export const CaseHighlight: React.FC<CaseHighlightProps> = ({
           <div className="p-8 md:p-10">
             <h3 className="text-2xl font-semibold text-slate-900 tracking-tight mb-4">{project.title}</h3>
             <p className="text-sm text-slate-600 font-light leading-relaxed mb-8">{project.description}</p>
-            <div className="space-y-5">
+            {/* <div className="space-y-5">
               {[
                 ["Tantangan", project.challenge],
                 ["Solusi", project.solution],
@@ -46,7 +46,7 @@ export const CaseHighlight: React.FC<CaseHighlightProps> = ({
                   </div>
                 </div>
               ))}
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

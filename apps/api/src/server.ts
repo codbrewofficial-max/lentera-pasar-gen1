@@ -31,7 +31,7 @@ import {
   getWebsiteTypeLabel
 } from "@lentera-pasar/shared";
 import { prisma } from "./prisma.js";
-import { createCompanyProfileDefaults, defaultPageNavLabel, isDynamicDetailPage, pagePurpose } from "./defaults.js";
+import { createCompanyProfileDefaults, ensureCompanyProfileStructure, defaultPageNavLabel, isDynamicDetailPage, pagePurpose } from "./defaults.js";
 import { AppError, created, ok, publicUser, toErrorPayload } from "./http.js";
 import { hashIp, hashPassword, limitJson, prismaJson, randomToken, verifyApiKey, verifyPassword } from "./security.js";
 
@@ -1033,6 +1033,67 @@ const registerInternalRoutes = () => {
     if (!website) throw new AppError(404, "WEBSITE_NOT_FOUND", "Website not found");
     return ok(reply, { ...website, owner: publicUser(website.owner) }, "Website loaded");
   });
+
+  app.post("/api/v1/internal/websites/:websiteId/sync-structure", async (request: Req, reply) => {
+    const user = await requireRole(request, ["internal_admin"]);
+    
+    const websiteId = request.params?.websiteId;
+    
+    // 1. TAMBAHKAN GUARD CLAUSE INI UNTUK MENYAKINKAN TYPESCRIPT
+    if (!websiteId) {
+      throw new AppError(400, "BAD_REQUEST", "Website ID harus disertakan.");
+    }
+    // Setelah baris ini, TypeScript otomatis menganggap tipe websiteId adalah 'string'
+
+    const website = await prisma.website.findUnique({ where: { id: websiteId } });
+    if (!website) throw new AppError(404, "WEBSITE_NOT_FOUND", "Website tidak ditemukan.");
+    
+    if (website.websiteType !== "company_profile") {
+      throw new AppError(400, "UNSUPPORTED_WEBSITE_TYPE", `Sinkronisasi struktur belum didukung untuk tipe website: ${website.websiteType}`);
+    }
+
+    const before = {
+      pages: await prisma.websitePage.count({ where: { websiteId } }),
+      sections: await prisma.pageSection.count({ where: { websiteId } })
+    };
+
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      // Sekarang baris ini sudah aman dari error ts(2345)
+      await ensureCompanyProfileStructure(tx, websiteId);
+    });
+
+    const after = {
+      pages: await prisma.websitePage.count({ where: { websiteId } }),
+      sections: await prisma.pageSection.count({ where: { websiteId } })
+    };
+
+    await createAuditLog(request, {
+      action: "internal.website_structure_synced",
+      actor: user,
+      websiteId,
+      entityType: "website",
+      entityId: websiteId,
+      summary: `Struktur website ${website.slug} disinkronkan ke versi terbaru`,
+      metadata: {
+        websiteType: website.websiteType,
+        pagesBefore: before.pages,
+        pagesAfter: after.pages,
+        pagesAdded: after.pages - before.pages,
+        sectionsBefore: before.sections,
+        sectionsAfter: after.sections,
+        sectionsAdded: after.sections - before.sections
+      }
+    });
+
+    return ok(reply, {
+      websiteId,
+      websiteSlug: website.slug,
+      pagesAdded: after.pages - before.pages,
+      sectionsAdded: after.sections - before.sections,
+      totalPages: after.pages,
+      totalSections: after.sections
+    }, "Struktur website berhasil disinkronkan ke versi terbaru.");
+});
 };
 
 const registerWebsiteRoutes = () => {
