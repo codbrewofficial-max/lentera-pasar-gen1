@@ -16,14 +16,16 @@ export function Header({ getHref, businessName, taglineLabel = 'Casual Theme', l
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
-  const navigation = [
-    { name: 'Home', path: '/' },
-    { name: 'Tentang Kami', path: '/about' },
-    { name: 'Layanan', path: '/services' },
-    { name: 'Portofolio', path: '/portfolio' },
-    { name: 'Artikel', path: '/articles' },
-    { name: 'Hubungi Kami', path: '/contact' },
-  ].map((item) => ({ ...item, href: getHref(item.path) }));
+  const DEFAULT_NAV: NavItem[] = [
+    { pageKey: 'home', label: 'Home', path: '/' },
+    { pageKey: 'about', label: 'Tentang Kami', path: '/about' },
+    { pageKey: 'services', label: 'Layanan', path: '/services' },
+    { pageKey: 'portfolio', label: 'Portofolio', path: '/portfolio' },
+    { pageKey: 'articles', label: 'Artikel', path: '/articles' },
+    { pageKey: 'contact', label: 'Hubungi Kami', path: '/contact' },
+  ];
+  const navigation = (navItems && navItems.length > 0 ? navItems : DEFAULT_NAV)
+    .map((item) => ({ ...item, name: item.label, href: getHref(item.path) }));
 
   const isActive = (href: string) => {
     if (href === getHref('/')) {
@@ -79,7 +81,7 @@ export function Header({ getHref, businessName, taglineLabel = 'Casual Theme', l
           <div className="hidden md:flex items-center gap-4">
             <Link
               id="header-cta"
-              href={getHref('/contact')}
+              href={getHref(ctaPath)}
               className="inline-flex items-center gap-2 bg-[#F56B71] text-white px-5 py-2.5 rounded-full text-sm font-semibold shadow-md hover:bg-[#F56B71]/90 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
             >
               Konsultasi Gratis
@@ -126,7 +128,7 @@ export function Header({ getHref, businessName, taglineLabel = 'Casual Theme', l
             <div className="pt-4 border-t border-gray-100">
               <Link
                 id="mobile-header-cta"
-                href={getHref('/contact')}
+                href={getHref(ctaPath)}
                 onClick={() => setIsOpen(false)}
                 className="flex items-center justify-center gap-2 bg-[#F56B71] text-white w-full py-3.5 rounded-2xl text-base font-semibold shadow-md hover:bg-[#F56B71]/90 transition-all duration-200"
               >

@@ -2,7 +2,10 @@ import React from "react";
 import Link from "next/link";
 import { Shield, Mail, Phone, MapPin, Clock, Instagram, Facebook, Linkedin, Twitter, Globe } from "lucide-react";
 
+export interface FooterNavItem { pageKey: string; label: string; path: string; }
+
 export interface FormalSiteFooterProps {
+  navItems?: FooterNavItem[];
   getHref: (path: string) => string;
   businessName: string;
   taglineLabel?: string;
@@ -21,14 +24,7 @@ export interface FormalSiteFooterProps {
   websiteUrl?: string;
 }
 
-const QUICK_LINKS = [
-  { label: "Beranda", path: "/" },
-  { label: "Tentang Kami", path: "/about" },
-  { label: "Layanan Korporasi", path: "/services" },
-  { label: "Portofolio Proyek", path: "/portfolio" },
-  { label: "Artikel / Pemikiran", path: "/articles" },
-  { label: "Kontak Hubung", path: "/contact" },
-];
+
 
 export const FormalSiteFooter: React.FC<FormalSiteFooterProps> = ({
   getHref,
@@ -49,6 +45,15 @@ export const FormalSiteFooter: React.FC<FormalSiteFooterProps> = ({
   websiteUrl,
 }) => {
   const currentYear = new Date().getFullYear();
+  const DEFAULT_QUICK_LINKS: FooterNavItem[] = [
+    { pageKey: "home", label: "Beranda", path: "/" },
+    { pageKey: "about", label: "Tentang Kami", path: "/about" },
+    { pageKey: "services", label: "Layanan Korporasi", path: "/services" },
+    { pageKey: "portfolio", label: "Portofolio Proyek", path: "/portfolio" },
+    { pageKey: "articles", label: "Artikel / Pemikiran", path: "/articles" },
+    { pageKey: "contact", label: "Kontak Hubung", path: "/contact" },
+  ];
+  const resolvedLinks = navItems && navItems.length > 0 ? navItems : DEFAULT_QUICK_LINKS;
   const hasSocial = instagramUrl || facebookUrl || linkedinUrl || twitterUrl || websiteUrl;
 
   return (
@@ -114,7 +119,7 @@ export const FormalSiteFooter: React.FC<FormalSiteFooterProps> = ({
           <div className="md:col-span-3 flex flex-col space-y-4">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-white">Navigasi Cepat</h3>
             <ul className="space-y-2 text-sm font-light">
-              {QUICK_LINKS.map((link) => (
+              {resolvedLinks.map((link) => (
                 <li key={link.path}>
                   <Link href={getHref(link.path)} className="hover:text-[#649FF6] hover:underline transition-all">
                     {link.label}

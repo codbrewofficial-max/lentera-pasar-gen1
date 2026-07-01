@@ -4,7 +4,10 @@ import React from 'react';
 import Link from 'next/link';
 import { ArrowUpRight, Mail, MapPin, Phone, Github, Instagram, Linkedin, Twitter } from 'lucide-react';
 
+interface FooterNavItem { pageKey: string; label: string; path: string; }
+
 interface FooterProps {
+  navItems?: FooterNavItem[];
   businessName?: string;
   description?: string;
   address?: string;
@@ -26,6 +29,7 @@ export function Footer({
   linkedinUrl = "https://linkedin.com",
   twitterUrl = "https://twitter.com",
   getHref,
+  navItems,
 }: FooterProps) {
   const currentYear = new Date().getFullYear();
 

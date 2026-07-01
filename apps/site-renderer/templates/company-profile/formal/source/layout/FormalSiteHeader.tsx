@@ -7,22 +7,20 @@ import { Menu, X, Shield } from "lucide-react";
 import { cn } from "../lib/utils";
 import { Button } from "../shared/Button";
 
+export interface NavItem { pageKey: string; label: string; path: string; }
+
 export interface FormalSiteHeaderProps {
   siteSlug: string;
   getHref: (path: string) => string;
   businessName: string;
   taglineLabel?: string;
   logoUrl?: string;
+  navItems?: NavItem[];
+  ctaLabel?: string;
+  ctaPath?: string;
 }
 
-const NAV_LINKS = [
-  { label: "Beranda", path: "/" },
-  { label: "Tentang", path: "/about" },
-  { label: "Layanan", path: "/services" },
-  { label: "Portofolio", path: "/portfolio" },
-  { label: "Artikel", path: "/articles" },
-  { label: "Kontak", path: "/contact" },
-];
+
 
 export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
   siteSlug,
@@ -31,6 +29,20 @@ export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
   taglineLabel = "Consulting Group",
   logoUrl,
 }) => {
+
+  const DEFAULT_NAV_LINKS: NavItem[] = [
+    { pageKey: "home", label: "Beranda", path: "/" },
+    { pageKey: "about", label: "Tentang", path: "/about" },
+    { pageKey: "services", label: "Layanan", path: "/services" },
+    { pageKey: "portfolio", label: "Portofolio", path: "/portfolio" },
+    { pageKey: "articles", label: "Artikel", path: "/articles" },
+    { pageKey: "contact", label: "Kontak", path: "/contact" },
+  ];
+  const resolvedLinks = (navItems && navItems.length > 0 ? navItems : DEFAULT_NAV_LINKS).map(item => ({
+    ...item,
+    href: getHref(item.path)
+  }));
+
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
@@ -87,12 +99,12 @@ export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            {NAV_LINKS.map((link) => {
-              const active = isLinkActive(link.path);
+            {resolvedLinks.map((link) => {
+              const active = isLinkActive(link.href);
               return (
                 <Link
                   key={link.path}
-                  href={getHref(link.path)}
+                  href={link.href}
                   className={cn(
                     "text-sm font-medium tracking-wide transition-colors py-1 relative",
                     active ? "text-[#649FF6]" : "text-slate-600 hover:text-[#649FF6]"
@@ -108,7 +120,7 @@ export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
           {/* Header CTA Button (Desktop) */}
           <div className="hidden md:block">
             <Button href={getHref("/contact")} variant="primary" size="sm" className="min-h-[38px]">
-              Hubungi Kami
+              {ctaLabel}
             </Button>
           </div>
 
@@ -136,7 +148,7 @@ export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
             return (
               <Link
                 key={link.path}
-                href={getHref(link.path)}
+                href={link.href}
                 className={cn(
                   "block px-4 py-2.5 rounded text-base font-medium transition-colors",
                   active ? "bg-[#649FF6]/10 text-[#649FF6]" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
@@ -148,7 +160,7 @@ export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
           })}
           <div className="pt-2 px-4">
             <Button href={getHref("/contact")} variant="primary" className="w-full">
-              Hubungi Kami
+              {ctaLabel}
             </Button>
           </div>
         </div>

@@ -6,22 +6,20 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X, Sparkles } from 'lucide-react';
 
+interface NavItem { pageKey: string; label: string; path: string; }
+
 interface HeaderProps {
   businessName?: string;
   logoUrl?: string;
   getHref: (path: string) => string;
+  navItems?: NavItem[];
+  ctaLabel?: string;
+  ctaPath?: string;
 }
 
-const navLinks = [
-  { label: 'HOME', path: '/' },
-  { label: 'ABOUT', path: '/about' },
-  { label: 'SERVICES', path: '/services' },
-  { label: 'PORTFOLIO', path: '/portfolio' },
-  { label: 'ARTICLES', path: '/articles' },
-  { label: 'CONTACT', path: '/contact' }
-];
 
-export function Header({ businessName = "Studio Sinestesia", logoUrl, getHref }: HeaderProps) {
+
+export function Header({ businessName = "Studio Sinestesia", logoUrl, getHref, navItems, ctaLabel = 'Mulai Proyek', ctaPath = '/contact' }: HeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
@@ -76,7 +74,7 @@ export function Header({ businessName = "Studio Sinestesia", logoUrl, getHref }:
           })}
           
           <Link 
-            href={getHref('/contact')} 
+            href={getHref(ctaPath)} 
             className="flex items-center px-6 bg-[#F56B71] hover:bg-white text-black font-mono text-xs font-bold tracking-widest border-l-4 border-white hover:text-black transition-colors"
           >
             LET&apos;S TALK
@@ -124,7 +122,7 @@ export function Header({ businessName = "Studio Sinestesia", logoUrl, getHref }:
                 );
               })}
               <Link
-                href={getHref('/contact')}
+                href={getHref(ctaPath)}
                 onClick={() => setIsOpen(false)}
                 className="px-6 py-5 bg-[#F56B71] text-black font-mono text-sm font-bold tracking-widest text-center hover:bg-white transition-colors"
               >

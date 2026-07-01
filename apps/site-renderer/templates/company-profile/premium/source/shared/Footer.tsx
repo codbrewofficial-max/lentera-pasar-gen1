@@ -3,7 +3,10 @@
 import React from 'react';
 import { Mail, Phone, MapPin, Instagram, Linkedin, ArrowUp } from 'lucide-react';
 
+interface FooterNavItem { pageKey: string; label: string; path: string; }
+
 interface FooterProps {
+  navItems?: FooterNavItem[];
   businessName?: string;
   logoUrl?: string;
   getHref: (path: string) => string;
@@ -25,6 +28,7 @@ export function Footer({
   email = "email@contoh.com",
   instagramUrl = "https://instagram.com",
   linkedinUrl = "https://linkedin.com",
+  navItems,
 }: FooterProps) {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });

@@ -3,23 +3,30 @@
 import React, { useState } from 'react';
 import { Menu, X, ArrowRight } from 'lucide-react';
 
+interface NavItem { pageKey: string; label: string; path: string; }
+
 interface HeaderProps {
   businessName?: string;
   logoUrl?: string;
   getHref: (path: string) => string;
+  navItems?: NavItem[];
+  ctaLabel?: string;
+  ctaPath?: string;
 }
 
-export function Header({ businessName = "Niskala Atelier", logoUrl, getHref }: HeaderProps) {
+export function Header({ businessName = "Niskala Atelier", logoUrl, getHref, navItems, ctaLabel = 'Konsultasi', ctaPath = '/contact' }: HeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const navLinks = [
-    { label: "BERANDA", path: "/" },
-    { label: "TENTANG", path: "/about" },
-    { label: "LAYANAN", path: "/services" },
-    { label: "PORTFOLIO", path: "/portfolio" },
-    { label: "ARTIKEL", path: "/articles" },
-    { label: "KONTAK", path: "/contact" }
-  ].map((item) => ({ ...item, href: getHref(item.path) }));
+  const DEFAULT_NAV: NavItem[] = [
+    { pageKey: "home", label: "BERANDA", path: "/" },
+    { pageKey: "about", label: "TENTANG", path: "/about" },
+    { pageKey: "services", label: "LAYANAN", path: "/services" },
+    { pageKey: "portfolio", label: "PORTFOLIO", path: "/portfolio" },
+    { pageKey: "articles", label: "ARTIKEL", path: "/articles" },
+    { pageKey: "contact", label: "KONTAK", path: "/contact" }
+  ];
+  const navLinks = (navItems && navItems.length > 0 ? navItems.map(i => ({ ...i, label: i.label.toUpperCase() })) : DEFAULT_NAV)
+    .map((item) => ({ ...item, href: getHref(item.path) }));
 
   return (
     <header id="premium-header" className="sticky top-0 z-50 w-full bg-[#0E0E0F]/90 backdrop-blur-md border-b border-white/5 text-white transition-all duration-300">
@@ -62,7 +69,7 @@ export function Header({ businessName = "Niskala Atelier", logoUrl, getHref }: H
         <div className="hidden md:block">
           <a
             id="header-cta-btn"
-            href={getHref('/contact')}
+            href={getHref(ctaPath)}
             className="inline-flex items-center space-x-2 text-xs font-semibold tracking-[0.2em] uppercase px-5 py-2.5 border border-white/15 rounded-none hover:border-[#649FF6] hover:bg-white/5 transition-all duration-300"
           >
             <span>KONSULTASI</span>
@@ -99,7 +106,7 @@ export function Header({ businessName = "Niskala Atelier", logoUrl, getHref }: H
           </div>
           <a
             id="header-mobile-cta"
-            href={getHref('/contact')}
+            href={getHref(ctaPath)}
             className="flex items-center justify-between text-xs font-semibold tracking-[0.2em] uppercase w-full px-5 py-4 border border-white/10 rounded-none bg-white/5"
             onClick={() => setIsOpen(false)}
           >

@@ -69,7 +69,16 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
   if (activeTheme === 'formal') {
     return (
       <div className="min-h-screen bg-white text-slate-950">
-        <FormalSiteHeader siteSlug={siteSlug} getHref={getHref} businessName={businessName} taglineLabel={tagline} logoUrl={logoUrl || undefined} />
+        <FormalSiteHeader
+          siteSlug={siteSlug}
+          getHref={getHref}
+          businessName={businessName}
+          taglineLabel={tagline}
+          logoUrl={logoUrl || undefined}
+          navItems={navbarItems.length > 0 ? navbarItems : undefined}
+          ctaLabel={cta?.label || 'Hubungi Kami'}
+          ctaPath={cta?.path || '/contact'}
+        />
         <main className="pt-[72px]">{children}</main>
         <FormalSiteFooter
           getHref={getHref}
@@ -88,6 +97,7 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
           linkedinUrl={payload.businessProfile?.linkedinUrl || undefined}
           twitterUrl={payload.businessProfile?.twitterUrl || undefined}
           websiteUrl={payload.businessProfile?.websiteUrl || undefined}
+          navItems={footerItems.length > 0 ? footerItems : undefined}
         />
         <FloatingWhatsApp whatsappNumber={payload.businessProfile?.whatsapp || undefined} />
       </div>
@@ -97,7 +107,15 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
   if (activeTheme === 'casual') {
     return (
       <div className="min-h-screen bg-white text-gray-950">
-        <CasualSiteHeader getHref={getHref} businessName={businessName} taglineLabel={tagline} logoUrl={logoUrl || undefined} />
+        <CasualSiteHeader
+          getHref={getHref}
+          businessName={businessName}
+          taglineLabel={tagline}
+          logoUrl={logoUrl || undefined}
+          navItems={navbarItems.length > 0 ? navbarItems : undefined}
+          ctaLabel={cta?.label || 'Hubungi Kami'}
+          ctaPath={cta?.path || '/contact'}
+        />
         <main>{children}</main>
         <CasualSiteFooter
           getHref={getHref}
@@ -108,6 +126,7 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
           email={email || 'email@contoh.com'}
           whatsappHref={whatsapp ? `https://wa.me/${whatsapp}` : ctaHref}
           logoUrl={logoUrl || undefined}
+          navItems={footerItems.length > 0 ? footerItems : undefined}
         />
       </div>
     );
@@ -116,7 +135,14 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
   if (activeTheme === 'premium') {
     return (
       <div className="min-h-screen bg-[#0E0E0F] text-white">
-        <PremiumSiteHeader getHref={getHref} businessName={businessName} logoUrl={logoUrl || undefined} />
+        <PremiumSiteHeader
+          getHref={getHref}
+          businessName={businessName}
+          logoUrl={logoUrl || undefined}
+          navItems={navbarItems.length > 0 ? navbarItems : undefined}
+          ctaLabel={cta?.label || 'Konsultasi'}
+          ctaPath={cta?.path || '/contact'}
+        />
         <main>{children}</main>
         <PremiumSiteFooter
           getHref={getHref}
@@ -126,6 +152,7 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
           phone={payload.businessProfile?.phone || '-'}
           email={email || 'email@contoh.com'}
           logoUrl={logoUrl || undefined}
+          navItems={footerItems.length > 0 ? footerItems : undefined}
         />
       </div>
     );
@@ -134,7 +161,14 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
   if (activeTheme === 'abstract') {
     return (
       <div className="min-h-screen bg-[#0d0d0d] text-white">
-        <AbstractSiteHeader getHref={getHref} businessName={businessName} logoUrl={logoUrl || undefined} />
+        <AbstractSiteHeader
+          getHref={getHref}
+          businessName={businessName}
+          logoUrl={logoUrl || undefined}
+          navItems={navbarItems.length > 0 ? navbarItems : undefined}
+          ctaLabel={cta?.label || 'Mulai Proyek'}
+          ctaPath={cta?.path || '/contact'}
+        />
         <main>{children}</main>
         <AbstractSiteFooter
           getHref={getHref}
@@ -143,6 +177,7 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
           address={payload.businessProfile?.address || 'Alamat belum diisi.'}
           phone={payload.businessProfile?.phone || '-'}
           email={email || 'email@contoh.com'}
+          navItems={footerItems.length > 0 ? footerItems : undefined}
         />
       </div>
     );
