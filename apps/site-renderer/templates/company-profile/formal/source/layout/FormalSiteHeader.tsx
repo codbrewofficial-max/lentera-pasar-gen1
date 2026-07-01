@@ -27,8 +27,8 @@ export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
   taglineLabel = "Consulting Group",
   logoUrl,
   navItems,
-  ctaLabel,
-  ctaPath
+  ctaLabel = "Hubungi Kami", // Memberikan default jika ctaLabel kosong
+  ctaPath = "/contact"
 }) => {
 
   const DEFAULT_NAV_LINKS: NavItem[] = [
@@ -39,6 +39,8 @@ export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
     { pageKey: "articles", label: "Artikel", path: "/articles" },
     { pageKey: "contact", label: "Kontak", path: "/contact" },
   ];
+
+  // Menggabungkan path dari DB dengan helper getHref
   const resolvedLinks = (navItems && navItems.length > 0 ? navItems : DEFAULT_NAV_LINKS).map(item => ({
     ...item,
     href: getHref(item.path)
@@ -49,22 +51,21 @@ export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
   const pathname = usePathname();
   const homeHref = getHref("/");
 
+  // Efek untuk mendeteksi scroll window
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // PERBAIKAN 1: Menu mobile otomatis menutup HANYA saat user sukses pindah halaman (pathname berubah)
   useEffect(() => {
-    if (isOpen) {
-      const timer = setTimeout(() => setIsOpen(false), 0);
-      return () => clearTimeout(timer);
-    }
-  }, [pathname, isOpen]);
+    setIsOpen(false);
+  }, [pathname]);
 
-  const isLinkActive = (path: string) => {
-    const href = getHref(path);
-    if (path === "/") return pathname === href;
+  // PERBAIKAN 2: Fungsi cek aktif menggunakan `href` yang sudah di-resolve agar konsisten
+  const isLinkActive = (href: string) => {
+    if (href === homeHref) return pathname === href;
     return pathname === href || pathname?.startsWith(`${href}/`);
   };
 
@@ -101,7 +102,7 @@ export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             {resolvedLinks.map((link) => {
-              const active = isLinkActive(link.href);
+              const active = isLinkActive(link.href); // Menggunakan link.href
               return (
                 <Link
                   key={link.path}
@@ -120,7 +121,7 @@ export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
 
           {/* Header CTA Button (Desktop) */}
           <div className="hidden md:block">
-            <Button href={getHref("/contact")} variant="primary" size="sm" className="min-h-[38px]">
+            <Button href={getHref(ctaPath)} variant="primary" size="sm" className="min-h-[38px]">
               {ctaLabel}
             </Button>
           </div>
@@ -145,7 +146,7 @@ export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
       >
         <div className="px-4 pt-4 pb-6 space-y-3">
           {resolvedLinks.map((link) => {
-            const active = isLinkActive(link.path);
+            const active = isLinkActive(link.href); // PERBAIKAN 3: Sekarang disamakan pakai link.href
             return (
               <Link
                 key={link.path}
@@ -160,7 +161,7 @@ export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
             );
           })}
           <div className="pt-2 px-4">
-            <Button href={getHref("/contact")} variant="primary" className="w-full">
+            <Button href={getHref(ctaPath)} variant="primary" className="w-full">
               {ctaLabel}
             </Button>
           </div>
@@ -169,4 +170,5 @@ export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
     </header>
   );
 };
+
 export default FormalSiteHeader;

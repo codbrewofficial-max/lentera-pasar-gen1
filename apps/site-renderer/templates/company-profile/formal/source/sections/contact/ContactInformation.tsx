@@ -72,8 +72,8 @@ export const ContactInformation: React.FC<ContactInformationProps> = ({
                 </div>
                 <h3 className="text-sm font-bold text-slate-900 mb-2 uppercase tracking-wider">Surel Resmi</h3>
                 <p className="text-sm text-slate-700 font-mono font-medium truncate w-full">
-                  <a href={`mailto:${company.contact.contactEmail}`} className="hover:text-slate-900 hover:underline transition-colors">
-                    {company.contact.contactEmail}
+                  <a href={`mailto:${company.contact.email}`} className="hover:text-slate-900 hover:underline transition-colors">
+                    {company.contact.email}
                   </a>
                 </p>
               </div>

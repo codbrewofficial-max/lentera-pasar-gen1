@@ -264,7 +264,7 @@ function companyDataFor(payload: PublicPagePayload): CompanyData {
         ],
     contact: {
       address: text(business.address, "Alamat bisnis belum diisi."),
-      email: text(business.email, "email@contoh.com"),
+      email: text(business.contactEmail, "email@contoh.com"),
       phone: text(business.phone, "-"),
       whatsapp: text(business.whatsapp, "-"),
       workingHours: text(business.workingHours, text(business.operationalHours, "Jam operasional belum diisi.")),

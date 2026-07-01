@@ -48,12 +48,12 @@ export const ServicePreview: React.FC<HomeServicePreviewProps> = ({
                 {service.description}
               </p>
 
-              <a
+              {/* <a
                 href={`${allServicesHref}#${service.id}`}
                 className="inline-flex text-xs text-[#649FF6] font-semibold pt-4 border-t border-slate-50 hover:underline"
               >
                 Selengkapnya →
-              </a>
+              </a> */}
             </Card>
           ))}
         </div>
