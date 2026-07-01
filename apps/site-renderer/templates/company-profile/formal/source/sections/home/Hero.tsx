@@ -85,10 +85,10 @@ export const Hero: React.FC<HomeHeroProps> = ({
                   referrerPolicy="no-referrer"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
-                <div className="absolute bottom-6 left-6 right-6 p-4 bg-slate-950/80 backdrop-blur-md rounded border border-slate-800">
+                {/* <div className="absolute bottom-6 left-6 right-6 p-4 bg-slate-950/80 backdrop-blur-md rounded border border-slate-800">
                   <p className="text-xs text-slate-400 uppercase tracking-widest font-mono">{visualLabel}</p>
                   <p className="text-sm font-semibold text-white mt-1">{visualText}</p>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>
