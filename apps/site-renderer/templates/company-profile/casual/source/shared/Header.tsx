@@ -8,6 +8,7 @@ import { Menu, X, Sparkles, ArrowRight } from 'lucide-react';
 export interface NavItem { pageKey: string; label: string; path: string; }
 
 export interface CasualHeaderProps {
+  siteSlug: string;
   getHref: (path: string) => string;
   businessName: string;
   taglineLabel?: string;
@@ -17,7 +18,7 @@ export interface CasualHeaderProps {
   ctaPath?: string;
 }
 
-export function Header({ getHref, businessName, taglineLabel = 'Casual Theme', logoUrl, navItems, ctaLabel, ctaPath }: CasualHeaderProps) {
+export function Header({ siteSlug, getHref, businessName, taglineLabel = 'Casual Theme', logoUrl, navItems, ctaLabel, ctaPath }: CasualHeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 

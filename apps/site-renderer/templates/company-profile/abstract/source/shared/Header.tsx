@@ -9,9 +9,11 @@ import { Menu, X, Sparkles } from 'lucide-react';
 interface NavItem { pageKey: string; label: string; path: string; }
 
 interface HeaderProps {
-  businessName?: string;
-  logoUrl?: string;
+  siteSlug: string;
   getHref: (path: string) => string;
+  businessName: string;
+  taglineLabel?: string;
+  logoUrl?: string;
   navItems?: NavItem[];
   ctaLabel?: string;
   ctaPath?: string;
@@ -19,9 +21,28 @@ interface HeaderProps {
 
 
 
-export function Header({ businessName = "Studio Sinestesia", logoUrl, getHref, navItems, ctaLabel = 'Mulai Proyek', ctaPath = '/contact' }: HeaderProps) {
+
+export function Header({ siteSlug, getHref, businessName, taglineLabel = 'Casual Theme', logoUrl, navItems, ctaLabel, ctaPath }: HeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+
+  const DEFAULT_NAV: NavItem[] = [
+    { pageKey: 'home', label: 'Home', path: '/' },
+    { pageKey: 'about', label: 'Tentang Kami', path: '/about' },
+    { pageKey: 'services', label: 'Layanan', path: '/services' },
+    { pageKey: 'portfolio', label: 'Portofolio', path: '/portfolio' },
+    { pageKey: 'articles', label: 'Artikel', path: '/articles' },
+    { pageKey: 'contact', label: 'Hubungi Kami', path: '/contact' },
+  ];
+  const navigation = (navItems && navItems.length > 0 ? navItems : DEFAULT_NAV)
+    .map((item) => ({ ...item, name: item.label, href: getHref(item.path) }));
+
+  const isActive = (href: string) => {
+    if (href === getHref('/')) {
+      return pathname === href;
+    }
+    return pathname?.startsWith(href);
+  };
 
   return (
     <header className="relative z-50 w-full bg-[#111111] text-white border-b-4 border-white overflow-visible">
@@ -46,7 +67,7 @@ export function Header({ businessName = "Studio Sinestesia", logoUrl, getHref, n
 
         {/* DESKTOP NAV - Asymmetric Grid-like Boxes */}
         <nav className="hidden md:flex items-stretch h-full">
-          {navLinks.map((link) => {
+          {navigation.map((link) => {
             const isActive = pathname === getHref(link.path);
             return (
               <Link 
@@ -74,7 +95,7 @@ export function Header({ businessName = "Studio Sinestesia", logoUrl, getHref, n
           })}
           
           <Link 
-            href={getHref(ctaPath)} 
+            href={getHref('/contact')} 
             className="flex items-center px-6 bg-[#F56B71] hover:bg-white text-black font-mono text-xs font-bold tracking-widest border-l-4 border-white hover:text-black transition-colors"
           >
             LET&apos;S TALK
@@ -105,7 +126,7 @@ export function Header({ businessName = "Studio Sinestesia", logoUrl, getHref, n
             className="absolute top-24 left-0 w-full bg-[#111111] border-b-4 border-white text-white md:hidden z-40"
           >
             <div className="flex flex-col border-t border-neutral-800">
-              {navLinks.map((link, idx) => {
+              {navigation.map((link, idx) => {
                 const isActive = pathname === getHref(link.path);
                 return (
                   <Link
@@ -122,7 +143,7 @@ export function Header({ businessName = "Studio Sinestesia", logoUrl, getHref, n
                 );
               })}
               <Link
-                href={getHref(ctaPath)}
+                href={getHref('/contact')}
                 onClick={() => setIsOpen(false)}
                 className="px-6 py-5 bg-[#F56B71] text-black font-mono text-sm font-bold tracking-widest text-center hover:bg-white transition-colors"
               >

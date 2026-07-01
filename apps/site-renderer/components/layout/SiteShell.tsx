@@ -108,6 +108,7 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
     return (
       <div className="min-h-screen bg-white text-gray-950">
         <CasualSiteHeader
+          siteSlug={siteSlug}
           getHref={getHref}
           businessName={businessName}
           taglineLabel={tagline}
@@ -120,12 +121,20 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
         <CasualSiteFooter
           getHref={getHref}
           businessName={businessName}
-          description={description}
-          address={payload.businessProfile?.address || 'Alamat belum diisi.'}
-          phone={payload.businessProfile?.phone || '-'}
-          email={email || 'email@contoh.com'}
-          whatsappHref={whatsapp ? `https://wa.me/${whatsapp}` : ctaHref}
+          taglineLabel={tagline}
           logoUrl={logoUrl || undefined}
+          description={description}
+          establishedYear={typeof payload.businessProfile?.establishedYear === 'string' ? payload.businessProfile.establishedYear : undefined}
+          founderName={typeof payload.businessProfile?.founderName === 'string' ? payload.businessProfile.founderName : undefined}
+          address={payload.businessProfile?.address || ''}
+          email={email || ''}
+          phone={payload.businessProfile?.phone || ''}
+          workingHours={payload.businessProfile?.workingHours || payload.businessProfile?.operationalHours || ''}
+          instagramUrl={payload.businessProfile?.instagramUrl || undefined}
+          facebookUrl={payload.businessProfile?.facebookUrl || undefined}
+          linkedinUrl={payload.businessProfile?.linkedinUrl || undefined}
+          twitterUrl={payload.businessProfile?.twitterUrl || undefined}
+          websiteUrl={payload.businessProfile?.websiteUrl || undefined}
           navItems={footerItems.length > 0 ? footerItems : undefined}
         />
       </div>
@@ -162,11 +171,13 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
     return (
       <div className="min-h-screen bg-[#0d0d0d] text-white">
         <AbstractSiteHeader
+          siteSlug={siteSlug}
           getHref={getHref}
           businessName={businessName}
+          taglineLabel={tagline}
           logoUrl={logoUrl || undefined}
           navItems={navbarItems.length > 0 ? navbarItems : undefined}
-          ctaLabel={cta?.label || 'Mulai Proyek'}
+          ctaLabel={cta?.label || 'Hubungi Kami'}
           ctaPath={cta?.path || '/contact'}
         />
         <main>{children}</main>
