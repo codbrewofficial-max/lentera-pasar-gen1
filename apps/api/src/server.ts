@@ -509,7 +509,12 @@ const businessProfileBody = z.object({
   contactEmail: z.string().email().nullable().optional(),
   phone: z.string().nullable().optional(),
   whatsapp: z.string().nullable().optional(),
-  address: z.string().nullable().optional()
+  address: z.string().nullable().optional(),
+  instagramUrl: z.string().url().nullable().optional(),
+  facebookUrl: z.string().url().nullable().optional(),
+  linkedinUrl: z.string().url().nullable().optional(),
+  twitterUrl: z.string().url().nullable().optional(),
+  websiteUrl: z.string().url().nullable().optional()
 });
 const listItemBody = z.object({
   categoryId: z.string().nullable().optional(),

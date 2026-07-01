@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { Shield, Mail, Phone, MapPin, Clock } from "lucide-react";
+import { Shield, Mail, Phone, MapPin, Clock, Instagram, Facebook, Linkedin, Twitter, Globe } from "lucide-react";
 
 export interface FormalSiteFooterProps {
   getHref: (path: string) => string;
@@ -14,6 +14,11 @@ export interface FormalSiteFooterProps {
   email: string;
   phone: string;
   workingHours: string;
+  instagramUrl?: string;
+  facebookUrl?: string;
+  linkedinUrl?: string;
+  twitterUrl?: string;
+  websiteUrl?: string;
 }
 
 const QUICK_LINKS = [
@@ -28,7 +33,7 @@ const QUICK_LINKS = [
 export const FormalSiteFooter: React.FC<FormalSiteFooterProps> = ({
   getHref,
   businessName,
-  taglineLabel = "Consulting Group",
+  taglineLabel = "Company Profile",
   logoUrl,
   description,
   establishedYear,
@@ -37,8 +42,14 @@ export const FormalSiteFooter: React.FC<FormalSiteFooterProps> = ({
   email,
   phone,
   workingHours,
+  instagramUrl,
+  facebookUrl,
+  linkedinUrl,
+  twitterUrl,
+  websiteUrl,
 }) => {
   const currentYear = new Date().getFullYear();
+  const hasSocial = instagramUrl || facebookUrl || linkedinUrl || twitterUrl || websiteUrl;
 
   return (
     <footer className="bg-slate-900 text-slate-300 border-t border-slate-800">
@@ -67,6 +78,36 @@ export const FormalSiteFooter: React.FC<FormalSiteFooterProps> = ({
                 {founderName ? ` oleh ${founderName}` : ""}
               </div>
             )}
+            {/* Social Media */}
+            {hasSocial && (
+              <div className="flex items-center gap-2 pt-1">
+                {instagramUrl && (
+                  <a href={instagramUrl} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="w-8 h-8 flex items-center justify-center rounded bg-slate-800 hover:bg-[#649FF6] text-slate-400 hover:text-white transition-colors">
+                    <Instagram className="w-4 h-4" />
+                  </a>
+                )}
+                {facebookUrl && (
+                  <a href={facebookUrl} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="w-8 h-8 flex items-center justify-center rounded bg-slate-800 hover:bg-[#649FF6] text-slate-400 hover:text-white transition-colors">
+                    <Facebook className="w-4 h-4" />
+                  </a>
+                )}
+                {linkedinUrl && (
+                  <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="w-8 h-8 flex items-center justify-center rounded bg-slate-800 hover:bg-[#649FF6] text-slate-400 hover:text-white transition-colors">
+                    <Linkedin className="w-4 h-4" />
+                  </a>
+                )}
+                {twitterUrl && (
+                  <a href={twitterUrl} target="_blank" rel="noopener noreferrer" aria-label="Twitter/X" className="w-8 h-8 flex items-center justify-center rounded bg-slate-800 hover:bg-[#649FF6] text-slate-400 hover:text-white transition-colors">
+                    <Twitter className="w-4 h-4" />
+                  </a>
+                )}
+                {websiteUrl && (
+                  <a href={websiteUrl} target="_blank" rel="noopener noreferrer" aria-label="Website" className="w-8 h-8 flex items-center justify-center rounded bg-slate-800 hover:bg-[#649FF6] text-slate-400 hover:text-white transition-colors">
+                    <Globe className="w-4 h-4" />
+                  </a>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Quick Navigation Links */}
@@ -87,41 +128,44 @@ export const FormalSiteFooter: React.FC<FormalSiteFooterProps> = ({
           <div className="md:col-span-4 flex flex-col space-y-4">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-white">Informasi Kontak</h3>
             <div className="space-y-3 text-sm font-light text-slate-400">
-              <div className="flex items-start space-x-2.5">
-                <MapPin className="w-4 h-4 text-[#649FF6] mt-0.5 flex-shrink-0" />
-                <span>{address}</span>
-              </div>
-              <div className="flex items-center space-x-2.5">
-                <Mail className="w-4 h-4 text-[#649FF6] flex-shrink-0" />
-                <a href={`mailto:${email}`} className="hover:text-[#649FF6] transition-colors">
-                  {email}
-                </a>
-              </div>
-              <div className="flex items-center space-x-2.5">
-                <Phone className="w-4 h-4 text-[#649FF6] flex-shrink-0" />
-                <a href={`tel:${phone.replace(/[^0-9+]/g, "")}`} className="hover:text-[#649FF6] transition-colors">
-                  {phone}
-                </a>
-              </div>
-              <div className="flex items-start space-x-2.5 pt-1 border-t border-slate-800">
-                <Clock className="w-4 h-4 text-[#F56B71] mt-0.5 flex-shrink-0" />
-                <span className="text-xs font-mono">{workingHours}</span>
-              </div>
+              {address && (
+                <div className="flex items-start space-x-2.5">
+                  <MapPin className="w-4 h-4 text-[#649FF6] mt-0.5 flex-shrink-0" />
+                  <span>{address}</span>
+                </div>
+              )}
+              {email && (
+                <div className="flex items-center space-x-2.5">
+                  <Mail className="w-4 h-4 text-[#649FF6] flex-shrink-0" />
+                  <a href={`mailto:${email}`} className="hover:text-[#649FF6] transition-colors">{email}</a>
+                </div>
+              )}
+              {phone && (
+                <div className="flex items-center space-x-2.5">
+                  <Phone className="w-4 h-4 text-[#649FF6] flex-shrink-0" />
+                  <a href={`tel:${phone.replace(/[^0-9+]/g, "")}`} className="hover:text-[#649FF6] transition-colors">{phone}</a>
+                </div>
+              )}
+              {workingHours && (
+                <div className="flex items-start space-x-2.5 pt-1 border-t border-slate-800">
+                  <Clock className="w-4 h-4 text-[#F56B71] mt-0.5 flex-shrink-0" />
+                  <span className="text-xs font-mono">{workingHours}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
       {/* Bottom Copyright Section */}
-      <div className="border-t border-slate-800 bg-slate-950 py-6 text-xs text-center text-slate-500 font-mono">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p>
-            &copy; {currentYear} {businessName}. Hak Cipta Dilindungi Undang-Undang.
-          </p>
-          <p className="mt-1 text-[10px] text-slate-600">
-            Layanan Korporasi Profesional &middot; Legalitas &middot; Restrukturisasi &middot; Kepatuhan ESG
-          </p>
-        </div>
+      <div className="border-t border-slate-800 bg-slate-950 py-5 text-xs font-mono text-center text-slate-500 space-y-1">
+        <p>
+          &copy; {currentYear} {businessName} &mdash; Powered by{" "}
+          <span className="text-slate-400 font-semibold">Lentera Pasar</span>
+        </p>
+        <p className="text-[10px] text-slate-600">
+          Developed by the <span className="text-slate-500">LabKerKomIT Community Team</span>
+        </p>
       </div>
     </footer>
   );

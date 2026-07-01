@@ -28,10 +28,8 @@ export const CaseHighlight: React.FC<CaseHighlightProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center bg-white border border-slate-100 rounded-lg shadow-sm overflow-hidden">
           <div className="relative h-full min-h-[360px] bg-slate-100">
             <img src={imageUrl || project.imageUrl} alt={project.title} className="absolute inset-0 w-full h-full object-cover" referrerPolicy="no-referrer" />
-            <div className="absolute top-4 left-4"><Badge variant="accent" className="bg-slate-900/80 text-white border-transparent backdrop-blur-sm">{project.category}</Badge></div>
           </div>
           <div className="p-8 md:p-10">
-            <p className="text-xs font-mono text-slate-400 uppercase tracking-wider mb-2">{project.clientName} &bull; {project.year}</p>
             <h3 className="text-2xl font-semibold text-slate-900 tracking-tight mb-4">{project.title}</h3>
             <p className="text-sm text-slate-600 font-light leading-relaxed mb-8">{project.description}</p>
             <div className="space-y-5">

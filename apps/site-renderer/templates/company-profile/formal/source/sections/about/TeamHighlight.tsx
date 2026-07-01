@@ -47,8 +47,7 @@ export const TeamHighlight: React.FC<TeamHighlightProps> = ({
                       <Linkedin className="w-4 h-4" />
                     </a>
                   )}
-                  <span className="text-slate-200">|</span>
-                  <span className="text-[10px] text-slate-400 font-mono">Verified Advisor</span>
+
                 </div>
               </div>
             </Card>

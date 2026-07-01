@@ -7,8 +7,6 @@ interface ContactCtaProps {
   description?: string;
   ctaLabel?: string;
   ctaHref?: string;
-  secondaryLabel?: string;
-  secondaryHref?: string;
 }
 
 export const ContactCta: React.FC<ContactCtaProps> = ({
@@ -16,8 +14,6 @@ export const ContactCta: React.FC<ContactCtaProps> = ({
   description = "Gunakan tombol berikut untuk menuju saluran kontak utama bisnis.",
   ctaLabel = "Hubungi Sekarang",
   ctaHref = "/contact",
-  secondaryLabel = "WhatsApp",
-  secondaryHref = "#",
 }) => {
   return (
     <section id="contact-cta" className="py-16 md:py-24 bg-slate-900 text-white relative overflow-hidden">
@@ -27,7 +23,6 @@ export const ContactCta: React.FC<ContactCtaProps> = ({
         <p className="text-slate-300 font-light leading-relaxed max-w-2xl mx-auto mb-8">{description}</p>
         <div className="flex flex-col sm:flex-row justify-center gap-3">
           <Button href={ctaHref} size="lg" iconRight={<ArrowRight className="w-4 h-4" />}>{ctaLabel}</Button>
-          <Button href={secondaryHref} size="lg" variant="outline" className="border-white/40 text-white hover:bg-white/10">{secondaryLabel}</Button>
         </div>
       </div>
     </section>

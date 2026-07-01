@@ -6,6 +6,7 @@ import type { PublicPagePayload } from '@/lib/types';
 import { getSiteHref } from '@/lib/links';
 import { FormalSiteHeader } from '@/templates/company-profile/formal/source/layout/FormalSiteHeader';
 import { FormalSiteFooter } from '@/templates/company-profile/formal/source/layout/FormalSiteFooter';
+import { FloatingWhatsApp } from '@/components/layout/FloatingWhatsApp';
 import { Header as CasualSiteHeader } from '@/templates/company-profile/casual/source/shared/Header';
 import { Footer as CasualSiteFooter } from '@/templates/company-profile/casual/source/shared/Footer';
 import { Header as PremiumSiteHeader } from '@/templates/company-profile/premium/source/shared/Header';
@@ -78,11 +79,17 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
           description={description}
           establishedYear={typeof payload.businessProfile?.establishedYear === 'string' ? payload.businessProfile.establishedYear : undefined}
           founderName={typeof payload.businessProfile?.founderName === 'string' ? payload.businessProfile.founderName : undefined}
-          address={payload.businessProfile?.address || 'Alamat belum diisi.'}
-          email={email || 'email@contoh.com'}
-          phone={payload.businessProfile?.phone || '-'}
-          workingHours={payload.businessProfile?.workingHours || payload.businessProfile?.operationalHours || 'Jam operasional belum diisi.'}
+          address={payload.businessProfile?.address || ''}
+          email={email || ''}
+          phone={payload.businessProfile?.phone || ''}
+          workingHours={payload.businessProfile?.workingHours || payload.businessProfile?.operationalHours || ''}
+          instagramUrl={payload.businessProfile?.instagramUrl || undefined}
+          facebookUrl={payload.businessProfile?.facebookUrl || undefined}
+          linkedinUrl={payload.businessProfile?.linkedinUrl || undefined}
+          twitterUrl={payload.businessProfile?.twitterUrl || undefined}
+          websiteUrl={payload.businessProfile?.websiteUrl || undefined}
         />
+        <FloatingWhatsApp whatsappNumber={payload.businessProfile?.whatsapp || undefined} />
       </div>
     );
   }

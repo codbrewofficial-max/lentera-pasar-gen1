@@ -242,6 +242,11 @@ model BusinessProfile {
   phone        String?
   whatsapp     String?
   address      String?
+  instagramUrl String?
+  facebookUrl  String?
+  linkedinUrl  String?
+  twitterUrl   String?
+  websiteUrl   String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }

@@ -1,5 +1,5 @@
 import React from "react";
-import { User, Calendar, ArrowRight, CheckCircle, HelpCircle, ShieldCheck } from "lucide-react";
+import { ArrowRight, CheckCircle, HelpCircle, ShieldCheck } from "lucide-react";
 import { PortfolioItem } from "../../lib/types";
 import { Card } from "../../shared/Card";
 import { Badge } from "../../shared/Badge";
@@ -62,16 +62,11 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-6 text-xs text-slate-500 font-mono mb-4">
-                  <div className="flex items-center space-x-1.5">
-                    <User className="w-4 h-4 text-slate-400" />
+                {project.clientName && (
+                  <div className="text-xs text-slate-500 font-mono mb-4">
                     <span className="font-semibold text-slate-700">{project.clientName}</span>
                   </div>
-                  <div className="flex items-center space-x-1.5">
-                    <Calendar className="w-4 h-4 text-slate-400" />
-                    <span>Tahun {project.year}</span>
-                  </div>
-                </div>
+                )}
 
                 <h3 className="text-xl font-semibold text-slate-900 mb-4 tracking-tight leading-snug">
                   {project.title}

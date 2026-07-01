@@ -1,16 +1,12 @@
 import React from "react";
 import { ArrowRight } from "lucide-react";
 import { Button } from "../../shared/Button";
-import { companyData } from "../../data/companyProfileData";
 
 export interface HomeCtaContactProps {
   title?: string;
   description?: string;
   primaryCtaLabel?: string;
   primaryCtaHref?: string;
-  whatsappLabel?: string;
-  whatsappHref?: string;
-  footnote?: string;
 }
 
 export const CtaContact: React.FC<HomeCtaContactProps> = ({
@@ -18,9 +14,6 @@ export const CtaContact: React.FC<HomeCtaContactProps> = ({
   description = "Hubungi dewan penasihat senior kami hari ini untuk menjadwalkan sesi diskusi awal yang sepenuhnya rahasia (NDA-secured).",
   primaryCtaLabel = "Konsultasi Sekarang",
   primaryCtaHref = "/contact",
-  whatsappLabel = "Hubungi via WhatsApp",
-  whatsappHref = `https://wa.me/${companyData.contact.whatsapp.replace(/[^0-9]/g, "")}`,
-  footnote = "Respons dalam 1x24 jam kerja • Bebas biaya komitmen diagnostik awal",
 }) => {
   return (
     <section 
@@ -49,18 +42,6 @@ export const CtaContact: React.FC<HomeCtaContactProps> = ({
           >
             {primaryCtaLabel}
           </Button>
-          <a
-            href={whatsappHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center font-medium transition-all duration-200 px-8 py-3 text-base rounded border border-white/20 text-white hover:bg-white/5 min-h-[44px]"
-          >
-            {whatsappLabel}
-          </a>
-        </div>
-
-        <div className="mt-8 text-xs text-slate-500 font-mono">
-          {footnote}
         </div>
       </div>
     </section>

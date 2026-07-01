@@ -22,6 +22,7 @@ export const PAGES = {
   articles: "Blog / Artikel",
   article_detail: "Article Detail",
   contact: "Contact",
+  portfolio_detail: "Portfolio Detail",
   products: "Products",
   product_detail: "Product Detail",
   packages: "Rooms / Packages",
@@ -33,7 +34,7 @@ export const PAGES = {
 
 export const WEBSITE_TYPE_PAGES = {
   landing_page: ["home"],
-  company_profile: ["home", "about", "services", "portfolio", "articles", "article_detail", "contact"],
+  company_profile: ["home", "about", "services", "portfolio", "articles", "article_detail", "contact", "portfolio_detail"],
   catalog_product: ["home", "products", "product_detail", "articles", "article_detail", "contact"],
   booking_inquiry: ["home", "packages", "gallery", "booking", "articles", "contact"],
   community_website: ["home", "events", "gallery", "articles", "join"]
@@ -47,7 +48,8 @@ export const PAGE_SECTION_RULES = {
     portfolio: ["portfolio_hero", "portfolio_category", "portfolio_grid", "case_highlight", "portfolio_cta"],
     articles: ["article_hero", "featured_article", "article_preview"],
     article_detail: ["article_detail_hero", "article_content", "related_articles", "article_cta"],
-    contact: ["contact_hero", "contact_information", "maps_location", "contact_faq", "contact_cta"]
+    contact: ["contact_hero", "contact_information", "maps_location", "contact_faq", "contact_cta"],
+    portfolio_detail: ["portfolio_detail_hero", "portfolio_detail_content", "portfolio_detail_cta"]
   },
   catalog_product: {
     home: ["hero", "category_preview", "featured_products", "advantages", "testimonials", "whatsapp_cta"],
@@ -113,9 +115,9 @@ export const WEBSITE_TYPES = [
 export const COMPANY_PROFILE_PAGES = WEBSITE_TYPE_PAGES.company_profile.map((pageKey, index) => ({
   pageKey,
   title: PAGES[pageKey],
-  slug: pageKey === "home" ? "" : pageKey === "article_detail" ? "article-detail" : pageKey,
+  slug: pageKey === "home" ? "" : pageKey === "article_detail" ? "article-detail" : pageKey === "portfolio_detail" ? "portfolio-detail" : pageKey,
   sortOrder: index + 1,
-  isDynamicDetailPage: pageKey === "article_detail"
+  isDynamicDetailPage: pageKey === "article_detail" || pageKey === "portfolio_detail"
 }));
 
 export const COMPANY_PROFILE_SECTION_SLOTS = Object.entries(PAGE_SECTION_RULES.company_profile).flatMap(
@@ -141,7 +143,8 @@ export const COMPANY_PROFILE_PAGE_PURPOSES = {
   portfolio: "Halaman untuk menampilkan bukti kerja, pengalaman, project, atau hasil yang pernah dikerjakan.",
   articles: "Halaman untuk artikel, edukasi, dan konten SEO agar bisnis lebih mudah ditemukan dari pencarian.",
   article_detail: "Template halaman detail artikel. Halaman ini tidak tampil di navbar karena digunakan otomatis saat pengunjung membuka artikel tertentu.",
-  contact: "Halaman untuk informasi kontak, lokasi, dan cara calon client menghubungi bisnis."
+  contact: "Halaman untuk informasi kontak, lokasi, dan cara calon client menghubungi bisnis.",
+  portfolio_detail: "Template halaman detail portfolio. Halaman ini tidak tampil di navbar karena digunakan otomatis saat pengunjung membuka detail proyek tertentu."
 } as const;
 
 export const COMPANY_PROFILE_DEFAULT_NAV_LABELS = {
@@ -151,7 +154,8 @@ export const COMPANY_PROFILE_DEFAULT_NAV_LABELS = {
   portfolio: "Portfolio",
   articles: "Artikel",
   article_detail: "Detail Artikel",
-  contact: "Kontak"
+  contact: "Kontak",
+  portfolio_detail: "Detail Portfolio"
 } as const;
 
 export const COMPANY_PROFILE_PAGE_LABELS = Object.fromEntries(
@@ -191,7 +195,10 @@ export const COMPANY_PROFILE_SECTION_SLOT_LABELS = {
   "contact.contact_information": "Informasi Kontak",
   "contact.maps_location": "Lokasi / Maps",
   "contact.contact_faq": "FAQ Kontak",
-  "contact.contact_cta": "CTA Kontak"
+  "contact.contact_cta": "CTA Kontak",
+  "portfolio_detail.portfolio_detail_hero": "Pembuka Detail Portfolio",
+  "portfolio_detail.portfolio_detail_content": "Isi Detail Portfolio",
+  "portfolio_detail.portfolio_detail_cta": "CTA Detail Portfolio"
 } as const;
 
 export const COMPANY_PROFILE_SECTION_SLOT_DESCRIPTIONS = Object.fromEntries(

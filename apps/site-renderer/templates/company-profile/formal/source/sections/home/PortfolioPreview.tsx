@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowRight, Calendar, User } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { portfolioData } from "../../data/companyProfileData";
 import { SectionHeading } from "../../shared/SectionHeading";
 import { Card } from "../../shared/Card";
@@ -59,18 +59,6 @@ export const PortfolioPreview: React.FC<HomePortfolioPreviewProps> = ({
 
               {/* Card Body */}
               <div className="p-6 flex flex-col flex-grow">
-                {/* Meta details */}
-                <div className="flex items-center space-x-4 text-xs text-slate-500 font-mono mb-3">
-                  <div className="flex items-center space-x-1">
-                    <User className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="truncate max-w-[120px]">{project.clientName}</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                    <span>{project.year}</span>
-                  </div>
-                </div>
-
                 <h3 className="text-base md:text-lg font-semibold text-slate-900 mb-3 leading-snug tracking-tight">
                   {project.title}
                 </h3>
