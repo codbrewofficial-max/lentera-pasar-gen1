@@ -686,7 +686,7 @@ export function FormalContactFaq(props: FormalSectionProps) {
 
 export function FormalContactCta(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiContactCta title={text(content.title, "Siap Menghubungi Kami?")} description={text(content.description, "Gunakan tombol berikut untuk menuju saluran kontak utama bisnis.")} ctaLabel={text(content.ctaLabel, "Hubungi Sekarang")} ctaHref={sectionHref(props, "cta", "/contact")} secondaryHref={whatsappHref(props.payload)} />;
+  return <AiContactCta title={text(content.title, "Siap Menghubungi Kami?")} description={text(content.description, "Gunakan tombol berikut untuk menuju saluran kontak utama bisnis.")} ctaLabel={text(content.ctaLabel, "Hubungi Sekarang")} ctaHref={sectionHref(props, "cta", "/contact")} />;
 }
 
 

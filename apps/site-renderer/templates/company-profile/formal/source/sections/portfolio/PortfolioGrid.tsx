@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowRight, CheckCircle, HelpCircle, ShieldCheck } from "lucide-react";
+import { CheckCircle, HelpCircle, ShieldCheck } from "lucide-react";
 import { PortfolioItem } from "../../lib/types";
 import { Card } from "../../shared/Card";
 import { Badge } from "../../shared/Badge";

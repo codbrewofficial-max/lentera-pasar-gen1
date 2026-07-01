@@ -48,15 +48,12 @@ export const ServicePreview: React.FC<HomeServicePreviewProps> = ({
                 {service.description}
               </p>
 
-              <Button
+              <a
                 href={`${allServicesHref}#${service.id}`}
-                variant="text"
-                size="sm"
-                iconRight={<ArrowRight className="w-4 h-4 ml-1" />}
-                className="justify-start inline-flex text-xs text-[#649FF6] font-semibold pt-4 border-t border-slate-50"
+                className="inline-flex text-xs text-[#649FF6] font-semibold pt-4 border-t border-slate-50 hover:underline"
               >
-                Selengkapnya
-              </Button>
+                Selengkapnya →
+              </a>
             </Card>
           ))}
         </div>
