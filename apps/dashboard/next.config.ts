@@ -19,7 +19,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // output: 'standalone',
   webpack: (config, {dev}) => {
     // HMR is disabled via DISABLE_HMR env var.
     if (dev && process.env.DISABLE_HMR === 'true') {

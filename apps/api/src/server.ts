@@ -1,11 +1,15 @@
 import "dotenv/config";
 import AdmZip from "adm-zip";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+import path from "node:path";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import jwt from "@fastify/jwt";
 import multipart from "@fastify/multipart";
 import rateLimit from "@fastify/rate-limit";
 import Fastify, { type FastifyRequest } from "fastify";
+import { apiConfig, assertRuntimeEnv, isOriginAllowed } from "./env.js";
+import { loggerConfig, registerObservabilityHooks, safeServerInfo } from "./observability.js";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import {
@@ -13,25 +17,35 @@ import {
   COMPANY_PROFILE_SECTION_SLOTS,
   LEAD_STATUS,
   SECTION_FIELD_TYPES,
+  THEMES,
   TRACKING_EVENT_NAMES,
+  WEBSITE_TYPE_PAGES,
   WEBSITE_TYPES,
+  getArticleStatusLabel,
   getLeadStatusLabel,
   getPageLabel,
   getSlotDescription,
   getSlotLabel,
+  getTemplateSectionStatusLabel,
   getWebsiteStatusLabel,
-  getWebsiteTypeLabel,
-  isCompanyProfileSlot
+  getWebsiteTypeLabel
 } from "@lentera-pasar/shared";
 import { prisma } from "./prisma.js";
-import { createCompanyProfileDefaults } from "./defaults.js";
+import { createCompanyProfileDefaults, ensureCompanyProfileStructure, defaultPageNavLabel, isDynamicDetailPage, pagePurpose } from "./defaults.js";
 import { AppError, created, ok, publicUser, toErrorPayload } from "./http.js";
-import { hashIp, hashPassword, limitJson, prismaJson, randomToken, verifyPassword } from "./security.js";
+import { hashIp, hashPassword, limitJson, prismaJson, randomToken, verifyApiKey, verifyPassword } from "./security.js";
 
 type AuthUser = { id: string; role: "internal_admin" | "owner_admin"; email: string };
 type Req = FastifyRequest<{ Params?: Record<string, string>; Querystring?: Record<string, string> }>;
 
-const app = Fastify({ logger: true });
+assertRuntimeEnv();
+
+const app = Fastify({
+  logger: loggerConfig,
+  maxParamLength: apiConfig.maxParamLength,
+  bodyLimit: apiConfig.requestBodyLimitBytes,
+  requestIdHeader: "x-request-id"
+});
 
 const publicUrlFor = (website: { slug: string; status: string }) =>
   website.status === "published" ? `/${website.slug}` : null;
@@ -82,9 +96,30 @@ const templateSummary = (template: any) =>
       }
     : null;
 
+const templatePackContract = (pack: any) => ({
+  id: pack.id,
+  templatePackKey: pack.templatePackKey,
+  websiteType: pack.websiteType,
+  websiteTypeLabel: getWebsiteTypeLabel(pack.websiteType),
+  name: pack.name,
+  theme: pack.theme,
+  version: pack.version,
+  description: pack.description,
+  status: pack.status,
+  statusLabel: getTemplateSectionStatusLabel(pack.status),
+  validationSummary: pack.validationSummaryJson || null,
+  sectionsCount: pack._count?.sections ?? pack.sections?.length ?? 0,
+  createdAt: pack.createdAt,
+  updatedAt: pack.updatedAt
+});
+
 const templateContract = (template: any) => ({
   id: template.id,
   sectionKey: template.sectionKey,
+  templatePackId: template.templatePackId || null,
+  templatePack: template.templatePack ? templatePackContract(template.templatePack) : null,
+  pageKey: template.pageKey || template.slotKey?.split(".")[0] || null,
+  pageLabel: template.pageKey || template.slotKey ? getPageLabel(template.pageKey || template.slotKey.split(".")[0]) : null,
   slotKey: template.slotKey,
   slotLabel: getSlotLabel(template.slotKey),
   websiteType: template.websiteType,
@@ -92,9 +127,99 @@ const templateContract = (template: any) => ({
   name: template.name,
   component: template.component,
   variant: template.variant,
+  status: template.status || (template.isActive ? "active" : "draft"),
+  statusLabel: getTemplateSectionStatusLabel(template.status || (template.isActive ? "active" : "draft")),
+  validationErrors: template.validationErrors || null,
   schema: normalizeSectionSchema(template.schemaJson),
   defaultContent: template.defaultContentJson || {}
 });
+
+const ownerContract = (owner: any) => ({
+  id: owner.id,
+  name: owner.name,
+  email: owner.email,
+  role: owner.role,
+  whatsapp: owner.whatsapp || null,
+  primaryWebsiteId: owner.primaryWebsiteId || null,
+  primaryWebsite: owner.primaryWebsite ? websiteSummary(owner.primaryWebsite) : null,
+  websitesCount: owner._count?.websites ?? owner.websites?.length ?? 0,
+  createdAt: owner.createdAt
+});
+
+const auditLogContract = (log: any) => ({
+  id: log.id,
+  category: log.category,
+  action: log.action,
+  actorUserId: log.actorUserId,
+  actorRole: log.actorRole,
+  actor: log.actor
+    ? {
+        id: log.actor.id,
+        name: log.actor.name,
+        email: log.actor.email,
+        role: log.actor.role
+      }
+    : null,
+  websiteId: log.websiteId,
+  website: log.website
+    ? {
+        id: log.website.id,
+        name: log.website.name,
+        slug: log.website.slug,
+        status: log.website.status
+      }
+    : null,
+  entityType: log.entityType,
+  entityId: log.entityId,
+  summary: log.summary,
+  metadata: log.metadataJson || null,
+  ipHash: log.ipHash || null,
+  userAgent: log.userAgent || null,
+  requestId: log.requestId || null,
+  createdAt: log.createdAt
+});
+
+const createAuditLog = async (
+  request: FastifyRequest,
+  input: {
+    category?: "audit" | "security" | "system";
+    action: string;
+    actor?: AuthUser | null;
+    websiteId?: string | null;
+    entityType?: string | null;
+    entityId?: string | null;
+    summary: string;
+    metadata?: unknown;
+  }
+) => {
+  try {
+    await prisma.auditLog.create({
+      data: {
+        category: input.category || "audit",
+        action: input.action,
+        actorUserId: input.actor?.id || null,
+        actorRole: input.actor?.role || null,
+        websiteId: input.websiteId || null,
+        entityType: input.entityType || null,
+        entityId: input.entityId || null,
+        summary: input.summary,
+        metadataJson: prismaJson(limitJson(input.metadata, 5000)),
+        ipHash: hashIp(request.ip),
+        userAgent: request.headers["user-agent"] || null,
+        requestId: request.id
+      }
+    });
+  } catch (error) {
+    request.log.warn(
+      {
+        requestId: request.id,
+        action: input.action,
+        error: error instanceof Error ? error.message : String(error)
+      },
+      "audit_log_failed"
+    );
+  }
+};
 
 const mergeContent = (template: any, contentJson: unknown) => ({
   ...((template?.defaultContentJson as Record<string, unknown> | null) || {}),
@@ -125,18 +250,106 @@ const sectionDetailContract = (section: any, websiteId: string) => ({
   }
 });
 
+const cleanPageSlug = (value: string | null | undefined) =>
+  String(value || "")
+    .trim()
+    .replace(/^\/+|\/+$/g, "")
+    .toLowerCase();
+
+const isValidPageSlug = (value: string) => value === "" || /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
+
+const pagePublicPath = (page: any) => {
+  if (page.pageKey === "article_detail") return "/articles/:articleSlug";
+  if (page.pageKey === "home") return "/";
+  return `/${page.slug}`;
+};
+
+const pageDisplayLabel = (page: any) => page.navLabel || page.title || defaultPageNavLabel(page.pageKey);
+
 const pageDashboardSummary = (page: any) => {
   const sections = page.sections || [];
+  const dynamicDetailPage = isDynamicDetailPage(page.pageKey);
   return {
     id: page.id,
     pageKey: page.pageKey,
     title: page.title,
+    navLabel: page.navLabel || page.title,
+    footerLabel: page.footerLabel || page.navLabel || page.title,
     slug: page.slug,
+    publicPath: pagePublicPath(page),
+    purpose: page.purpose || pagePurpose(page.pageKey),
     pageLabel: getPageLabel(page.pageKey),
+    isDynamicDetailPage: dynamicDetailPage,
+    isPublished: page.isPublished ?? page.isActive,
+    isVisibleInNavbar: dynamicDetailPage ? false : Boolean(page.isVisibleInNavbar),
+    isVisibleInFooter: dynamicDetailPage ? false : Boolean(page.isVisibleInFooter),
+    seoTitle: page.seoTitle || null,
+    seoDescription: page.seoDescription || null,
     sectionCount: sections.length,
     filledSectionCount: sections.filter((section: any) => section.templateSectionId || section.contentJson).length,
     sortOrder: page.sortOrder,
-    isActive: page.isActive
+    isActive: page.isActive,
+    oldSlugsCount: page._count?.slugHistories ?? page.slugHistories?.length ?? 0
+  };
+};
+
+const buildNavigationContract = async (websiteId: string) => {
+  const [pages, businessProfile] = await Promise.all([
+    prisma.websitePage.findMany({ where: { websiteId }, orderBy: { sortOrder: "asc" } }),
+    prisma.businessProfile.findUnique({ where: { websiteId } })
+  ]);
+
+  const publishedPages = pages.filter((page: any) => (page.isPublished ?? page.isActive) && !isDynamicDetailPage(page.pageKey));
+  const navbarItems = publishedPages
+    .filter((page: any) => page.isVisibleInNavbar)
+    .slice(0, 6)
+    .map((page: any) => ({
+      pageKey: page.pageKey,
+      label: page.navLabel || page.title || defaultPageNavLabel(page.pageKey),
+      slug: page.slug,
+      path: pagePublicPath(page),
+      sortOrder: page.sortOrder
+    }));
+
+  const footerItems = publishedPages
+    .filter((page: any) => page.isVisibleInFooter)
+    .map((page: any) => ({
+      pageKey: page.pageKey,
+      label: page.footerLabel || page.navLabel || page.title || defaultPageNavLabel(page.pageKey),
+      slug: page.slug,
+      path: pagePublicPath(page),
+      sortOrder: page.sortOrder
+    }));
+
+  const availableTargets = [
+    ...publishedPages.map((page: any) => ({
+      type: "page",
+      pageKey: page.pageKey,
+      label: `Halaman ${pageDisplayLabel(page)}`,
+      path: pagePublicPath(page)
+    })),
+    {
+      type: "whatsapp",
+      label: "WhatsApp Bisnis",
+      value: "business_whatsapp",
+      path: businessProfile?.whatsapp ? `https://wa.me/${String(businessProfile.whatsapp).replace(/\D/g, "")}` : null
+    },
+    { type: "custom", label: "Link Custom", value: "custom", path: null }
+  ];
+
+  return {
+    navbar: {
+      maxItems: 6,
+      items: navbarItems,
+      cta: {
+        label: "Hubungi Kami",
+        targetType: "page",
+        targetPageKey: "contact",
+        path: publishedPages.find((page: any) => page.pageKey === "contact") ? pagePublicPath(publishedPages.find((page: any) => page.pageKey === "contact")) : "/contact"
+      }
+    },
+    footer: { items: footerItems },
+    availableTargets
   };
 };
 
@@ -154,6 +367,82 @@ const leadContract = (lead: any) => ({
   sourceSection: lead.sourceSection,
   sourceSectionLabel: lead.sourceSection ? getSlotLabel(lead.sourceSection) : null,
   createdAt: lead.createdAt
+});
+
+const articleContract = (article: any) => ({
+  id: article.id,
+  websiteId: article.websiteId,
+  categoryId: article.categoryId,
+  category: article.category ? categoryContract(article.category) : null,
+  title: article.title,
+  slug: article.slug,
+  excerpt: article.excerpt,
+  content: article.content,
+  coverImageUrl: article.coverImageUrl,
+  seoTitle: article.seoTitle,
+  seoDescription: article.seoDescription,
+  status: article.status,
+  statusLabel: getArticleStatusLabel(article.status),
+  sortOrder: article.sortOrder,
+  isFeatured: article.isFeatured ?? false,
+  featuredOrder: article.featuredOrder ?? 0,
+  publishedAt: article.publishedAt,
+  createdAt: article.createdAt,
+  updatedAt: article.updatedAt
+});
+
+const publicArticleSummary = (article: any) => ({
+  id: article.id,
+  categoryId: article.categoryId,
+  category: article.category ? categoryContract(article.category) : null,
+  title: article.title,
+  slug: article.slug,
+  excerpt: article.excerpt,
+  coverImageUrl: article.coverImageUrl,
+  seoTitle: article.seoTitle,
+  seoDescription: article.seoDescription,
+  isFeatured: article.isFeatured ?? false,
+  featuredOrder: article.featuredOrder ?? 0,
+  sortOrder: article.sortOrder ?? 0,
+  publishedAt: article.publishedAt
+});
+
+const categoryContract = (category: any) => ({
+  id: category.id,
+  websiteId: category.websiteId,
+  name: category.name,
+  slug: category.slug,
+  description: category.description,
+  sortOrder: category.sortOrder,
+  isActive: category.isActive,
+  createdAt: category.createdAt,
+  updatedAt: category.updatedAt
+});
+
+const faqContract = (faq: any) => ({
+  id: faq.id,
+  websiteId: faq.websiteId,
+  question: faq.question,
+  answer: faq.answer,
+  pageKey: faq.pageKey,
+  pageLabel: faq.pageKey ? getPageLabel(faq.pageKey) : null,
+  sortOrder: faq.sortOrder,
+  isActive: faq.isActive,
+  createdAt: faq.createdAt,
+  updatedAt: faq.updatedAt
+});
+
+const mediaAssetContract = (asset: any) => ({
+  id: asset.id,
+  websiteId: asset.websiteId,
+  filename: asset.filename,
+  originalName: asset.originalName,
+  mimeType: asset.mimeType,
+  sizeBytes: asset.sizeBytes,
+  url: asset.url,
+  altText: asset.altText,
+  createdAt: asset.createdAt,
+  updatedAt: asset.updatedAt
 });
 
 const ctaLabel = (ctaKey: string | null) => {
@@ -174,12 +463,16 @@ const authBody = z.object({
 const createOwnerBody = z.object({
   name: z.string().min(2),
   email: z.string().email(),
-  password: z.string().min(8)
+  password: z.string().min(8),
+  whatsapp: z.string().nullable().optional(),
+  primaryWebsiteId: z.string().nullable().optional()
 });
 const patchOwnerBody = z.object({
   name: z.string().min(2).optional(),
   email: z.string().email().optional(),
-  password: z.string().min(8).optional()
+  password: z.string().min(8).optional(),
+  whatsapp: z.string().nullable().optional(),
+  primaryWebsiteId: z.string().nullable().optional()
 });
 const websiteBody = z.object({
   name: z.string().min(2),
@@ -191,23 +484,46 @@ const patchWebsiteBody = z.object({
   slug: z.string().min(2).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
   themeJson: z.unknown().optional()
 });
+const pageSetupBody = z.object({
+  title: z.string().min(1).optional(),
+  navLabel: z.string().min(1).nullable().optional(),
+  footerLabel: z.string().min(1).nullable().optional(),
+  slug: z.string().nullable().optional(),
+  purpose: z.string().nullable().optional(),
+  isPublished: z.boolean().optional(),
+  isVisibleInNavbar: z.boolean().optional(),
+  isVisibleInFooter: z.boolean().optional(),
+  sortOrder: z.number().int().optional(),
+  seoTitle: z.string().nullable().optional(),
+  seoDescription: z.string().nullable().optional()
+});
 const businessProfileBody = z.object({
   name: z.string().min(2),
   tagline: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
+  logoUrl: z.string().nullable().optional(),
+  logoAlt: z.string().nullable().optional(),
   vision: z.string().nullable().optional(),
   mission: z.string().nullable().optional(),
   timelineJson: z.unknown().nullable().optional(),
   contactEmail: z.string().email().nullable().optional(),
   phone: z.string().nullable().optional(),
   whatsapp: z.string().nullable().optional(),
-  address: z.string().nullable().optional()
+  address: z.string().nullable().optional(),
+  instagramUrl: z.string().url().nullable().optional(),
+  facebookUrl: z.string().url().nullable().optional(),
+  linkedinUrl: z.string().url().nullable().optional(),
+  twitterUrl: z.string().url().nullable().optional(),
+  websiteUrl: z.string().url().nullable().optional()
 });
 const listItemBody = z.object({
+  categoryId: z.string().nullable().optional(),
   title: z.string().min(1),
   description: z.string().nullable().optional(),
   imageUrl: z.string().nullable().optional(),
   sortOrder: z.number().int().optional(),
+  isFeatured: z.boolean().optional(),
+  featuredOrder: z.number().int().optional(),
   isActive: z.boolean().optional()
 });
 const testimonialBody = z.object({
@@ -226,6 +542,56 @@ const brandBody = z.object({
   sortOrder: z.number().int().optional(),
   isActive: z.boolean().optional()
 });
+const timelineBody = z.object({
+  year: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().nullable().optional(),
+  sortOrder: z.number().int().optional(),
+  isActive: z.boolean().optional()
+});
+
+const teamMemberBody = z.object({
+  name: z.string().min(1),
+  role: z.string().nullable().optional(),
+  bio: z.string().nullable().optional(),
+  imageUrl: z.string().nullable().optional(),
+  sortOrder: z.number().int().optional(),
+  isActive: z.boolean().optional()
+});
+
+const faqBody = z.object({
+  question: z.string().min(1),
+  answer: z.string().min(1),
+  pageKey: z.string().nullable().optional(),
+  sortOrder: z.number().int().optional(),
+  isActive: z.boolean().optional()
+});
+const categoryBody = z.object({
+  name: z.string().min(1),
+  slug: z.string().min(1).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  description: z.string().nullable().optional(),
+  sortOrder: z.number().int().optional(),
+  isActive: z.boolean().optional()
+});
+const mediaUpdateBody = z.object({
+  altText: z.string().nullable().optional()
+});
+const articleBody = z.object({
+  categoryId: z.string().nullable().optional(),
+  title: z.string().min(1),
+  slug: z.string().min(1).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  excerpt: z.string().nullable().optional(),
+  content: z.string().min(1),
+  coverImageUrl: z.string().nullable().optional(),
+  seoTitle: z.string().nullable().optional(),
+  seoDescription: z.string().nullable().optional(),
+  status: z.enum(["draft", "published"]).optional(),
+  sortOrder: z.number().int().optional(),
+  isFeatured: z.boolean().optional(),
+  featuredOrder: z.number().int().optional()
+});
+const createOwnerWebsiteBody = websiteBody;
+const primaryWebsiteBody = z.object({ websiteId: z.string().min(1) });
 const sectionTemplateBody = z.object({ templateSectionId: z.string().min(1) });
 const sectionContentBody = z.object({ contentJson: z.record(z.unknown()) });
 const visibilityBody = z.object({ isVisible: z.boolean() });
@@ -264,11 +630,31 @@ const contactBody = z.object({
 });
 
 const registerPlugins = async () => {
-  await app.register(cors, { origin: (process.env.CORS_ORIGIN || "*").split(",") });
-  await app.register(helmet);
-  await app.register(jwt, { secret: process.env.JWT_SECRET || "dev-secret" });
-  await app.register(multipart, { limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
-  await app.register(rateLimit, { max: 120, timeWindow: "1 minute" });
+  await app.register(cors, {
+    origin: (origin, callback) => {
+      if (isOriginAllowed(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error(`Origin ${origin} is not allowed by CORS`), false);
+    },
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-lentera-api-key", "x-request-id"],
+    exposedHeaders: ["x-request-id"],
+    credentials: false,
+    maxAge: apiConfig.isProductionLike ? 86400 : 600
+  });
+  await app.register(helmet, {
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" }
+  });
+  await app.register(jwt, {
+    secret: apiConfig.jwtSecret,
+    sign: { expiresIn: apiConfig.jwtExpiresIn }
+  });
+  await app.register(multipart, { limits: { fileSize: apiConfig.templateUploadMaxBytes, files: 1 } });
+  await app.register(rateLimit, apiConfig.rateLimits.global);
+  registerObservabilityHooks(app);
 };
 
 const requireAuth = async (request: FastifyRequest) => {
@@ -286,6 +672,20 @@ const requireRole = async (request: FastifyRequest, roles: AuthUser["role"][]) =
   return user;
 };
 
+const requireInternalApiKey = async (request: FastifyRequest) => {
+  const provided = request.headers["x-lentera-api-key"];
+  if (!verifyApiKey(provided)) {
+    await createAuditLog(request, {
+      category: "security",
+      action: "api_key.invalid",
+      entityType: "api_key",
+      summary: "Invalid internal API key request",
+      metadata: { method: request.method, url: request.url }
+    });
+    throw new AppError(401, "INVALID_API_KEY", "Valid internal API key is required");
+  }
+};
+
 const getWebsiteForAccess = async (request: Req, websiteId?: string) => {
   const user = await requireAuth(request);
   const id = websiteId || request.params?.websiteId;
@@ -298,33 +698,36 @@ const getWebsiteForAccess = async (request: Req, websiteId?: string) => {
   return { user, website };
 };
 
-const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string; slug?: string }) => {
+const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string; slug?: string }, options: { publicOnly?: boolean } = {}) => {
   const website = await prisma.website.findUnique({
     where: { id: websiteId },
     include: { businessProfile: true }
   });
   if (!website) throw new AppError(404, "WEBSITE_NOT_FOUND", "Website not found");
   const page = await prisma.websitePage.findFirst({
-    where: { websiteId, isActive: true, ...pageWhere },
+    where: { websiteId, isActive: true, ...(options.publicOnly ? { isPublished: true } : {}), ...pageWhere },
     include: {
       sections: {
         where: { isVisible: true },
         orderBy: { sortOrder: "asc" },
-        include: { templateSection: true }
+        include: { templateSection: { include: { templatePack: true } } }
       }
     }
   });
   if (!page) throw new AppError(404, "PAGE_NOT_FOUND", "Page not found");
-  const [services, portfolios, testimonials, brands] = await Promise.all([
-    prisma.service.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
-    prisma.portfolio.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
+  const [services, portfolios, testimonials, brands, articles, faqs, articleCategories, portfolioCategories, timelines, teamMembers] = await Promise.all([
+    prisma.service.findMany({ where: { websiteId, isActive: true }, orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }] }),
+    prisma.portfolio.findMany({ where: { websiteId, isActive: true }, orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }], include: { category: true } }),
     prisma.testimonial.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
-    prisma.brandPartner.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } })
+    prisma.brandPartner.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.article.findMany({ where: { websiteId, status: "published" }, orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }, { publishedAt: "desc" }], include: { category: true } }),
+    prisma.faq.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.articleCategory.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.portfolioCategory.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.businessTimeline.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.teamMember.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } })
   ]);
-  const navigation = COMPANY_PROFILE_PAGES.map((navPage) => ({
-    label: navPage.title,
-    href: navPage.slug ? `/${website.slug}/${navPage.slug}` : `/${website.slug}`
-  }));
+  const navigation = await buildNavigationContract(websiteId);
   return {
     website: {
       id: website.id,
@@ -345,7 +748,15 @@ const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string;
     page: {
       pageKey: page.pageKey,
       title: page.title,
+      navLabel: page.navLabel || page.title,
+      footerLabel: page.footerLabel || page.navLabel || page.title,
       slug: page.slug,
+      path: pagePublicPath(page),
+      purpose: page.purpose || pagePurpose(page.pageKey),
+      isPublished: page.isPublished ?? page.isActive,
+      isDynamicDetailPage: isDynamicDetailPage(page.pageKey),
+      seoTitle: page.seoTitle || null,
+      seoDescription: page.seoDescription || null,
       sections: page.sections
         .filter((section: any) => section.templateSection)
         .map((section: any) => ({
@@ -353,6 +764,9 @@ const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string;
           slotKey: section.slotKey,
           slotLabel: getSlotLabel(section.slotKey),
           sectionKey: section.templateSection?.sectionKey || null,
+          templateKey: section.templateSection?.templatePack?.templatePackKey || null,
+          templateName: section.templateSection?.templatePack?.name || null,
+          templateTheme: section.templateSection?.templatePack?.theme || null,
           component: section.templateSection?.component || null,
           variant: section.templateSection?.variant || null,
           content: mergeContent(section.templateSection, section.contentJson),
@@ -360,7 +774,18 @@ const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string;
             slotKey: section.slotKey,
             sectionKey: section.templateSection?.sectionKey || null
           },
-          data: { services, portfolios, testimonials, brands }
+          data: {
+            services,
+            portfolios,
+            testimonials,
+            brands,
+            faqs: faqs.map(faqContract),
+            articleCategories: articleCategories.map(categoryContract),
+            portfolioCategories: portfolioCategories.map(categoryContract),
+            articles: articles.map(publicArticleSummary),
+            timelines,
+            teamMembers,
+          }
         }))
     }
   };
@@ -393,7 +818,7 @@ const recordTracking = async (request: FastifyRequest, input: z.infer<typeof tra
 };
 
 const registerAuthRoutes = () => {
-  app.post("/api/v1/auth/register", async (request, reply) => {
+  app.post("/api/v1/auth/register", { config: { rateLimit: apiConfig.rateLimits.auth } }, async (request, reply) => {
     const body = authBody.parse(request.body);
     const count = await prisma.user.count();
     const role = count === 0 ? "internal_admin" : "owner_admin";
@@ -405,14 +830,39 @@ const registerAuthRoutes = () => {
         role
       }
     });
+    const authUser = { id: user.id, role: user.role, email: user.email } as AuthUser;
+    await createAuditLog(request, {
+      category: "security",
+      action: "auth.registered",
+      actor: authUser,
+      entityType: "user",
+      entityId: user.id,
+      summary: `${user.email} registered as ${user.role}`
+    });
     return created(reply, { user: publicUser(user), token: app.jwt.sign({ id: user.id, role: user.role, email: user.email }) }, "Registered");
   });
-  app.post("/api/v1/auth/login", async (request, reply) => {
+  app.post("/api/v1/auth/login", { config: { rateLimit: apiConfig.rateLimits.auth } }, async (request, reply) => {
     const body = authBody.omit({ name: true }).parse(request.body);
     const user = await prisma.user.findUnique({ where: { email: body.email.toLowerCase() } });
     if (!user || !(await verifyPassword(body.password, user.passwordHash))) {
+      await createAuditLog(request, {
+        category: "security",
+        action: "auth.login_failed",
+        entityType: "auth",
+        summary: "Failed login attempt",
+        metadata: { email: body.email.toLowerCase() }
+      });
       throw new AppError(401, "INVALID_CREDENTIALS", "Invalid email or password");
     }
+    const authUser = { id: user.id, role: user.role, email: user.email } as AuthUser;
+    await createAuditLog(request, {
+      category: "security",
+      action: "auth.login_success",
+      actor: authUser,
+      entityType: "user",
+      entityId: user.id,
+      summary: `${user.email} logged in`
+    });
     return ok(reply, { user: publicUser(user), token: app.jwt.sign({ id: user.id, role: user.role, email: user.email }) }, "Logged in");
   });
   app.get("/api/v1/auth/me", async (request, reply) => {
@@ -425,42 +875,149 @@ const registerAuthRoutes = () => {
 };
 
 const registerCoreRoutes = () => {
-  app.get("/api/v1/health", async (_request, reply) => ok(reply, { status: "ok" }, "API healthy"));
+  app.get("/api/v1/health", async (_request, reply) => ok(reply, safeServerInfo(), "API healthy"));
+  app.get("/api/v1/health/live", async (_request, reply) => ok(reply, safeServerInfo(), "API live"));
+  app.get("/api/v1/health/ready", async (request, reply) => {
+    await requireInternalApiKey(request);
+    await prisma.$queryRaw`SELECT 1`;
+    return ok(reply, { ...safeServerInfo(), database: "ok" }, "API ready");
+  });
+  app.get("/api/v1/deployment/health", async (request, reply) => {
+    await requireInternalApiKey(request);
+    await prisma.$queryRaw`SELECT 1`;
+    return ok(reply, {
+      ...safeServerInfo(),
+      database: "ok",
+      corsOrigins: apiConfig.corsOrigins,
+      jwtExpiresIn: apiConfig.jwtExpiresIn,
+      rateLimits: apiConfig.rateLimits
+    }, "Deployment health loaded");
+  });
   app.get("/api/v1/website-types", async (_request, reply) => ok(reply, WEBSITE_TYPES, "Website types loaded"));
 };
 
 const registerInternalRoutes = () => {
   app.get("/api/v1/internal/owners", async (request, reply) => {
     await requireRole(request, ["internal_admin"]);
-    const owners = await prisma.user.findMany({ where: { role: "owner_admin" }, orderBy: { createdAt: "desc" } });
-    return ok(reply, owners.map(publicUser), "Owners loaded");
+    const owners = await prisma.user.findMany({
+      where: { role: "owner_admin" },
+      include: { primaryWebsite: true, _count: { select: { websites: true } } },
+      orderBy: { createdAt: "desc" }
+    });
+    return ok(reply, owners.map(ownerContract), "Owners loaded");
   });
   app.post("/api/v1/internal/owners", async (request, reply) => {
-    await requireRole(request, ["internal_admin"]);
+    const actor = await requireRole(request, ["internal_admin"]);
     const body = createOwnerBody.parse(request.body);
     const owner = await prisma.user.create({
-      data: { name: body.name, email: body.email.toLowerCase(), passwordHash: await hashPassword(body.password), role: "owner_admin" }
+      data: {
+        name: body.name,
+        email: body.email.toLowerCase(),
+        passwordHash: await hashPassword(body.password),
+        role: "owner_admin",
+        whatsapp: body.whatsapp || null,
+        primaryWebsiteId: body.primaryWebsiteId || null
+      },
+      include: { primaryWebsite: true, _count: { select: { websites: true } } }
     });
-    return created(reply, publicUser(owner), "Owner created");
+    await createAuditLog(request, {
+      action: "internal.owner_created",
+      actor,
+      entityType: "user",
+      entityId: owner.id,
+      summary: `Owner ${owner.email} created`,
+      metadata: { ownerEmail: owner.email, whatsapp: owner.whatsapp || null }
+    });
+    return created(reply, ownerContract(owner), "Owner created");
   });
   app.get("/api/v1/internal/owners/:ownerId", async (request: Req, reply) => {
     await requireRole(request, ["internal_admin"]);
-    const owner = await prisma.user.findUnique({ where: { id: request.params?.ownerId }, include: { websites: true } });
+    const owner = await prisma.user.findUnique({
+      where: { id: request.params?.ownerId },
+      include: { primaryWebsite: true, websites: true, _count: { select: { websites: true } } }
+    });
     if (!owner || owner.role !== "owner_admin") throw new AppError(404, "OWNER_NOT_FOUND", "Owner not found");
-    return ok(reply, publicUser(owner), "Owner loaded");
+    return ok(reply, ownerContract(owner), "Owner loaded");
   });
   app.patch("/api/v1/internal/owners/:ownerId", async (request: Req, reply) => {
-    await requireRole(request, ["internal_admin"]);
+    const actor = await requireRole(request, ["internal_admin"]);
     const body = patchOwnerBody.parse(request.body);
+    if (body.primaryWebsiteId) {
+      const website = await prisma.website.findFirst({ where: { id: body.primaryWebsiteId, ownerId: request.params?.ownerId } });
+      if (!website) throw new AppError(422, "INVALID_PRIMARY_WEBSITE", "Primary website must belong to owner");
+    }
     const owner = await prisma.user.update({
       where: { id: request.params?.ownerId },
       data: {
         name: body.name,
         email: body.email?.toLowerCase(),
-        passwordHash: body.password ? await hashPassword(body.password) : undefined
-      }
+        passwordHash: body.password ? await hashPassword(body.password) : undefined,
+        whatsapp: body.whatsapp,
+        primaryWebsiteId: body.primaryWebsiteId
+      },
+      include: { primaryWebsite: true, _count: { select: { websites: true } } }
     });
-    return ok(reply, publicUser(owner), "Owner updated");
+    await createAuditLog(request, {
+      action: "internal.owner_updated",
+      actor,
+      entityType: "user",
+      entityId: owner.id,
+      summary: `Owner ${owner.email} updated`,
+      metadata: { changedFields: Object.keys(body).filter((key) => key !== "password") }
+    });
+    return ok(reply, ownerContract(owner), "Owner updated");
+  });
+  app.post("/api/v1/internal/owners/:ownerId/websites", async (request: Req, reply) => {
+    const actor = await requireRole(request, ["internal_admin"]);
+    const body = createOwnerWebsiteBody.parse(request.body);
+    const owner = await prisma.user.findUnique({ where: { id: request.params?.ownerId } });
+    if (!owner || owner.role !== "owner_admin") throw new AppError(404, "OWNER_NOT_FOUND", "Owner not found");
+    const website = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const createdWebsite = await tx.website.create({
+        data: {
+          ownerId: owner.id,
+          websiteType: body.websiteType,
+          name: body.name,
+          slug: body.slug,
+          trackingKey: randomToken("trk")
+        }
+      });
+      await createCompanyProfileDefaults(tx, createdWebsite.id, createdWebsite.name);
+      return createdWebsite;
+    });
+    await createAuditLog(request, {
+      action: "internal.owner_website_created",
+      actor,
+      websiteId: website.id,
+      entityType: "website",
+      entityId: website.id,
+      summary: `Website ${website.slug} created for owner ${owner.email}`,
+      metadata: { ownerId: owner.id, websiteSlug: website.slug }
+    });
+    return created(reply, websiteSummary(website), "Owner website created");
+  });
+  app.patch("/api/v1/internal/owners/:ownerId/primary-website", async (request: Req, reply) => {
+    const actor = await requireRole(request, ["internal_admin"]);
+    const body = primaryWebsiteBody.parse(request.body);
+    const owner = await prisma.user.findUnique({ where: { id: request.params?.ownerId } });
+    if (!owner || owner.role !== "owner_admin") throw new AppError(404, "OWNER_NOT_FOUND", "Owner not found");
+    const website = await prisma.website.findFirst({ where: { id: body.websiteId, ownerId: owner.id } });
+    if (!website) throw new AppError(422, "INVALID_PRIMARY_WEBSITE", "Primary website must belong to owner");
+    const updated = await prisma.user.update({
+      where: { id: owner.id },
+      data: { primaryWebsiteId: website.id },
+      include: { primaryWebsite: true, _count: { select: { websites: true } } }
+    });
+    await createAuditLog(request, {
+      action: "internal.primary_website_updated",
+      actor,
+      websiteId: website.id,
+      entityType: "user",
+      entityId: owner.id,
+      summary: `Primary website updated for owner ${owner.email}`,
+      metadata: { primaryWebsiteId: website.id, websiteSlug: website.slug }
+    });
+    return ok(reply, ownerContract(updated), "Primary website updated");
   });
   app.get("/api/v1/internal/websites", async (request, reply) => {
     await requireRole(request, ["internal_admin"]);
@@ -476,6 +1033,67 @@ const registerInternalRoutes = () => {
     if (!website) throw new AppError(404, "WEBSITE_NOT_FOUND", "Website not found");
     return ok(reply, { ...website, owner: publicUser(website.owner) }, "Website loaded");
   });
+
+  app.post("/api/v1/internal/websites/:websiteId/sync-structure", async (request: Req, reply) => {
+    const user = await requireRole(request, ["internal_admin"]);
+    
+    const websiteId = request.params?.websiteId;
+    
+    // 1. TAMBAHKAN GUARD CLAUSE INI UNTUK MENYAKINKAN TYPESCRIPT
+    if (!websiteId) {
+      throw new AppError(400, "BAD_REQUEST", "Website ID harus disertakan.");
+    }
+    // Setelah baris ini, TypeScript otomatis menganggap tipe websiteId adalah 'string'
+
+    const website = await prisma.website.findUnique({ where: { id: websiteId } });
+    if (!website) throw new AppError(404, "WEBSITE_NOT_FOUND", "Website tidak ditemukan.");
+    
+    if (website.websiteType !== "company_profile") {
+      throw new AppError(400, "UNSUPPORTED_WEBSITE_TYPE", `Sinkronisasi struktur belum didukung untuk tipe website: ${website.websiteType}`);
+    }
+
+    const before = {
+      pages: await prisma.websitePage.count({ where: { websiteId } }),
+      sections: await prisma.pageSection.count({ where: { websiteId } })
+    };
+
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      // Sekarang baris ini sudah aman dari error ts(2345)
+      await ensureCompanyProfileStructure(tx, websiteId);
+    });
+
+    const after = {
+      pages: await prisma.websitePage.count({ where: { websiteId } }),
+      sections: await prisma.pageSection.count({ where: { websiteId } })
+    };
+
+    await createAuditLog(request, {
+      action: "internal.website_structure_synced",
+      actor: user,
+      websiteId,
+      entityType: "website",
+      entityId: websiteId,
+      summary: `Struktur website ${website.slug} disinkronkan ke versi terbaru`,
+      metadata: {
+        websiteType: website.websiteType,
+        pagesBefore: before.pages,
+        pagesAfter: after.pages,
+        pagesAdded: after.pages - before.pages,
+        sectionsBefore: before.sections,
+        sectionsAfter: after.sections,
+        sectionsAdded: after.sections - before.sections
+      }
+    });
+
+    return ok(reply, {
+      websiteId,
+      websiteSlug: website.slug,
+      pagesAdded: after.pages - before.pages,
+      sectionsAdded: after.sections - before.sections,
+      totalPages: after.pages,
+      totalSections: after.sections
+    }, "Struktur website berhasil disinkronkan ke versi terbaru.");
+});
 };
 
 const registerWebsiteRoutes = () => {
@@ -503,6 +1121,15 @@ const registerWebsiteRoutes = () => {
       await createCompanyProfileDefaults(tx, created.id, created.name);
       return created;
     });
+    await createAuditLog(request, {
+      action: "website.created",
+      actor: user,
+      websiteId: website.id,
+      entityType: "website",
+      entityId: website.id,
+      summary: `Website ${website.slug} created`,
+      metadata: { websiteType: website.websiteType }
+    });
     return created(reply, websiteSummary(website), "Website created");
   });
   app.get("/api/v1/websites/:websiteId", async (request: Req, reply) => {
@@ -526,26 +1153,158 @@ const registerWebsiteRoutes = () => {
     }, "Website loaded");
   });
   app.patch("/api/v1/websites/:websiteId", async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const body = patchWebsiteBody.parse(request.body);
     const updated = await prisma.website.update({ where: { id: website.id }, data: { ...body, themeJson: prismaJson(limitJson(body.themeJson)) } });
+    await createAuditLog(request, {
+      action: "website.updated",
+      actor: user,
+      websiteId: website.id,
+      entityType: "website",
+      entityId: website.id,
+      summary: `Website ${website.slug} updated`,
+      metadata: { changedFields: Object.keys(body) }
+    });
     return ok(reply, websiteSummary(updated), "Website updated");
   });
   app.post("/api/v1/websites/:websiteId/publish", async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const updated = await prisma.website.update({ where: { id: website.id }, data: { status: "published" } });
+    await createAuditLog(request, {
+      action: "website.published",
+      actor: user,
+      websiteId: website.id,
+      entityType: "website",
+      entityId: website.id,
+      summary: `Website ${website.slug} published`
+    });
     return ok(reply, websiteSummary(updated), "Website published");
   });
   app.post("/api/v1/websites/:websiteId/unpublish", async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const updated = await prisma.website.update({ where: { id: website.id }, data: { status: "draft" } });
+    await createAuditLog(request, {
+      action: "website.unpublished",
+      actor: user,
+      websiteId: website.id,
+      entityType: "website",
+      entityId: website.id,
+      summary: `Website ${website.slug} unpublished`
+    });
     return ok(reply, websiteSummary(updated), "Website unpublished");
   });
+  app.get("/api/v1/websites/:websiteId/page-setup", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    const pages = await prisma.websitePage.findMany({
+      where: { websiteId: website.id },
+      include: { sections: true, _count: { select: { slugHistories: true } } },
+      orderBy: { sortOrder: "asc" }
+    });
+    const navigation = await buildNavigationContract(website.id);
+    return ok(reply, {
+      pages: pages.map(pageDashboardSummary),
+      navbarItems: navigation.navbar.items,
+      footerItems: navigation.footer.items,
+      availableTargets: navigation.availableTargets
+    }, "Page setup loaded");
+  });
+
+  app.get("/api/v1/websites/:websiteId/navigation-contract", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    return ok(reply, await buildNavigationContract(website.id), "Navigation contract loaded");
+  });
+
+  app.get("/api/v1/websites/:websiteId/page-redirects", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    const redirects = await prisma.websitePageSlugHistory.findMany({
+      where: { websiteId: website.id },
+      orderBy: { createdAt: "desc" }
+    });
+    return ok(reply, redirects.map((redirect: any) => ({
+      id: redirect.id,
+      pageKey: redirect.pageKey,
+      oldSlug: redirect.oldSlug,
+      newSlug: redirect.newSlug,
+      from: redirect.oldSlug ? `/${redirect.oldSlug}` : "/",
+      to: redirect.newSlug ? `/${redirect.newSlug}` : "/",
+      redirectType: redirect.redirectType,
+      createdAt: redirect.createdAt
+    })), "Page redirects loaded");
+  });
+
+  app.patch("/api/v1/websites/:websiteId/pages/:pageKey/setup", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const pageKey = request.params?.pageKey || "";
+    const body = pageSetupBody.parse(request.body);
+    const page = await prisma.websitePage.findUnique({ where: { websiteId_pageKey: { websiteId: website.id, pageKey } } });
+    if (!page) throw new AppError(404, "PAGE_NOT_FOUND", "Page not found");
+
+    const dynamicDetailPage = isDynamicDetailPage(page.pageKey);
+    const nextSlug = page.pageKey === "home" ? "" : body.slug === undefined ? page.slug : cleanPageSlug(body.slug);
+    if (!isValidPageSlug(nextSlug)) throw new AppError(422, "INVALID_PAGE_SLUG", "Slug must use lowercase kebab-case without slash");
+    if (page.pageKey !== "home" && !nextSlug) throw new AppError(422, "PAGE_SLUG_REQUIRED", "Slug is required for this page");
+
+    if (nextSlug !== page.slug) {
+      const existingSlug = await prisma.websitePage.findFirst({ where: { websiteId: website.id, slug: nextSlug, id: { not: page.id } } });
+      if (existingSlug) throw new AppError(409, "PAGE_SLUG_EXISTS", "Slug already used by another page");
+    }
+
+    const data: any = {
+      title: body.title,
+      navLabel: body.navLabel === undefined ? undefined : body.navLabel || null,
+      footerLabel: body.footerLabel === undefined ? undefined : body.footerLabel || null,
+      slug: nextSlug,
+      purpose: body.purpose === undefined ? undefined : body.purpose || null,
+      isPublished: body.isPublished,
+      isVisibleInNavbar: dynamicDetailPage ? false : body.isVisibleInNavbar,
+      isVisibleInFooter: dynamicDetailPage ? false : body.isVisibleInFooter,
+      sortOrder: body.sortOrder,
+      seoTitle: body.seoTitle === undefined ? undefined : body.seoTitle || null,
+      seoDescription: body.seoDescription === undefined ? undefined : body.seoDescription || null
+    };
+
+    const updated = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      if (nextSlug !== page.slug) {
+        await tx.websitePageSlugHistory.create({
+          data: {
+            websiteId: website.id,
+            pageId: page.id,
+            pageKey: page.pageKey,
+            oldSlug: page.slug,
+            newSlug: nextSlug,
+            redirectType: 301
+          }
+        });
+      }
+      return tx.websitePage.update({
+        where: { id: page.id },
+        data,
+        include: { sections: true, _count: { select: { slugHistories: true } } }
+      });
+    });
+
+    await createAuditLog(request, {
+      action: "page_setup.updated",
+      actor: user,
+      websiteId: website.id,
+      entityType: "website_page",
+      entityId: updated.id,
+      summary: `Page setup updated: ${updated.pageKey}`,
+      metadata: {
+        pageKey: updated.pageKey,
+        oldSlug: page.slug,
+        newSlug: updated.slug,
+        changedFields: Object.keys(body)
+      }
+    });
+    return ok(reply, pageDashboardSummary(updated), "Page setup updated");
+  });
+
   app.get("/api/v1/websites/:websiteId/pages", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
     const pages = await prisma.websitePage.findMany({
       where: { websiteId: website.id },
-      include: { sections: true },
+      include: { sections: true, _count: { select: { slugHistories: true } } },
       orderBy: { sortOrder: "asc" }
     });
     return ok(reply, pages.map(pageDashboardSummary), "Pages loaded");
@@ -566,8 +1325,18 @@ const registerWebsiteRoutes = () => {
       id: page.id,
       pageKey: page.pageKey,
       title: page.title,
+      navLabel: page.navLabel || page.title,
+      footerLabel: page.footerLabel || page.navLabel || page.title,
       slug: page.slug,
+      publicPath: pagePublicPath(page),
+      purpose: page.purpose || pagePurpose(page.pageKey),
       pageLabel: getPageLabel(page.pageKey),
+      isDynamicDetailPage: isDynamicDetailPage(page.pageKey),
+      isPublished: page.isPublished ?? page.isActive,
+      isVisibleInNavbar: isDynamicDetailPage(page.pageKey) ? false : page.isVisibleInNavbar,
+      isVisibleInFooter: isDynamicDetailPage(page.pageKey) ? false : page.isVisibleInFooter,
+      seoTitle: page.seoTitle || null,
+      seoDescription: page.seoDescription || null,
       isActive: page.isActive,
       sections: page.sections.map((section: any) => sectionDetailContract(section, website.id))
     }, "Page loaded");
@@ -587,33 +1356,60 @@ const registerSectionRoutes = () => {
     return ok(reply, sectionDetailContract(section, website.id), "Section loaded");
   });
   app.patch("/api/v1/websites/:websiteId/sections/:slotKey/template", async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const body = sectionTemplateBody.parse(request.body);
     const section = await prisma.pageSection.findUnique({ where: { websiteId_slotKey: { websiteId: website.id, slotKey: request.params?.slotKey || "" } } });
     const template = await prisma.templateSection.findUnique({ where: { id: body.templateSectionId } });
-    if (!section || !template || template.slotKey !== section.slotKey || template.websiteType !== "company_profile") {
+    if (!section || !template || template.slotKey !== section.slotKey || template.websiteType !== "company_profile" || template.status !== "active" || !template.isActive) {
       throw new AppError(400, "INVALID_TEMPLATE_SECTION", "Template section does not match this slot");
     }
     const updated = await prisma.pageSection.update({ where: { id: section.id }, data: { templateSectionId: template.id }, include: { templateSection: true } });
+    await createAuditLog(request, {
+      action: "section.template_updated",
+      actor: user,
+      websiteId: website.id,
+      entityType: "page_section",
+      entityId: updated.id,
+      summary: `Section template updated: ${updated.slotKey}`,
+      metadata: { slotKey: updated.slotKey, templateSectionId: template.id, sectionKey: template.sectionKey }
+    });
     return ok(reply, sectionDetailContract(updated, website.id), "Section template updated");
   });
   app.patch("/api/v1/websites/:websiteId/sections/:slotKey/content", async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const body = sectionContentBody.parse(request.body);
     const updated = await prisma.pageSection.update({
       where: { websiteId_slotKey: { websiteId: website.id, slotKey: request.params?.slotKey || "" } },
       data: { contentJson: prismaJson(limitJson(body.contentJson)) },
       include: { templateSection: true }
     });
+    await createAuditLog(request, {
+      action: "section.content_updated",
+      actor: user,
+      websiteId: website.id,
+      entityType: "page_section",
+      entityId: updated.id,
+      summary: `Section content updated: ${updated.slotKey}`,
+      metadata: { slotKey: updated.slotKey, contentKeys: Object.keys(body.contentJson || {}) }
+    });
     return ok(reply, sectionDetailContract(updated, website.id), "Section content updated");
   });
   app.patch("/api/v1/websites/:websiteId/sections/:slotKey/visibility", async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const body = visibilityBody.parse(request.body);
     const updated = await prisma.pageSection.update({
       where: { websiteId_slotKey: { websiteId: website.id, slotKey: request.params?.slotKey || "" } },
       data: { isVisible: body.isVisible },
       include: { templateSection: true }
+    });
+    await createAuditLog(request, {
+      action: "section.visibility_updated",
+      actor: user,
+      websiteId: website.id,
+      entityType: "page_section",
+      entityId: updated.id,
+      summary: `Section visibility updated: ${updated.slotKey}`,
+      metadata: { slotKey: updated.slotKey, isVisible: updated.isVisible }
     });
     return ok(reply, sectionDetailContract(updated, website.id), "Section visibility updated");
   });
@@ -632,8 +1428,10 @@ const templateFieldSchema = z
 
 const templateImportSchema = z.object({
   sectionKey: z.string().min(1),
+  templateKey: z.string().min(1).nullable().optional(),
   slotKey: z.string().min(1),
   websiteType: z.literal("company_profile"),
+  pageKey: z.string().min(1),
   name: z.string().min(1),
   component: z.string().min(1),
   variant: z.string().nullable().optional(),
@@ -641,71 +1439,326 @@ const templateImportSchema = z.object({
   defaultContent: z.record(z.unknown())
 });
 
+const templatePackManifestSchema = z.object({
+  templatePackKey: z.string().min(1),
+  websiteType: z.literal("company_profile"),
+  name: z.string().min(1),
+  theme: z.enum(["formal", "casual", "abstract", "premium"]),
+  version: z.string().min(1),
+  description: z.string().nullable().optional(),
+  pages: z.array(z.string().min(1))
+});
+
+type ValidationItem = { level: "error" | "warning"; file?: string; slotKey?: string; message: string };
+
+const expectedPagesFor = (websiteType: string) =>
+  websiteType === "company_profile" ? [...WEBSITE_TYPE_PAGES.company_profile] : [];
+
+const expectedSlotsFor = (websiteType: string) =>
+  websiteType === "company_profile" ? COMPANY_PROFILE_SECTION_SLOTS.map((slot) => slot.slotKey) : [];
+
+const sameStringSet = (a: string[], b: string[]) =>
+  a.length === b.length && a.every((item) => b.includes(item)) && b.every((item) => a.includes(item));
+
+const isSafeZipEntryName = (name: string) =>
+  !name.includes("..") && !name.startsWith("/") && !name.startsWith("\\") && !name.includes(":") && !name.includes("\\");
+
+const validationSummary = (summary: Record<string, unknown>, errors: ValidationItem[], warnings: ValidationItem[]) => ({
+  ...summary,
+  errors,
+  warnings
+});
+
+const importTemplatePackZip = async (buffer: Buffer) => {
+  if (buffer.byteLength > 5 * 1024 * 1024) {
+    throw new AppError(413, "ZIP_TOO_LARGE", "Template pack ZIP is too large");
+  }
+
+  const zip = new AdmZip(buffer);
+  const allEntries = zip.getEntries();
+  for (const entry of allEntries) {
+    if (!isSafeZipEntryName(entry.entryName)) {
+      throw new AppError(400, "UNSAFE_ZIP_ENTRY", `Unsafe ZIP entry path: ${entry.entryName}`);
+    }
+  }
+
+  const manifestEntry = zip.getEntry("manifest.json");
+  if (!manifestEntry) throw new AppError(400, "MANIFEST_REQUIRED", "manifest.json is required");
+
+  let manifestRaw: unknown;
+  try {
+    manifestRaw = JSON.parse(manifestEntry.getData().toString("utf8"));
+  } catch {
+    throw new AppError(400, "INVALID_MANIFEST_JSON", "manifest.json must be valid JSON");
+  }
+
+  const manifestResult = templatePackManifestSchema.safeParse(manifestRaw);
+  if (!manifestResult.success) {
+    throw new AppError(422, "INVALID_MANIFEST", "Template pack manifest is invalid", manifestResult.error.flatten());
+  }
+  const manifest = manifestResult.data;
+  const expectedPages = expectedPagesFor(manifest.websiteType);
+  const expectedSlots = expectedSlotsFor(manifest.websiteType);
+  const errors: ValidationItem[] = [];
+  const warnings: ValidationItem[] = [];
+
+  if (!WEBSITE_TYPES.some((type) => type.key === manifest.websiteType)) {
+    errors.push({ level: "error", file: "manifest.json", message: "websiteType tidak dikenal." });
+  }
+  if (manifest.websiteType !== "company_profile") {
+    errors.push({ level: "error", file: "manifest.json", message: "Untuk MVP, websiteType harus company_profile." });
+  }
+  if (!Object.keys(THEMES).includes(manifest.theme)) {
+    errors.push({ level: "error", file: "manifest.json", message: "theme tidak valid." });
+  }
+  if (!sameStringSet(manifest.pages, expectedPages)) {
+    errors.push({ level: "error", file: "manifest.json", message: "pages tidak cocok dengan struktur websiteType." });
+  }
+
+  const sectionEntries = allEntries.filter((entry) => !entry.isDirectory && entry.entryName.startsWith("sections/") && entry.entryName.endsWith(".json"));
+  if (sectionEntries.length === 0) {
+    errors.push({ level: "error", file: "sections/", message: "Folder sections harus berisi minimal satu JSON section." });
+  }
+
+  const seenSectionKeys = new Set<string>();
+  const validSectionRows: Array<{ parsed: z.infer<typeof templateImportSchema>; file: string; status: "draft" | "active" | "invalid"; validationErrors: ValidationItem[] }> = [];
+  const foundValidSlots = new Set<string>();
+
+  for (const entry of sectionEntries) {
+    const file = entry.entryName;
+    const sectionErrors: ValidationItem[] = [];
+    let raw: any;
+    try {
+      raw = JSON.parse(entry.getData().toString("utf8"));
+    } catch {
+      errors.push({ level: "error", file, message: "File section bukan JSON valid." });
+      continue;
+    }
+
+    const parsedResult = templateImportSchema.safeParse(raw);
+    if (!parsedResult.success) {
+      sectionErrors.push({ level: "error", file, slotKey: raw?.slotKey, message: "Format section tidak valid." });
+    }
+
+    const parsed = parsedResult.success
+      ? parsedResult.data
+      : {
+          sectionKey: String(raw?.sectionKey || ""),
+          templateKey: raw?.templateKey ? String(raw.templateKey) : null,
+          slotKey: String(raw?.slotKey || ""),
+          websiteType: raw?.websiteType,
+          pageKey: String(raw?.pageKey || ""),
+          name: String(raw?.name || raw?.sectionKey || file),
+          component: String(raw?.component || ""),
+          variant: raw?.variant || null,
+          schema: Array.isArray(raw?.schema) ? raw.schema : [],
+          defaultContent: raw?.defaultContent && typeof raw.defaultContent === "object" ? raw.defaultContent : {}
+        };
+
+    if (!parsed.sectionKey) sectionErrors.push({ level: "error", file, slotKey: parsed.slotKey, message: "sectionKey wajib diisi." });
+    if (parsed.sectionKey && seenSectionKeys.has(parsed.sectionKey)) {
+      sectionErrors.push({ level: "error", file, slotKey: parsed.slotKey, message: "sectionKey duplikat dalam pack." });
+    }
+    if (parsed.sectionKey) seenSectionKeys.add(parsed.sectionKey);
+    if (parsed.websiteType !== manifest.websiteType) {
+      sectionErrors.push({ level: "error", file, slotKey: parsed.slotKey, message: "websiteType section tidak sama dengan manifest." });
+    }
+    if (parsed.templateKey && parsed.templateKey !== manifest.templatePackKey) {
+      sectionErrors.push({ level: "error", file, slotKey: parsed.slotKey, message: "templateKey section tidak sama dengan templatePackKey manifest." });
+    }
+    if (!expectedPages.includes(parsed.pageKey as any)) {
+      sectionErrors.push({ level: "error", file, slotKey: parsed.slotKey, message: "pageKey tidak valid untuk websiteType." });
+    }
+    if (!parsed.slotKey.includes(".") || parsed.slotKey.split(".")[0] !== parsed.pageKey) {
+      sectionErrors.push({ level: "error", file, slotKey: parsed.slotKey, message: "slotKey tidak cocok dengan pageKey." });
+    }
+    if (!expectedSlots.includes(parsed.slotKey)) {
+      sectionErrors.push({ level: "error", file, slotKey: parsed.slotKey, message: "slotKey tidak valid untuk struktur websiteType." });
+    }
+    if (!parsed.component) {
+      sectionErrors.push({ level: "error", file, slotKey: parsed.slotKey, message: "component tidak boleh kosong." });
+    }
+    for (const field of parsed.schema as any[]) {
+      if (!field?.key || !field?.label || !field?.type || !SECTION_FIELD_TYPES.includes(field.type)) {
+        sectionErrors.push({ level: "error", file, slotKey: parsed.slotKey, message: "schema field harus memiliki key, label, dan type valid." });
+        break;
+      }
+    }
+
+    if (sectionErrors.length === 0) foundValidSlots.add(parsed.slotKey);
+    else errors.push(...sectionErrors);
+
+    if (parsed.sectionKey) {
+      validSectionRows.push({
+        parsed: parsed as z.infer<typeof templateImportSchema>,
+        file,
+        status: sectionErrors.length > 0 ? "invalid" : "draft",
+        validationErrors: sectionErrors
+      });
+    }
+  }
+
+  const missingSlots = expectedSlots.filter((slotKey) => !foundValidSlots.has(slotKey));
+  for (const slotKey of missingSlots) {
+    warnings.push({ level: "warning", slotKey, message: "Template untuk slot ini belum ada di pack." });
+  }
+
+  const packStatus = errors.length > 0 ? "invalid" : missingSlots.length > 0 ? "draft" : "active";
+  for (const row of validSectionRows) {
+    if (row.status !== "invalid") row.status = packStatus === "active" ? "active" : "draft";
+  }
+
+  const summary = {
+    expectedPages: expectedPages.length,
+    expectedSlots: expectedSlots.length,
+    foundSections: sectionEntries.length,
+    validSections: validSectionRows.filter((row) => row.status !== "invalid").length,
+    draftSections: validSectionRows.filter((row) => row.status === "draft").length,
+    invalidSections: validSectionRows.filter((row) => row.status === "invalid").length
+  };
+
+  const templatePack = await prisma.templatePack.upsert({
+    where: { templatePackKey: manifest.templatePackKey },
+    update: {
+      websiteType: manifest.websiteType,
+      name: manifest.name,
+      theme: manifest.theme,
+      version: manifest.version,
+      description: manifest.description || null,
+      status: packStatus,
+      validationSummaryJson: validationSummary(summary, errors, warnings) as any
+    },
+    create: {
+      templatePackKey: manifest.templatePackKey,
+      websiteType: manifest.websiteType,
+      name: manifest.name,
+      theme: manifest.theme,
+      version: manifest.version,
+      description: manifest.description || null,
+      status: packStatus,
+      validationSummaryJson: validationSummary(summary, errors, warnings) as any
+    }
+  });
+
+  for (const row of validSectionRows) {
+    const parsed = row.parsed;
+    const schemaJson = normalizeSectionSchema(parsed.schema);
+    await prisma.templateSection.upsert({
+      where: { sectionKey: parsed.sectionKey },
+      update: {
+        templatePackId: templatePack.id,
+        websiteType: parsed.websiteType,
+        pageKey: parsed.pageKey,
+        slotKey: parsed.slotKey,
+        name: parsed.name,
+        component: parsed.component || "InvalidSection",
+        variant: parsed.variant || null,
+        schemaJson: schemaJson as any,
+        defaultContentJson: parsed.defaultContent as any,
+        status: row.status,
+        isActive: row.status === "active",
+        validationErrors: row.validationErrors.length ? row.validationErrors as any : null
+      },
+      create: {
+        templatePackId: templatePack.id,
+        sectionKey: parsed.sectionKey,
+        websiteType: parsed.websiteType,
+        pageKey: parsed.pageKey,
+        slotKey: parsed.slotKey,
+        name: parsed.name,
+        component: parsed.component || "InvalidSection",
+        variant: parsed.variant || null,
+        schemaJson: schemaJson as any,
+        defaultContentJson: parsed.defaultContent as any,
+        status: row.status,
+        isActive: row.status === "active",
+        validationErrors: row.validationErrors.length ? row.validationErrors as any : null
+      }
+    });
+  }
+
+  const savedPack = await prisma.templatePack.findUnique({ where: { id: templatePack.id }, include: { _count: { select: { sections: true } } } });
+  return { templatePack: savedPack || templatePack, summary, errors, warnings };
+};
+
 const registerTemplateRoutes = () => {
-  app.post("/api/v1/internal/template-sections/import-zip", async (request, reply) => {
-    await requireRole(request, ["internal_admin"]);
+  app.post("/api/v1/internal/template-sections/import-zip", { config: { rateLimit: apiConfig.rateLimits.templateUpload } }, async (request, reply) => {
+    const actor = await requireRole(request, ["internal_admin"]);
     const file = await request.file();
     if (!file) throw new AppError(400, "ZIP_REQUIRED", "Template ZIP file is required");
-    const buffer = await file.toBuffer();
-    const zip = new AdmZip(buffer);
-    const manifest = zip.getEntry("manifest.json");
-    if (!manifest) throw new AppError(400, "MANIFEST_REQUIRED", "manifest.json is required");
-    JSON.parse(manifest.getData().toString("utf8"));
-    const entries = zip.getEntries().filter((entry) => entry.entryName.startsWith("sections/") && entry.entryName.endsWith(".json"));
-    const imported = [];
-    for (const entry of entries) {
-      const parsed = templateImportSchema.parse(JSON.parse(entry.getData().toString("utf8")));
-      if (!isCompanyProfileSlot(parsed.slotKey)) throw new AppError(422, "INVALID_SLOT_KEY", `Invalid slotKey: ${parsed.slotKey}`);
-      const schemaJson = parsed.schema.map((field) => ({ ...field, type: normalizeFieldType(field.type) }));
-      imported.push(
-        await prisma.templateSection.upsert({
-          where: { sectionKey: parsed.sectionKey },
-          update: {
-            websiteType: parsed.websiteType,
-            slotKey: parsed.slotKey,
-            name: parsed.name,
-            component: parsed.component,
-            variant: parsed.variant || null,
-            schemaJson: schemaJson as any,
-            defaultContentJson: parsed.defaultContent as any,
-            isActive: true
-          },
-          create: {
-            sectionKey: parsed.sectionKey,
-            websiteType: parsed.websiteType,
-            slotKey: parsed.slotKey,
-            name: parsed.name,
-            component: parsed.component,
-            variant: parsed.variant || null,
-            schemaJson: schemaJson as any,
-            defaultContentJson: parsed.defaultContent as any
-          }
-        })
-      );
-    }
-    return ok(reply, { importedCount: imported.length, sections: imported.map(templateContract) }, "Template sections imported");
+    const report = await importTemplatePackZip(await file.toBuffer());
+    await createAuditLog(request, {
+      action: "template_pack.imported",
+      actor,
+      entityType: "template_pack",
+      entityId: report.templatePack.id,
+      summary: `Template pack imported: ${report.templatePack.templatePackKey}`,
+      metadata: { status: report.templatePack.status, summary: report.summary, errors: report.errors.length, warnings: report.warnings.length }
+    });
+    return ok(reply, { templatePack: templatePackContract(report.templatePack), summary: report.summary, errors: report.errors, warnings: report.warnings }, "Template pack imported");
+  });
+  app.post("/api/v1/internal/template-packs/import-zip", { config: { rateLimit: apiConfig.rateLimits.templateUpload } }, async (request, reply) => {
+    const actor = await requireRole(request, ["internal_admin"]);
+    const file = await request.file();
+    if (!file) throw new AppError(400, "ZIP_REQUIRED", "Template pack ZIP file is required");
+    const report = await importTemplatePackZip(await file.toBuffer());
+    await createAuditLog(request, {
+      action: "template_pack.imported",
+      actor,
+      entityType: "template_pack",
+      entityId: report.templatePack.id,
+      summary: `Template pack imported: ${report.templatePack.templatePackKey}`,
+      metadata: { status: report.templatePack.status, summary: report.summary, errors: report.errors.length, warnings: report.warnings.length }
+    });
+    return ok(reply, { templatePack: templatePackContract(report.templatePack), summary: report.summary, errors: report.errors, warnings: report.warnings }, "Template pack imported");
+  });
+  app.get("/api/v1/internal/template-packs", async (request, reply) => {
+    await requireRole(request, ["internal_admin"]);
+    const packs = await prisma.templatePack.findMany({
+      orderBy: { updatedAt: "desc" },
+      include: { _count: { select: { sections: true } } }
+    });
+    return ok(reply, packs.map(templatePackContract), "Template packs loaded");
+  });
+  app.get("/api/v1/internal/template-packs/:templatePackId", async (request: Req, reply) => {
+    await requireRole(request, ["internal_admin"]);
+    const pack = await prisma.templatePack.findUnique({
+      where: { id: request.params?.templatePackId },
+      include: { sections: { orderBy: [{ pageKey: "asc" }, { slotKey: "asc" }, { name: "asc" }] }, _count: { select: { sections: true } } }
+    });
+    if (!pack) throw new AppError(404, "TEMPLATE_PACK_NOT_FOUND", "Template pack not found");
+    return ok(reply, { ...templatePackContract(pack), sections: pack.sections.map(templateContract) }, "Template pack loaded");
+  });
+  app.get("/api/v1/internal/template-packs/:templatePackId/validation-report", async (request: Req, reply) => {
+    await requireRole(request, ["internal_admin"]);
+    const pack = await prisma.templatePack.findUnique({ where: { id: request.params?.templatePackId }, include: { _count: { select: { sections: true } } } });
+    if (!pack) throw new AppError(404, "TEMPLATE_PACK_NOT_FOUND", "Template pack not found");
+    const report = pack.validationSummaryJson as any;
+    return ok(reply, { templatePack: templatePackContract(pack), summary: report || null, errors: report?.errors || [], warnings: report?.warnings || [] }, "Template pack validation report loaded");
   });
   app.get("/api/v1/template-sections", async (request: Req, reply) => {
-    await requireAuth(request);
+    const user = await requireAuth(request);
+    const includeDraft = request.query?.includeDraft === "true" && user.role === "internal_admin";
     const sections = await prisma.templateSection.findMany({
       where: {
         websiteType: request.query?.websiteType,
         slotKey: request.query?.slotKey,
-        isActive: true
+        ...(includeDraft ? {} : { status: "active", isActive: true })
       },
-      orderBy: { name: "asc" }
+      orderBy: { name: "asc" },
+      include: { templatePack: true }
     });
     return ok(reply, sections.map(templateContract), "Template sections loaded");
   });
   app.get("/api/v1/template-sections/:id", async (request: Req, reply) => {
     await requireAuth(request);
-    const section = await prisma.templateSection.findUnique({ where: { id: request.params?.id } });
+    const section = await prisma.templateSection.findUnique({ where: { id: request.params?.id }, include: { templatePack: true } });
     if (!section) throw new AppError(404, "TEMPLATE_SECTION_NOT_FOUND", "Template section not found");
     return ok(reply, templateContract(section), "Template section loaded");
   });
   app.get("/api/v1/template-sections/by-slot/:slotKey", async (request: Req, reply) => {
     await requireAuth(request);
-    const sections = await prisma.templateSection.findMany({ where: { slotKey: request.params?.slotKey, isActive: true }, orderBy: { name: "asc" } });
+    const sections = await prisma.templateSection.findMany({ where: { slotKey: request.params?.slotKey, status: "active", isActive: true }, orderBy: { name: "asc" }, include: { templatePack: true } });
     return ok(reply, sections.map(templateContract), "Template sections loaded");
   });
 };
@@ -716,10 +1769,19 @@ const registerContentRoutes = () => {
     return ok(reply, await prisma.businessProfile.findUnique({ where: { websiteId: website.id } }), "Business profile loaded");
   });
   app.put("/api/v1/websites/:websiteId/business-profile", async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const body = businessProfileBody.parse(request.body);
     const profileData = { ...body, timelineJson: prismaJson(limitJson(body.timelineJson)) };
     const profile = await prisma.businessProfile.upsert({ where: { websiteId: website.id }, update: profileData, create: { ...profileData, websiteId: website.id } });
+    await createAuditLog(request, {
+      action: "business_profile.saved",
+      actor: user,
+      websiteId: website.id,
+      entityType: "business_profile",
+      entityId: profile.id,
+      summary: `Business profile saved for ${website.slug}`,
+      metadata: { changedFields: Object.keys(body) }
+    });
     return ok(reply, profile, "Business profile saved");
   });
 };
@@ -730,61 +1792,585 @@ const registerCrud = (
 ) => {
   const model = base === "services" ? prisma.service : base === "portfolios" ? prisma.portfolio : base === "testimonials" ? prisma.testimonial : prisma.brandPartner;
   const idParam = base === "services" ? "serviceId" : base === "portfolios" ? "portfolioId" : base === "testimonials" ? "testimonialId" : "brandPartnerId";
+  const include = base === "portfolios" ? { category: true } : undefined;
   app.get(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
-    const rows = await (model as any).findMany({ where: { websiteId: website.id }, orderBy: { sortOrder: "asc" } });
+    const orderBy = base === "services" || base === "portfolios"
+      ? [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }]
+      : [{ sortOrder: "asc" }];
+    const rows = await (model as any).findMany({ where: { websiteId: website.id }, orderBy, ...(include ? { include } : {}) });
     return ok(reply, rows, `${base} loaded`);
   });
   app.post(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const body = schema.parse(request.body);
-    const row = await (model as any).create({ data: { ...body, websiteId: website.id } });
+    const data = base === "portfolios" ? body : { ...body, categoryId: undefined };
+    if (base === "portfolios" && data.categoryId) {
+      const category = await prisma.portfolioCategory.findFirst({ where: { id: data.categoryId, websiteId: website.id } });
+      if (!category) throw new AppError(404, "PORTFOLIO_CATEGORY_NOT_FOUND", "Portfolio category not found");
+    }
+    const row = await (model as any).create({ data: { ...data, websiteId: website.id }, ...(include ? { include } : {}) });
+    await createAuditLog(request, {
+      action: `${base}.created`,
+      actor: user,
+      websiteId: website.id,
+      entityType: base,
+      entityId: row.id,
+      summary: `${base} item created`,
+      metadata: { title: row.title || row.name || null }
+    });
     return ok(reply, row, `${base} created`, 201);
   });
   app.get(`/api/v1/websites/:websiteId/${base}/:${idParam}`, async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
-    const row = await (model as any).findFirst({ where: { id: request.params?.[idParam], websiteId: website.id } });
+    const row = await (model as any).findFirst({ where: { id: request.params?.[idParam], websiteId: website.id }, ...(include ? { include } : {}) });
     if (!row) throw new AppError(404, "ITEM_NOT_FOUND", "Item not found");
     return ok(reply, row, `${base} loaded`);
   });
   app.patch(`/api/v1/websites/:websiteId/${base}/:${idParam}`, async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const body = (schema as any).partial().parse(request.body);
+    const data = base === "portfolios" ? body : { ...body, categoryId: undefined };
     const existing = await (model as any).findFirst({ where: { id: request.params?.[idParam], websiteId: website.id } });
     if (!existing) throw new AppError(404, "ITEM_NOT_FOUND", "Item not found");
-    const row = await (model as any).update({ where: { id: existing.id }, data: body });
+    if (base === "portfolios" && data.categoryId) {
+      const category = await prisma.portfolioCategory.findFirst({ where: { id: data.categoryId, websiteId: website.id } });
+      if (!category) throw new AppError(404, "PORTFOLIO_CATEGORY_NOT_FOUND", "Portfolio category not found");
+    }
+    const row = await (model as any).update({ where: { id: existing.id }, data, ...(include ? { include } : {}) });
+    await createAuditLog(request, {
+      action: `${base}.updated`,
+      actor: user,
+      websiteId: website.id,
+      entityType: base,
+      entityId: row.id,
+      summary: `${base} item updated`,
+      metadata: { changedFields: Object.keys(body) }
+    });
     return ok(reply, row, `${base} updated`);
   });
   app.delete(`/api/v1/websites/:websiteId/${base}/:${idParam}`, async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const existing = await (model as any).findFirst({ where: { id: request.params?.[idParam], websiteId: website.id } });
     if (!existing) throw new AppError(404, "ITEM_NOT_FOUND", "Item not found");
     await (model as any).delete({ where: { id: existing.id } });
+    await createAuditLog(request, {
+      action: `${base}.deleted`,
+      actor: user,
+      websiteId: website.id,
+      entityType: base,
+      entityId: existing.id,
+      summary: `${base} item deleted`,
+      metadata: { title: existing.title || existing.name || null }
+    });
     return ok(reply, true, `${base} deleted`);
   });
 };
+
+const articleData = (body: z.infer<typeof articleBody>, existing?: { publishedAt: Date | null }) => ({
+  categoryId: body.categoryId || null,
+  title: body.title,
+  slug: body.slug,
+  excerpt: body.excerpt || null,
+  content: body.content,
+  coverImageUrl: body.coverImageUrl || null,
+  seoTitle: body.seoTitle || null,
+  seoDescription: body.seoDescription || null,
+  status: body.status || "draft",
+  sortOrder: body.sortOrder ?? 0,
+  isFeatured: body.isFeatured ?? false,
+  featuredOrder: body.featuredOrder ?? 0,
+  publishedAt: body.status === "published" ? existing?.publishedAt || new Date() : null
+});
+
+const registerArticleRoutes = () => {
+  app.get("/api/v1/websites/:websiteId/articles", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    const articles = await prisma.article.findMany({ where: { websiteId: website.id }, orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }], include: { category: true } });
+    return ok(reply, articles.map(articleContract), "Articles loaded");
+  });
+  app.post("/api/v1/websites/:websiteId/articles", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const body = articleBody.parse(request.body);
+    const existingSlug = await prisma.article.findUnique({ where: { websiteId_slug: { websiteId: website.id, slug: body.slug } } });
+    if (existingSlug) throw new AppError(409, "ARTICLE_SLUG_EXISTS", "Article slug already exists for this website");
+    if (body.categoryId) {
+      const category = await prisma.articleCategory.findFirst({ where: { id: body.categoryId, websiteId: website.id } });
+      if (!category) throw new AppError(404, "ARTICLE_CATEGORY_NOT_FOUND", "Article category not found");
+    }
+    const article = await prisma.article.create({ data: { ...articleData(body), websiteId: website.id }, include: { category: true } });
+    await createAuditLog(request, {
+      action: "article.created",
+      actor: user,
+      websiteId: website.id,
+      entityType: "article",
+      entityId: article.id,
+      summary: `Article created: ${article.title}`,
+      metadata: { slug: article.slug, status: article.status }
+    });
+    return created(reply, articleContract(article), "Article created");
+  });
+  app.get("/api/v1/websites/:websiteId/articles/:articleId", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    const article = await prisma.article.findFirst({ where: { id: request.params?.articleId, websiteId: website.id }, include: { category: true } });
+    if (!article) throw new AppError(404, "ARTICLE_NOT_FOUND", "Article not found");
+    return ok(reply, articleContract(article), "Article loaded");
+  });
+  app.patch("/api/v1/websites/:websiteId/articles/:articleId", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const body = articleBody.partial().parse(request.body);
+    const article = await prisma.article.findFirst({ where: { id: request.params?.articleId, websiteId: website.id }, include: { category: true } });
+    if (!article) throw new AppError(404, "ARTICLE_NOT_FOUND", "Article not found");
+    if (body.slug && body.slug !== article.slug) {
+      const existingSlug = await prisma.article.findUnique({ where: { websiteId_slug: { websiteId: website.id, slug: body.slug } } });
+      if (existingSlug) throw new AppError(409, "ARTICLE_SLUG_EXISTS", "Article slug already exists for this website");
+    }
+    if (body.categoryId) {
+      const category = await prisma.articleCategory.findFirst({ where: { id: body.categoryId, websiteId: website.id } });
+      if (!category) throw new AppError(404, "ARTICLE_CATEGORY_NOT_FOUND", "Article category not found");
+    }
+    const status = body.status || article.status;
+    const updated = await prisma.article.update({
+      where: { id: article.id },
+      data: {
+        categoryId: body.categoryId,
+        title: body.title,
+        slug: body.slug,
+        excerpt: body.excerpt,
+        content: body.content,
+        coverImageUrl: body.coverImageUrl,
+        seoTitle: body.seoTitle,
+        seoDescription: body.seoDescription,
+        status,
+        sortOrder: body.sortOrder,
+        isFeatured: body.isFeatured,
+        featuredOrder: body.featuredOrder,
+        publishedAt: status === "published" ? article.publishedAt || new Date() : null
+      },
+      include: { category: true }
+    });
+    await createAuditLog(request, {
+      action: "article.updated",
+      actor: user,
+      websiteId: website.id,
+      entityType: "article",
+      entityId: updated.id,
+      summary: `Article updated: ${updated.title}`,
+      metadata: { changedFields: Object.keys(body), oldSlug: article.slug, newSlug: updated.slug, status: updated.status }
+    });
+    return ok(reply, articleContract(updated), "Article updated");
+  });
+  app.delete("/api/v1/websites/:websiteId/articles/:articleId", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const article = await prisma.article.findFirst({ where: { id: request.params?.articleId, websiteId: website.id }, include: { category: true } });
+    if (!article) throw new AppError(404, "ARTICLE_NOT_FOUND", "Article not found");
+    await prisma.article.delete({ where: { id: article.id } });
+    await createAuditLog(request, {
+      action: "article.deleted",
+      actor: user,
+      websiteId: website.id,
+      entityType: "article",
+      entityId: article.id,
+      summary: `Article deleted: ${article.title}`,
+      metadata: { slug: article.slug }
+    });
+    return ok(reply, true, "Article deleted");
+  });
+};
+
+
+const registerStage9cContentRoutes = () => {
+  const categoryRoutes = (
+    base: "article-categories" | "portfolio-categories",
+    model: typeof prisma.articleCategory | typeof prisma.portfolioCategory,
+    entityType: "article_category" | "portfolio_category"
+  ) => {
+    const idParam = base === "article-categories" ? "articleCategoryId" : "portfolioCategoryId";
+
+    app.get(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {
+      const { website } = await getWebsiteForAccess(request);
+      const rows = await (model as any).findMany({ where: { websiteId: website.id }, orderBy: { sortOrder: "asc" } });
+      return ok(reply, rows.map(categoryContract), `${base} loaded`);
+    });
+
+    app.post(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {
+      const { user, website } = await getWebsiteForAccess(request);
+      const body = categoryBody.parse(request.body);
+      const exists = await (model as any).findFirst({ where: { websiteId: website.id, slug: body.slug } });
+      if (exists) throw new AppError(409, "CATEGORY_SLUG_EXISTS", "Category slug already exists for this website");
+      const row = await (model as any).create({ data: { ...body, websiteId: website.id } });
+      await createAuditLog(request, {
+        action: `${entityType}.created`,
+        actor: user,
+        websiteId: website.id,
+        entityType,
+        entityId: row.id,
+        summary: `${entityType} created: ${row.name}`,
+        metadata: { slug: row.slug }
+      });
+      return created(reply, categoryContract(row), `${base} created`);
+    });
+
+    app.patch(`/api/v1/websites/:websiteId/${base}/:${idParam}`, async (request: Req, reply) => {
+      const { user, website } = await getWebsiteForAccess(request);
+      const body = categoryBody.partial().parse(request.body);
+      const existing = await (model as any).findFirst({ where: { id: request.params?.[idParam], websiteId: website.id } });
+      if (!existing) throw new AppError(404, "CATEGORY_NOT_FOUND", "Category not found");
+      if (body.slug && body.slug !== existing.slug) {
+        const exists = await (model as any).findFirst({ where: { websiteId: website.id, slug: body.slug } });
+        if (exists) throw new AppError(409, "CATEGORY_SLUG_EXISTS", "Category slug already exists for this website");
+      }
+      const row = await (model as any).update({ where: { id: existing.id }, data: body });
+      await createAuditLog(request, {
+        action: `${entityType}.updated`,
+        actor: user,
+        websiteId: website.id,
+        entityType,
+        entityId: row.id,
+        summary: `${entityType} updated: ${row.name}`,
+        metadata: { changedFields: Object.keys(body), oldSlug: existing.slug, newSlug: row.slug }
+      });
+      return ok(reply, categoryContract(row), `${base} updated`);
+    });
+
+    app.delete(`/api/v1/websites/:websiteId/${base}/:${idParam}`, async (request: Req, reply) => {
+      const { user, website } = await getWebsiteForAccess(request);
+      const existing = await (model as any).findFirst({ where: { id: request.params?.[idParam], websiteId: website.id } });
+      if (!existing) throw new AppError(404, "CATEGORY_NOT_FOUND", "Category not found");
+      await (model as any).delete({ where: { id: existing.id } });
+      await createAuditLog(request, {
+        action: `${entityType}.deleted`,
+        actor: user,
+        websiteId: website.id,
+        entityType,
+        entityId: existing.id,
+        summary: `${entityType} deleted: ${existing.name}`,
+        metadata: { slug: existing.slug }
+      });
+      return ok(reply, true, `${base} deleted`);
+    });
+  };
+
+  categoryRoutes("article-categories", prisma.articleCategory, "article_category");
+  categoryRoutes("portfolio-categories", prisma.portfolioCategory, "portfolio_category");
+
+  app.get("/api/v1/websites/:websiteId/faqs", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    const pageKey = request.query?.pageKey;
+    const faqs = await prisma.faq.findMany({
+      where: { websiteId: website.id, ...(pageKey ? { pageKey } : {}) },
+      orderBy: { sortOrder: "asc" }
+    });
+    return ok(reply, faqs.map(faqContract), "FAQs loaded");
+  });
+
+  app.post("/api/v1/websites/:websiteId/faqs", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const body = faqBody.parse(request.body);
+    const faq = await prisma.faq.create({ data: { ...body, websiteId: website.id } });
+    await createAuditLog(request, {
+      action: "faq.created",
+      actor: user,
+      websiteId: website.id,
+      entityType: "faq",
+      entityId: faq.id,
+      summary: `FAQ created: ${faq.question}`,
+      metadata: { pageKey: faq.pageKey }
+    });
+    return created(reply, faqContract(faq), "FAQ created");
+  });
+
+  app.patch("/api/v1/websites/:websiteId/faqs/:faqId", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const body = faqBody.partial().parse(request.body);
+    const existing = await prisma.faq.findFirst({ where: { id: request.params?.faqId, websiteId: website.id } });
+    if (!existing) throw new AppError(404, "FAQ_NOT_FOUND", "FAQ not found");
+    const faq = await prisma.faq.update({ where: { id: existing.id }, data: body });
+    await createAuditLog(request, {
+      action: "faq.updated",
+      actor: user,
+      websiteId: website.id,
+      entityType: "faq",
+      entityId: faq.id,
+      summary: `FAQ updated: ${faq.question}`,
+      metadata: { changedFields: Object.keys(body) }
+    });
+    return ok(reply, faqContract(faq), "FAQ updated");
+  });
+
+  app.delete("/api/v1/websites/:websiteId/faqs/:faqId", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const existing = await prisma.faq.findFirst({ where: { id: request.params?.faqId, websiteId: website.id } });
+    if (!existing) throw new AppError(404, "FAQ_NOT_FOUND", "FAQ not found");
+    await prisma.faq.delete({ where: { id: existing.id } });
+    await createAuditLog(request, {
+      action: "faq.deleted",
+      actor: user,
+      websiteId: website.id,
+      entityType: "faq",
+      entityId: existing.id,
+      summary: `FAQ deleted: ${existing.question}`,
+      metadata: { pageKey: existing.pageKey }
+    });
+    return ok(reply, true, "FAQ deleted");
+  });
+
+  app.get("/api/v1/websites/:websiteId/media", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    const assets = await prisma.mediaAsset.findMany({ where: { websiteId: website.id }, orderBy: { createdAt: "desc" } });
+    return ok(reply, assets.map(mediaAssetContract), "Media assets loaded");
+  });
+
+  app.post("/api/v1/websites/:websiteId/media", { config: { rateLimit: apiConfig.rateLimits.templateUpload } }, async (request, reply) => {
+    const { user, website } = await getWebsiteForAccess(request as any);
+
+    const allowed = new Map([
+      ["image/jpeg", "jpg"],
+      ["image/png", "png"],
+      ["image/webp", "webp"],
+      ["image/gif", "gif"]
+    ]);
+
+    let uploadedFile: { buffer: Buffer; filename: string; mimetype: string } | null = null;
+    let altText: string | null = null;
+
+    try {
+      for await (const part of (request as any).parts()) {
+        if (part.type === "field" && part.fieldname === "altText") {
+          const value = String(part.value || "").trim();
+          altText = value ? value.slice(0, 300) : null;
+          continue;
+        }
+
+        if (part.type !== "file" || part.fieldname !== "file") {
+          continue;
+        }
+
+        if (uploadedFile) {
+          throw new AppError(400, "MEDIA_ONLY_ONE_FILE", "Upload satu gambar saja dalam satu waktu");
+        }
+
+        const ext = allowed.get(part.mimetype);
+        if (!ext) {
+          throw new AppError(400, "MEDIA_TYPE_NOT_ALLOWED", "Format gambar yang didukung hanya JPG, PNG, WEBP, dan GIF");
+        }
+
+        const chunks: Buffer[] = [];
+        let totalBytes = 0;
+        for await (const chunk of part.file) {
+          const bufferChunk = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+          totalBytes += bufferChunk.length;
+          if (totalBytes > apiConfig.templateUploadMaxBytes) {
+            throw new AppError(413, "MEDIA_TOO_LARGE", `Ukuran gambar maksimal ${Math.round(apiConfig.templateUploadMaxBytes / 1024 / 1024)} MB`);
+          }
+          chunks.push(bufferChunk);
+        }
+
+        uploadedFile = {
+          buffer: Buffer.concat(chunks),
+          filename: part.filename || `media.${ext}`,
+          mimetype: part.mimetype
+        };
+      }
+    } catch (error: any) {
+      if (error instanceof AppError) throw error;
+      if (error?.code === "FST_REQ_FILE_TOO_LARGE" || error?.message?.toLowerCase?.().includes("request file too large")) {
+        throw new AppError(413, "MEDIA_TOO_LARGE", `Ukuran gambar maksimal ${Math.round(apiConfig.templateUploadMaxBytes / 1024 / 1024)} MB`);
+      }
+      throw error;
+    }
+
+    if (!uploadedFile) {
+      throw new AppError(400, "MEDIA_FILE_REQUIRED", "Pilih file gambar terlebih dahulu");
+    }
+
+    const ext = allowed.get(uploadedFile.mimetype)!;
+    const id = randomToken("media");
+    const filename = `${id}.${ext}`;
+    const storageDir = path.join(process.cwd(), "storage", "uploads", "sites", website.id);
+    const storagePath = path.join(storageDir, filename);
+    await mkdir(storageDir, { recursive: true });
+    await writeFile(storagePath, uploadedFile.buffer);
+
+    const asset = await prisma.mediaAsset.create({
+      data: {
+        id,
+        websiteId: website.id,
+        filename,
+        originalName: uploadedFile.filename,
+        mimeType: uploadedFile.mimetype,
+        sizeBytes: uploadedFile.buffer.length,
+        url: `/api/v1/public/media/${id}`,
+        altText,
+        storagePath
+      }
+    });
+
+    await createAuditLog(request, {
+      action: "media.uploaded",
+      actor: user,
+      websiteId: website.id,
+      entityType: "media_asset",
+      entityId: asset.id,
+      summary: `Media uploaded: ${asset.originalName}`,
+      metadata: { mimeType: asset.mimeType, sizeBytes: asset.sizeBytes }
+    });
+
+    return created(reply, mediaAssetContract(asset), "Media uploaded");
+  });
+
+  app.patch("/api/v1/websites/:websiteId/media/:mediaId", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const body = mediaUpdateBody.parse(request.body);
+    const existing = await prisma.mediaAsset.findFirst({ where: { id: request.params?.mediaId, websiteId: website.id } });
+    if (!existing) throw new AppError(404, "MEDIA_NOT_FOUND", "Media asset not found");
+    const asset = await prisma.mediaAsset.update({ where: { id: existing.id }, data: body });
+    await createAuditLog(request, {
+      action: "media.updated",
+      actor: user,
+      websiteId: website.id,
+      entityType: "media_asset",
+      entityId: asset.id,
+      summary: `Media updated: ${asset.originalName}`,
+      metadata: { changedFields: Object.keys(body) }
+    });
+    return ok(reply, mediaAssetContract(asset), "Media updated");
+  });
+
+  app.delete("/api/v1/websites/:websiteId/media/:mediaId", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const existing = await prisma.mediaAsset.findFirst({ where: { id: request.params?.mediaId, websiteId: website.id } });
+    if (!existing) throw new AppError(404, "MEDIA_NOT_FOUND", "Media asset not found");
+    await prisma.mediaAsset.delete({ where: { id: existing.id } });
+    await unlink(existing.storagePath).catch(() => undefined);
+    await createAuditLog(request, {
+      action: "media.deleted",
+      actor: user,
+      websiteId: website.id,
+      entityType: "media_asset",
+      entityId: existing.id,
+      summary: `Media deleted: ${existing.originalName}`,
+      metadata: { filename: existing.filename }
+    });
+    return ok(reply, true, "Media deleted");
+  });
+
+  app.get("/api/v1/api/v1/public/media/:mediaId", async (request: Req, reply) => {
+    return reply
+      .code(301)
+      .header("Location", `/api/v1/public/media/${request.params?.mediaId}`)
+      .send();
+  });
+
+  app.get("/api/v1/public/media/:mediaId", async (request: Req, reply) => {
+    const asset = await prisma.mediaAsset.findUnique({ where: { id: request.params?.mediaId } });
+    if (!asset) throw new AppError(404, "MEDIA_NOT_FOUND", "Media asset not found");
+
+    try {
+      const buffer = await readFile(asset.storagePath);
+      return reply
+        .header("Cache-Control", "public, max-age=2592000")
+        .type(asset.mimeType)
+        .send(buffer);
+    } catch {
+      throw new AppError(404, "MEDIA_FILE_MISSING", "File media tidak ditemukan di storage. Cek volume/folder upload backend.");
+    }
+  });
+};
+
 
 const registerPublicRoutes = () => {
   app.get("/api/v1/public/sites/:slug", async (request: Req, reply) => {
     const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" } });
     if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
-    return ok(reply, await buildPublicPage(website.id, { pageKey: "home" }), "Public page loaded");
+    return ok(reply, await buildPublicPage(website.id, { pageKey: "home" }, { publicOnly: true }), "Public page loaded");
   });
   app.get("/api/v1/public/sites/:slug/pages/:pageSlug", async (request: Req, reply) => {
     const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" } });
     if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
-    return ok(reply, await buildPublicPage(website.id, { slug: request.params?.pageSlug || "" }), "Public page loaded");
+    const requestedSlug = cleanPageSlug(request.params?.pageSlug || "");
+    const page = await prisma.websitePage.findFirst({ where: { websiteId: website.id, slug: requestedSlug, isPublished: true } });
+    if (!page) {
+      const redirect = await prisma.websitePageSlugHistory.findFirst({
+        where: { websiteId: website.id, oldSlug: requestedSlug },
+        orderBy: { createdAt: "desc" }
+      });
+      if (redirect) {
+        return ok(reply, {
+          redirect: {
+            type: redirect.redirectType,
+            from: redirect.oldSlug ? `/${redirect.oldSlug}` : "/",
+            to: redirect.newSlug ? `/${redirect.newSlug}` : "/"
+          }
+        }, "Page redirect found");
+      }
+    }
+    return ok(reply, await buildPublicPage(website.id, { slug: requestedSlug }, { publicOnly: true }), "Public page loaded");
+  });
+  app.get("/api/v1/public/sites/:slug/articles", async (request: Req, reply) => {
+    const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" }, include: { businessProfile: true } });
+    if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
+    const articles = await prisma.article.findMany({
+      where: { websiteId: website.id, status: "published" },
+      orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }, { publishedAt: "desc" }],
+      include: { category: true }
+    });
+    return ok(reply, articles.map(publicArticleSummary), "Public articles loaded");
+  });
+  app.get("/api/v1/public/sites/:slug/articles/:articleSlug", async (request: Req, reply) => {
+    const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" }, include: { businessProfile: true } });
+    if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
+    const article = await prisma.article.findFirst({
+      where: { websiteId: website.id, slug: request.params?.articleSlug, status: "published" },
+      include: { category: true }
+    });
+    if (!article) throw new AppError(404, "ARTICLE_NOT_FOUND", "Published article not found");
+    const sameCategoryArticles = article.categoryId
+      ? await prisma.article.findMany({
+        where: { websiteId: website.id, status: "published", id: { not: article.id }, categoryId: article.categoryId },
+        orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }, { publishedAt: "desc" }],
+        take: 3,
+        include: { category: true }
+      })
+      : [];
+    const fallbackArticles = sameCategoryArticles.length < 3
+      ? await prisma.article.findMany({
+        where: {
+          websiteId: website.id,
+          status: "published",
+          id: { notIn: [article.id, ...sameCategoryArticles.map((item: any) => item.id)] }
+        },
+        orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }, { publishedAt: "desc" }],
+        take: 3 - sameCategoryArticles.length,
+        include: { category: true }
+      })
+      : [];
+    const relatedArticles = [...sameCategoryArticles, ...fallbackArticles].slice(0, 3);
+    const articleDetailPage = await buildPublicPage(website.id, { pageKey: "article_detail" }).catch(() => null);
+    return ok(reply, {
+      article: articleContract(article),
+      relatedArticles: relatedArticles.map(publicArticleSummary),
+      articleDetailSections: articleDetailPage?.page?.sections || [],
+      website: websiteSummary(website),
+      businessProfile: website.businessProfile,
+      seo: {
+        title: article.seoTitle || article.title,
+        description: article.seoDescription || article.excerpt || website.businessProfile?.description || website.name
+      },
+      trackingKey: website.trackingKey,
+      navigation: await buildNavigationContract(website.id)
+    }, "Public article loaded");
   });
   app.get("/api/v1/websites/:websiteId/preview/pages/:pageKey", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
     return ok(reply, { ...(await buildPublicPage(website.id, { pageKey: request.params?.pageKey || "home" })), isPreview: true }, "Preview page loaded");
   });
-  app.post("/api/v1/public/tracking/events", { config: { rateLimit: { max: 60, timeWindow: "1 minute" } } }, async (request, reply) => {
+  app.post("/api/v1/public/tracking/events", { config: { rateLimit: apiConfig.rateLimits.tracking } }, async (request, reply) => {
     const body = trackingBody.parse(request.body);
     await recordTracking(request, body);
     return ok(reply, { accepted: true }, "Tracking event accepted", 202);
   });
-  app.post("/api/v1/public/sites/:slug/contact", { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } }, async (request: Req, reply) => {
+  app.post("/api/v1/public/sites/:slug/contact", { config: { rateLimit: apiConfig.rateLimits.contact } }, async (request: Req, reply) => {
     const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" } });
     if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
     const body = contactBody.parse(request.body);
@@ -821,6 +2407,80 @@ const registerPublicRoutes = () => {
   });
 };
 
+
+const registerAuditRoutes = () => {
+  app.get("/api/v1/internal/audit-logs", async (request: Req, reply) => {
+    await requireRole(request, ["internal_admin"]);
+
+    const query = request.query || {};
+    const limit = Math.min(Math.max(Number(query.limit || 50), 1), 100);
+    const page = Math.max(Number(query.page || 1), 1);
+    const skip = (page - 1) * limit;
+    const search = query.q?.trim();
+
+    const where: Prisma.AuditLogWhereInput = {
+      ...(query.category ? { category: query.category } : {}),
+      ...(query.action ? { action: query.action } : {}),
+      ...(query.websiteId ? { websiteId: query.websiteId } : {}),
+      ...(query.actorUserId ? { actorUserId: query.actorUserId } : {}),
+      ...(query.entityType ? { entityType: query.entityType } : {}),
+      ...(search
+        ? {
+            OR: [
+              { action: { contains: search, mode: "insensitive" } },
+              { summary: { contains: search, mode: "insensitive" } },
+              { entityType: { contains: search, mode: "insensitive" } },
+              { actorRole: { contains: search, mode: "insensitive" } }
+            ]
+          }
+        : {})
+    };
+
+    const [items, total] = await Promise.all([
+      prisma.auditLog.findMany({
+        where,
+        include: { actor: true, website: true },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit
+      }),
+      prisma.auditLog.count({ where })
+    ]);
+
+    return ok(reply, {
+      items: items.map(auditLogContract),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.max(Math.ceil(total / limit), 1)
+      }
+    }, "Audit logs loaded");
+  });
+
+  app.get("/api/v1/internal/audit-logs/summary", async (request: Req, reply) => {
+    await requireRole(request, ["internal_admin"]);
+
+    const [total, security, audit, system, latest] = await Promise.all([
+      prisma.auditLog.count(),
+      prisma.auditLog.count({ where: { category: "security" } }),
+      prisma.auditLog.count({ where: { category: "audit" } }),
+      prisma.auditLog.count({ where: { category: "system" } }),
+      prisma.auditLog.findMany({
+        include: { actor: true, website: true },
+        orderBy: { createdAt: "desc" },
+        take: 5
+      })
+    ]);
+
+    return ok(reply, {
+      total,
+      categories: { security, audit, system },
+      latest: latest.map(auditLogContract)
+    }, "Audit log summary loaded");
+  });
+};
+
 const registerLeadAndInsightRoutes = () => {
   app.get("/api/v1/websites/:websiteId/leads", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
@@ -833,11 +2493,21 @@ const registerLeadAndInsightRoutes = () => {
     return ok(reply, leads.map(leadContract), "Recent leads loaded");
   });
   app.patch("/api/v1/websites/:websiteId/leads/:leadId/status", async (request: Req, reply) => {
-    const { website } = await getWebsiteForAccess(request);
+    const { user, website } = await getWebsiteForAccess(request);
     const body = z.object({ status: z.enum(LEAD_STATUS) }).parse(request.body);
     const lead = await prisma.lead.findFirst({ where: { id: request.params?.leadId, websiteId: website.id } });
     if (!lead) throw new AppError(404, "LEAD_NOT_FOUND", "Lead not found");
-    return ok(reply, leadContract(await prisma.lead.update({ where: { id: lead.id }, data: { status: body.status } })), "Lead status updated");
+    const updatedLead = await prisma.lead.update({ where: { id: lead.id }, data: { status: body.status } });
+    await createAuditLog(request, {
+      action: "lead.status_updated",
+      actor: user,
+      websiteId: website.id,
+      entityType: "lead",
+      entityId: lead.id,
+      summary: `Lead status updated to ${body.status}`,
+      metadata: { oldStatus: lead.status, newStatus: body.status }
+    });
+    return ok(reply, leadContract(updatedLead), "Lead status updated");
   });
 
   const topBy = async (websiteId: string, field: "pageKey" | "slotKey" | "ctaKey" | "objectId", where: Record<string, unknown> = {}) => {
@@ -928,9 +2598,30 @@ const registerLeadAndInsightRoutes = () => {
       total: row._count._all
     }));
   };
+  const topArticles = async (websiteId: string) => {
+    const rows = await prisma.trackingEvent.groupBy({
+      by: ["objectId"],
+      where: { websiteId, eventName: "article_view", objectId: { not: null } },
+      _count: { _all: true },
+      orderBy: { _count: { objectId: "desc" } },
+      take: 10
+    });
+    const ids = rows.map((row) => row.objectId).filter(Boolean) as string[];
+    const articles = await prisma.article.findMany({ where: { id: { in: ids } }, select: { id: true, title: true, slug: true } });
+    const articleById = new Map(articles.map((article) => [article.id, article]));
+    return rows.map((row) => {
+      const article = row.objectId ? articleById.get(row.objectId) : null;
+      return {
+        articleId: row.objectId,
+        title: article?.title || null,
+        slug: article?.slug || null,
+        total: row._count._all
+      };
+    });
+  };
   app.get("/api/v1/websites/:websiteId/insights/summary", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
-    const [visitors, totalPageViews, totalCtaClicks, totalWhatsappClicks, totalContactSubmits, topPageRows, topServiceRows, topPortfolioRows] = await Promise.all([
+    const [visitors, totalPageViews, totalCtaClicks, totalWhatsappClicks, totalContactSubmits, topPageRows, topServiceRows, topPortfolioRows, topArticleRows] = await Promise.all([
       prisma.trackingEvent.findMany({ where: { websiteId: website.id, visitorId: { not: null } }, distinct: ["visitorId"], select: { visitorId: true } }),
       prisma.trackingEvent.count({ where: { websiteId: website.id, eventName: "page_view" } }),
       prisma.trackingEvent.count({ where: { websiteId: website.id, eventName: "cta_click" } }),
@@ -938,7 +2629,8 @@ const registerLeadAndInsightRoutes = () => {
       prisma.trackingEvent.count({ where: { websiteId: website.id, eventName: "contact_submit" } }),
       topBy(website.id, "pageKey", { eventName: "page_view" }),
       topBy(website.id, "objectId", { eventName: "service_view", objectType: "service" }),
-      topBy(website.id, "objectId", { eventName: "portfolio_view", objectType: "portfolio" })
+      topBy(website.id, "objectId", { eventName: "portfolio_view", objectType: "portfolio" }),
+      topArticles(website.id)
     ]);
     const topServiceId = topServiceRows[0]?.objectId;
     const topPortfolioId = topPortfolioRows[0]?.objectId;
@@ -988,6 +2680,9 @@ const registerLeadAndInsightRoutes = () => {
           : null,
         topPortfolio: topPortfolio
           ? { label: "Portfolio Paling Sering Dilihat", value: topPortfolio.title, total: topPortfolioRows[0].total }
+          : null,
+        topArticle: topArticleRows[0]
+          ? { label: "Artikel Paling Sering Dibaca", value: topArticleRows[0].title, total: topArticleRows[0].total }
           : null
       }
     }, "Insight summary loaded");
@@ -997,6 +2692,7 @@ const registerLeadAndInsightRoutes = () => {
   app.get("/api/v1/websites/:websiteId/insights/top-ctas", async (request: Req, reply) => ok(reply, await topCtas((await getWebsiteForAccess(request)).website.id), "Top CTAs loaded"));
   app.get("/api/v1/websites/:websiteId/insights/top-services", async (request: Req, reply) => ok(reply, await topObjects((await getWebsiteForAccess(request)).website.id, "service"), "Top services loaded"));
   app.get("/api/v1/websites/:websiteId/insights/top-portfolios", async (request: Req, reply) => ok(reply, await topObjects((await getWebsiteForAccess(request)).website.id, "portfolio"), "Top portfolios loaded"));
+  app.get("/api/v1/websites/:websiteId/insights/top-articles", async (request: Req, reply) => ok(reply, await topArticles((await getWebsiteForAccess(request)).website.id), "Top articles loaded"));
   app.get("/api/v1/websites/:websiteId/insights/traffic-sources", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
     const rows = await prisma.trackingEvent.findMany({ where: { websiteId: website.id, eventName: "page_view" }, select: { referrer: true, utmJson: true } });
@@ -1016,9 +2712,20 @@ const registerLeadAndInsightRoutes = () => {
 
 export const buildApp = async () => {
   await registerPlugins();
-  app.setErrorHandler((error, _request, reply) => {
-    const payload = toErrorPayload(error);
+  app.setErrorHandler((error, request, reply) => {
+    request.log.error({ err: error, requestId: request.id, method: request.method, url: request.url }, "request_error");
+    const payload = toErrorPayload(error, request);
     reply.code(payload.statusCode).send(payload.body);
+  });
+  app.setNotFoundHandler((request, reply) => {
+    reply.code(404).send({
+      error: {
+        code: "ROUTE_NOT_FOUND",
+        message: `Route ${request.method}:${request.url} not found`,
+        details: {},
+        requestId: request.id
+      }
+    });
   });
   registerCoreRoutes();
   registerAuthRoutes();
@@ -1031,15 +2738,180 @@ export const buildApp = async () => {
   registerCrud("portfolios", listItemBody);
   registerCrud("testimonials", testimonialBody);
   registerCrud("brand-partners", brandBody);
+
+  const registerTimelineRoutes = () => {
+    const base = "timelines";
+    app.get(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {
+      const { website } = await getWebsiteForAccess(request);
+      const rows = await prisma.businessTimeline.findMany({
+        where: { websiteId: website.id },
+        orderBy: { sortOrder: "asc" }
+      });
+      return ok(reply, rows, "timelines loaded");
+    });
+
+    app.post(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {
+      const { user, website } = await getWebsiteForAccess(request);
+      const body = timelineBody.parse(request.body);
+      const row = await prisma.businessTimeline.create({
+        data: { ...body, websiteId: website.id }
+      });
+      await createAuditLog(request, {
+        action: "timelines.created",
+        actor: user,
+        websiteId: website.id,
+        entityType: "timeline",
+        entityId: row.id,
+        summary: "Timeline item created",
+        metadata: { year: row.year, title: row.title }
+      });
+      return ok(reply, row, "timeline created", 201);
+    });
+
+    app.get(`/api/v1/websites/:websiteId/${base}/:timelineId`, async (request: Req, reply) => {
+      const { website } = await getWebsiteForAccess(request);
+      const row = await prisma.businessTimeline.findFirst({
+        where: { id: (request.params as any).timelineId, websiteId: website.id }
+      });
+      if (!row) throw new AppError(404, "ITEM_NOT_FOUND", "Timeline item not found");
+      return ok(reply, row, "timeline loaded");
+    });
+
+    app.patch(`/api/v1/websites/:websiteId/${base}/:timelineId`, async (request: Req, reply) => {
+      const { user, website } = await getWebsiteForAccess(request);
+      const body = timelineBody.partial().parse(request.body);
+      const existing = await prisma.businessTimeline.findFirst({
+        where: { id: (request.params as any).timelineId, websiteId: website.id }
+      });
+      if (!existing) throw new AppError(404, "ITEM_NOT_FOUND", "Timeline item not found");
+      const row = await prisma.businessTimeline.update({ where: { id: existing.id }, data: body });
+      await createAuditLog(request, {
+        action: "timelines.updated",
+        actor: user,
+        websiteId: website.id,
+        entityType: "timeline",
+        entityId: row.id,
+        summary: "Timeline item updated",
+        metadata: { changedFields: Object.keys(body) }
+      });
+      return ok(reply, row, "timeline updated");
+    });
+
+    app.delete(`/api/v1/websites/:websiteId/${base}/:timelineId`, async (request: Req, reply) => {
+      const { user, website } = await getWebsiteForAccess(request);
+      const existing = await prisma.businessTimeline.findFirst({
+        where: { id: (request.params as any).timelineId, websiteId: website.id }
+      });
+      if (!existing) throw new AppError(404, "ITEM_NOT_FOUND", "Timeline item not found");
+      await prisma.businessTimeline.delete({ where: { id: existing.id } });
+      await createAuditLog(request, {
+        action: "timelines.deleted",
+        actor: user,
+        websiteId: website.id,
+        entityType: "timeline",
+        entityId: existing.id,
+        summary: "Timeline item deleted",
+        metadata: { year: existing.year, title: existing.title }
+      });
+      return ok(reply, true, "timeline deleted");
+    });
+  };
+
+  // --- Team Member CRUD ---
+  const registerTeamMemberRoutes = () => {
+    const base = "team-members";
+    app.get(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {
+      const { website } = await getWebsiteForAccess(request);
+      const rows = await prisma.teamMember.findMany({
+        where: { websiteId: website.id },
+        orderBy: { sortOrder: "asc" }
+      });
+      return ok(reply, rows, "team members loaded");
+    });
+
+    app.post(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {
+      const { user, website } = await getWebsiteForAccess(request);
+      const body = teamMemberBody.parse(request.body);
+      const row = await prisma.teamMember.create({
+        data: { ...body, websiteId: website.id }
+      });
+      await createAuditLog(request, {
+        action: "team-members.created",
+        actor: user,
+        websiteId: website.id,
+        entityType: "team_member",
+        entityId: row.id,
+        summary: "Team member created",
+        metadata: { name: row.name }
+      });
+      return ok(reply, row, "team member created", 201);
+    });
+
+    app.get(`/api/v1/websites/:websiteId/${base}/:teamMemberId`, async (request: Req, reply) => {
+      const { website } = await getWebsiteForAccess(request);
+      const row = await prisma.teamMember.findFirst({
+        where: { id: (request.params as any).teamMemberId, websiteId: website.id }
+      });
+      if (!row) throw new AppError(404, "ITEM_NOT_FOUND", "Team member not found");
+      return ok(reply, row, "team member loaded");
+    });
+
+    app.patch(`/api/v1/websites/:websiteId/${base}/:teamMemberId`, async (request: Req, reply) => {
+      const { user, website } = await getWebsiteForAccess(request);
+      const body = teamMemberBody.partial().parse(request.body);
+      const existing = await prisma.teamMember.findFirst({
+        where: { id: (request.params as any).teamMemberId, websiteId: website.id }
+      });
+      if (!existing) throw new AppError(404, "ITEM_NOT_FOUND", "Team member not found");
+      const row = await prisma.teamMember.update({ where: { id: existing.id }, data: body });
+      await createAuditLog(request, {
+        action: "team-members.updated",
+        actor: user,
+        websiteId: website.id,
+        entityType: "team_member",
+        entityId: row.id,
+        summary: "Team member updated",
+        metadata: { changedFields: Object.keys(body) }
+      });
+      return ok(reply, row, "team member updated");
+    });
+
+    app.delete(`/api/v1/websites/:websiteId/${base}/:teamMemberId`, async (request: Req, reply) => {
+      const { user, website } = await getWebsiteForAccess(request);
+      const existing = await prisma.teamMember.findFirst({
+        where: { id: (request.params as any).teamMemberId, websiteId: website.id }
+      });
+      if (!existing) throw new AppError(404, "ITEM_NOT_FOUND", "Team member not found");
+      await prisma.teamMember.delete({ where: { id: existing.id } });
+      await createAuditLog(request, {
+        action: "team-members.deleted",
+        actor: user,
+        websiteId: website.id,
+        entityType: "team_member",
+        entityId: existing.id,
+        summary: "Team member deleted",
+        metadata: { name: existing.name }
+      });
+      return ok(reply, true, "team member deleted");
+    });
+  };
+
+  registerTimelineRoutes();
+  registerTeamMemberRoutes();
+
+  registerArticleRoutes();
+  registerStage9cContentRoutes();
   registerPublicRoutes();
+  registerAuditRoutes();
   registerLeadAndInsightRoutes();
   return app;
 };
 
 if (process.env.NODE_ENV !== "test") {
-  const port = Number(process.env.API_PORT || process.env.PORT || 4000);
+  const port = apiConfig.port;
   buildApp()
     .then((server) => server.listen({ port, host: "0.0.0.0" }))
+    .then(() => app.log.info({ port, runtimeMode: apiConfig.runtimeMode }, "api_started"))
     .catch(async (error) => {
       app.log.error(error);
       await prisma.$disconnect();

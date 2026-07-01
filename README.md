@@ -66,6 +66,16 @@ Seed membuat:
 - Website published: `lentera-demo`
 - Default pages, section slots, template sections, business profile, services, portfolios, testimonials, brand partners, leads, dan tracking events demo.
 
+### Reset Manual Testing, Tetap Simpan User
+
+Untuk menghapus data operasional tanpa menghapus akun user:
+
+```bash
+corepack pnpm db:reset:keep-users
+```
+
+Warning: command ini menghapus website, halaman, section, template pack, template section, artikel, lead/contact message, dan tracking event. Tabel `User` tetap dipertahankan, dan `User.primaryWebsiteId` akan diset `null`. Command ini tidak menjalankan seed demo setelah reset.
+
 ## Run API
 
 ```bash

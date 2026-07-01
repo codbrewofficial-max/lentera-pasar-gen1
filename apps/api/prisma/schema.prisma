@@ -24,15 +24,37 @@ enum LeadStatus {
   lost
 }
 
+enum ArticleStatus {
+  draft
+  published
+}
+
+enum TemplateSectionStatus {
+  draft
+  active
+  invalid
+}
+
+enum TemplatePackStatus {
+  draft
+  active
+  invalid
+}
+
 model User {
-  id           String    @id @default(cuid())
-  name         String
-  email        String    @unique
-  passwordHash String
-  role         UserRole
-  websites     Website[] @relation("OwnerWebsites")
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id               String    @id @default(cuid())
+  name             String
+  email            String    @unique
+  passwordHash     String
+  role             UserRole
+  whatsapp         String?
+  phone            String?
+  primaryWebsiteId String?
+  primaryWebsite   Website?  @relation("PrimaryWebsite", fields: [primaryWebsiteId], references: [id], onDelete: SetNull)
+  websites         Website[] @relation("OwnerWebsites")
+  auditLogs        AuditLog[] @relation("ActorAuditLogs")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }
 
 model Website {
@@ -52,8 +74,18 @@ model Website {
   portfolios      Portfolio[]
   testimonials    Testimonial[]
   brandPartners   BrandPartner[]
+  articles        Article[]
+  faqs            Faq[]
+  timelines       BusinessTimeline[]
+  teamMembers     TeamMember[]
+  mediaAssets     MediaAsset[]
+  articleCategories ArticleCategory[]
+  portfolioCategories PortfolioCategory[]
   leads           Lead[]
   trackingEvents  TrackingEvent[]
+  primaryForUsers User[]            @relation("PrimaryWebsite")
+  pageSlugHistories WebsitePageSlugHistory[]
+  auditLogs       AuditLog[]
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
@@ -63,19 +95,46 @@ model Website {
 }
 
 model WebsitePage {
-  id        String        @id @default(cuid())
-  websiteId String
-  website   Website       @relation(fields: [websiteId], references: [id], onDelete: Cascade)
-  pageKey   String
-  title     String
-  slug      String
-  sortOrder Int
-  isActive  Boolean       @default(true)
-  sections  PageSection[]
+  id                 String        @id @default(cuid())
+  websiteId          String
+  website            Website       @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  pageKey            String
+  title              String
+  slug               String
+  sortOrder          Int
+  isActive           Boolean       @default(true)
+  navLabel           String?
+  footerLabel        String?
+  purpose            String?
+  isPublished        Boolean       @default(true)
+  isVisibleInNavbar  Boolean       @default(true)
+  isVisibleInFooter  Boolean       @default(true)
+  seoTitle           String?
+  seoDescription     String?
+  sections           PageSection[]
+  slugHistories      WebsitePageSlugHistory[]
 
   @@unique([websiteId, pageKey])
   @@unique([websiteId, slug])
   @@index([websiteId, sortOrder])
+  @@index([websiteId, isPublished])
+  @@index([websiteId, isVisibleInNavbar])
+}
+
+model WebsitePageSlugHistory {
+  id           String      @id @default(cuid())
+  websiteId    String
+  website      Website     @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  pageId       String
+  page         WebsitePage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  pageKey      String
+  oldSlug      String
+  newSlug      String
+  redirectType Int         @default(301)
+  createdAt    DateTime    @default(now())
+
+  @@index([websiteId, oldSlug])
+  @@index([websiteId, pageKey])
 }
 
 model PageSection {
@@ -100,14 +159,19 @@ model PageSection {
 
 model TemplateSection {
   id                 String        @id @default(cuid())
+  templatePackId     String?
+  templatePack       TemplatePack? @relation(fields: [templatePackId], references: [id], onDelete: SetNull)
   sectionKey         String        @unique
   websiteType        String
+  pageKey            String?
   slotKey            String
   name               String
   component          String
   variant            String?
   schemaJson         Json
   defaultContentJson Json
+  status             TemplateSectionStatus @default(draft)
+  validationErrors   Json?
   isActive           Boolean       @default(true)
   pageSections       PageSection[]
   createdAt          DateTime      @default(now())
@@ -115,6 +179,51 @@ model TemplateSection {
 
   @@index([websiteType, slotKey])
   @@index([isActive])
+  @@index([templatePackId])
+}
+
+model TemplatePack {
+  id                    String             @id @default(cuid())
+  templatePackKey       String             @unique
+  websiteType           String
+  name                  String
+  theme                 String
+  version               String
+  description           String?
+  status                TemplatePackStatus @default(draft)
+  validationSummaryJson Json?
+  sections              TemplateSection[]
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@index([websiteType, status])
+}
+
+model Article {
+  id             String        @id @default(cuid())
+  websiteId      String
+  website        Website       @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  categoryId     String?
+  category       ArticleCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  title          String
+  slug           String
+  excerpt        String?
+  content        String
+  coverImageUrl  String?
+  seoTitle       String?
+  seoDescription String?
+  status         ArticleStatus @default(draft)
+  sortOrder      Int           @default(0)
+  isFeatured     Boolean       @default(false)
+  featuredOrder  Int           @default(0)
+  publishedAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([websiteId, slug])
+  @@index([websiteId, status, sortOrder])
+  @@index([websiteId, status, isFeatured, featuredOrder])
+  @@index([websiteId, categoryId])
 }
 
 model BusinessProfile {
@@ -124,6 +233,8 @@ model BusinessProfile {
   name         String
   tagline      String?
   description  String?
+  logoUrl      String?
+  logoAlt      String?
   vision       String?
   mission      String?
   timelineJson Json?
@@ -131,6 +242,11 @@ model BusinessProfile {
   phone        String?
   whatsapp     String?
   address      String?
+  instagramUrl String?
+  facebookUrl  String?
+  linkedinUrl  String?
+  twitterUrl   String?
+  websiteUrl   String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -143,26 +259,35 @@ model Service {
   description String?
   imageUrl    String?
   sortOrder   Int      @default(0)
+  isFeatured  Boolean  @default(false)
+  featuredOrder Int    @default(0)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([websiteId, sortOrder])
+  @@index([websiteId, isFeatured, featuredOrder])
 }
 
 model Portfolio {
   id          String   @id @default(cuid())
   websiteId   String
   website     Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  categoryId  String?
+  category    PortfolioCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   title       String
   description String?
   imageUrl    String?
   sortOrder   Int      @default(0)
+  isFeatured  Boolean  @default(false)
+  featuredOrder Int    @default(0)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([websiteId, sortOrder])
+  @@index([websiteId, isFeatured, featuredOrder])
+  @@index([websiteId, categoryId])
 }
 
 model Testimonial {
@@ -195,6 +320,109 @@ model BrandPartner {
   updatedAt DateTime @updatedAt
 
   @@index([websiteId, sortOrder])
+}
+
+model Faq {
+  id        String   @id @default(cuid())
+  websiteId String
+  website   Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  question  String
+  answer    String
+  pageKey   String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([websiteId, pageKey, sortOrder])
+  @@index([websiteId, isActive])
+}
+
+model ArticleCategory {
+  id          String   @id @default(cuid())
+  websiteId   String
+  website     Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  articles    Article[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([websiteId, slug])
+  @@index([websiteId, sortOrder])
+  @@index([websiteId, isActive])
+}
+
+model PortfolioCategory {
+  id          String   @id @default(cuid())
+  websiteId   String
+  website     Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  portfolios  Portfolio[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([websiteId, slug])
+  @@index([websiteId, sortOrder])
+  @@index([websiteId, isActive])
+}
+
+model MediaAsset {
+  id           String   @id @default(cuid())
+  websiteId    String
+  website      Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  filename     String
+  originalName String
+  mimeType     String
+  sizeBytes    Int
+  url          String
+  altText      String?
+  storagePath  String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([websiteId, createdAt])
+  @@index([websiteId, mimeType])
+}
+
+model BusinessTimeline {
+  id          String   @id @default(cuid())
+  websiteId   String
+  website     Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  year        String
+  title       String
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([websiteId, sortOrder])
+  @@index([websiteId, isActive])
+}
+
+model TeamMember {
+  id          String   @id @default(cuid())
+  websiteId   String
+  website     Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  name        String
+  role        String?
+  bio         String?
+  imageUrl    String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([websiteId, sortOrder])
+  @@index([websiteId, isActive])
 }
 
 model Lead {
@@ -243,4 +471,30 @@ model TrackingEvent {
   @@index([websiteId, slotKey, createdAt])
   @@index([websiteId, objectType, objectId, createdAt])
   @@index([websiteId, visitorId])
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  category     String   @default("audit")
+  action       String
+  actorUserId  String?
+  actor        User?    @relation("ActorAuditLogs", fields: [actorUserId], references: [id], onDelete: SetNull)
+  actorRole    String?
+  websiteId    String?
+  website      Website? @relation(fields: [websiteId], references: [id], onDelete: SetNull)
+  entityType   String?
+  entityId     String?
+  summary      String
+  metadataJson Json?
+  ipHash       String?
+  userAgent    String?
+  requestId    String?
+  createdAt    DateTime @default(now())
+
+  @@index([category, createdAt])
+  @@index([action, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([websiteId, createdAt])
+  @@index([entityType, entityId])
+  @@index([requestId])
 }

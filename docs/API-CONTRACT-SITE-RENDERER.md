@@ -5,6 +5,8 @@ Site renderer memakai public API tanpa JWT:
 ```http
 GET /api/v1/public/sites/:slug
 GET /api/v1/public/sites/:slug/pages/:pageSlug
+GET /api/v1/public/sites/:slug/articles
+GET /api/v1/public/sites/:slug/articles/:articleSlug
 ```
 
 Public API hanya mengembalikan website `published`. Website `draft` mengembalikan error `WEBSITE_NOT_PUBLISHED`.
@@ -31,7 +33,8 @@ Public API hanya mengembalikan website `published`. Website `draft` mengembalika
     "businessProfile": {},
     "navigation": [
       { "label": "Home", "href": "/lentera-demo" },
-      { "label": "About", "href": "/lentera-demo/about" }
+      { "label": "About Us", "href": "/lentera-demo/about" },
+      { "label": "Blog / Artikel", "href": "/lentera-demo/articles" }
     ],
     "page": {
       "pageKey": "home",
@@ -43,7 +46,7 @@ Public API hanya mengembalikan website `published`. Website `draft` mengembalika
           "slotKey": "home.hero",
           "slotLabel": "Hero",
           "sectionKey": "hero-clean",
-          "component": "HeroSection",
+          "component": "CompanyProfileCleanHomeHero",
           "variant": "clean",
           "content": {},
           "tracking": {
@@ -63,6 +66,39 @@ Public API hanya mengembalikan website `published`. Website `draft` mengembalika
   "message": "Public page loaded"
 }
 ```
+
+Company Profile public structure terdiri dari 7 page source of truth dan 33 section slots. `article_detail` adalah dynamic detail page, jadi tidak dikirim di navigation biasa.
+
+## Public Articles
+
+List:
+
+```http
+GET /api/v1/public/sites/:slug/articles
+```
+
+Item list:
+
+```json
+{
+  "id": "article_id",
+  "title": "Judul Artikel",
+  "slug": "judul-artikel",
+  "excerpt": "Ringkasan",
+  "coverImageUrl": "https://example.com/cover.jpg",
+  "seoTitle": "SEO Title",
+  "seoDescription": "SEO description",
+  "publishedAt": "2026-06-28T00:00:00.000Z"
+}
+```
+
+Detail:
+
+```http
+GET /api/v1/public/sites/:slug/articles/:articleSlug
+```
+
+Detail response menyertakan `article`, `relatedArticles`, `website`, `businessProfile`, `seo`, dan `trackingKey`. SEO title memakai `article.seoTitle || article.title`; SEO description memakai `article.seoDescription || article.excerpt || businessProfile.description`.
 
 Section yang tidak visible tidak dikirim. Section yang belum memilih template juga tidak dikirim agar renderer tidak perlu menebak component.
 
@@ -113,7 +149,7 @@ POST /api/v1/public/tracking/events
 }
 ```
 
-Valid event: `page_view`, `section_view`, `cta_click`, `whatsapp_click`, `contact_submit`, `service_view`, `portfolio_view`.
+Valid event: `page_view`, `section_view`, `cta_click`, `whatsapp_click`, `contact_submit`, `service_view`, `portfolio_view`, `article_view`.
 
 Backend menyimpan `ipHash`, bukan raw IP. `metadata` dibatasi ukuran.
 

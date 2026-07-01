@@ -1,5 +1,6 @@
-import type { FastifyReply } from "fastify";
+import type { FastifyRequest, FastifyReply } from "fastify";
 import { ZodError } from "zod";
+import { apiConfig } from "./env.js";
 
 export class AppError extends Error {
   constructor(
@@ -26,11 +27,18 @@ export const fail = (
   details: unknown = {}
 ) => reply.code(statusCode).send({ error: { code, message, details } });
 
-export const toErrorPayload = (error: unknown) => {
+const safeInternalMessage = (error: unknown) => {
+  if (apiConfig.isProductionLike) return "Internal server error";
+  if (error instanceof Error) return error.message;
+  return String(error);
+};
+
+export const toErrorPayload = (error: unknown, request?: FastifyRequest) => {
+  const requestId = request?.id;
   if (error instanceof AppError) {
     return {
       statusCode: error.statusCode,
-      body: { error: { code: error.code, message: error.message, details: error.details } }
+      body: { error: { code: error.code, message: error.message, details: error.details, requestId } }
     };
   }
   if (error instanceof ZodError) {
@@ -40,7 +48,8 @@ export const toErrorPayload = (error: unknown) => {
         error: {
           code: "VALIDATION_ERROR",
           message: "Request validation failed",
-          details: error.flatten()
+          details: error.flatten(),
+          requestId
         }
       }
     };
@@ -50,8 +59,9 @@ export const toErrorPayload = (error: unknown) => {
     body: {
       error: {
         code: "INTERNAL_ERROR",
-        message: process.env.NODE_ENV === "production" ? "Internal server error" : String(error),
-        details: {}
+        message: safeInternalMessage(error),
+        details: {},
+        requestId
       }
     }
   };

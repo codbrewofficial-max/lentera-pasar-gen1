@@ -11,7 +11,11 @@
     "prisma:validate": "prisma validate",
     "prisma:migrate": "prisma migrate dev --name init",
     "prisma:seed": "tsx prisma/seed.ts",
-    "smoke": "tsx scripts/smoke.ts"
+    "backfill:company-profile-structure": "tsx scripts/backfill-company-profile-structure.ts",
+    "db:reset:keep-users": "tsx scripts/reset-keep-users.ts",
+    "smoke": "tsx scripts/smoke.ts",
+    "backfill:page-navigation": "tsx scripts/backfill-page-navigation.ts",
+    "check:deployment": "tsx scripts/check-deployment.ts"
   },
   "dependencies": {
     "@fastify/cors": "^9.0.1",

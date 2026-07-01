@@ -1,0 +1,3497 @@
+{
+  "info": {
+    "_postman_id": "73205525-30d3-48e5-963e-dcefe4cca391",
+    "name": "Lentera Pasar API - MVP Manual QA",
+    "description": "Collection API Lentera Pasar untuk manual QA MVP: auth, internal, website setup, template pack, content CRUD, articles, public API, tracking, leads, dan insights.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 - Health & Meta",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('API healthy', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Website Types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/website-types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "website-types"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 - Auth",
+      "item": [
+        {
+          "name": "Login Internal Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{internalEmail}}\",\n  \"password\": \"{{internalPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login sukses', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.token) pm.environment.set('internalToken', json.data.token);",
+                  "if (json.data && json.data.user && json.data.user.id) pm.environment.set('internalUserId', json.data.user.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Owner",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{ownerEmail}}\",\n  \"password\": \"{{ownerPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login sukses', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.token) pm.environment.set('ownerToken', json.data.token);",
+                  "if (json.data && json.data.user && json.data.user.id) pm.environment.set('ownerUserId', json.data.user.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register New User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Owner Baru\",\n  \"email\": \"owner-baru-{{$timestamp}}@lenterapasar.test\",\n  \"password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Me - Owner Token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Me - Internal Token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{internalToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Internal Admin",
+      "item": [
+        {
+          "name": "List Owners",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/internal/owners",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "internal",
+                "owners"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{internalToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Owner response OK', function () { pm.expect(pm.response.code).to.be.oneOf([200,201]); });",
+                  "const json = pm.response.json();",
+                  "const owner = Array.isArray(json.data) ? json.data[0] : json.data;",
+                  "if (owner && owner.id) pm.environment.set('ownerId', owner.id);",
+                  "if (owner && owner.primaryWebsiteId) pm.environment.set('websiteId', owner.primaryWebsiteId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Owner",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/internal/owners",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "internal",
+                "owners"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{internalToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Owner QA {{$timestamp}}\",\n  \"email\": \"owner-qa-{{$timestamp}}@lenterapasar.test\",\n  \"password\": \"password123\",\n  \"whatsapp\": \"6281234567890\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Owner response OK', function () { pm.expect(pm.response.code).to.be.oneOf([200,201]); });",
+                  "const json = pm.response.json();",
+                  "const owner = Array.isArray(json.data) ? json.data[0] : json.data;",
+                  "if (owner && owner.id) pm.environment.set('ownerId', owner.id);",
+                  "if (owner && owner.primaryWebsiteId) pm.environment.set('websiteId', owner.primaryWebsiteId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Owner Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/internal/owners/{{ownerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "internal",
+                "owners",
+                "{{ownerId}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{internalToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Owner response OK', function () { pm.expect(pm.response.code).to.be.oneOf([200,201]); });",
+                  "const json = pm.response.json();",
+                  "const owner = Array.isArray(json.data) ? json.data[0] : json.data;",
+                  "if (owner && owner.id) pm.environment.set('ownerId', owner.id);",
+                  "if (owner && owner.primaryWebsiteId) pm.environment.set('websiteId', owner.primaryWebsiteId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Owner",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/internal/owners/{{ownerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "internal",
+                "owners",
+                "{{ownerId}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{internalToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Owner QA Updated\",\n  \"email\": \"{{ownerEmail}}\",\n  \"whatsapp\": \"6289876543210\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Create Website for Owner",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/internal/owners/{{ownerId}}/websites",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "internal",
+                "owners",
+                "{{ownerId}}",
+                "websites"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{internalToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Website QA {{$timestamp}}\",\n  \"slug\": \"qa-site-{{$timestamp}}\",\n  \"websiteType\": \"company_profile\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response OK', function () { pm.expect(pm.response.code).to.be.oneOf([200,201]); });",
+                  "const json = pm.response.json();",
+                  "const site = Array.isArray(json.data) ? json.data[0] : json.data;",
+                  "if (site && site.id) pm.environment.set('websiteId', site.id);",
+                  "if (site && site.slug) pm.environment.set('websiteSlug', site.slug);",
+                  "if (site && site.trackingKey) pm.environment.set('trackingKey', site.trackingKey);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Set Primary Website",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/internal/owners/{{ownerId}}/primary-website",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "internal",
+                "owners",
+                "{{ownerId}}",
+                "primary-website"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{internalToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"websiteId\": \"{{websiteId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "List Internal Websites",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/internal/websites",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "internal",
+                "websites"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{internalToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response OK', function () { pm.expect(pm.response.code).to.be.oneOf([200,201]); });",
+                  "const json = pm.response.json();",
+                  "const site = Array.isArray(json.data) ? json.data[0] : json.data;",
+                  "if (site && site.id) pm.environment.set('websiteId', site.id);",
+                  "if (site && site.slug) pm.environment.set('websiteSlug', site.slug);",
+                  "if (site && site.trackingKey) pm.environment.set('trackingKey', site.trackingKey);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Internal Website Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/internal/websites/{{websiteId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "internal",
+                "websites",
+                "{{websiteId}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{internalToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Websites",
+      "item": [
+        {
+          "name": "List My Websites",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response OK', function () { pm.expect(pm.response.code).to.be.oneOf([200,201]); });",
+                  "const json = pm.response.json();",
+                  "const site = Array.isArray(json.data) ? json.data[0] : json.data;",
+                  "if (site && site.id) pm.environment.set('websiteId', site.id);",
+                  "if (site && site.slug) pm.environment.set('websiteSlug', site.slug);",
+                  "if (site && site.trackingKey) pm.environment.set('trackingKey', site.trackingKey);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Website as Owner",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/websites",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Company Profile QA {{$timestamp}}\",\n  \"slug\": \"ddkb-{{$timestamp}}\",\n  \"websiteType\": \"company_profile\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response OK', function () { pm.expect(pm.response.code).to.be.oneOf([200,201]); });",
+                  "const json = pm.response.json();",
+                  "const site = Array.isArray(json.data) ? json.data[0] : json.data;",
+                  "if (site && site.id) pm.environment.set('websiteId', site.id);",
+                  "if (site && site.slug) pm.environment.set('websiteSlug', site.slug);",
+                  "if (site && site.trackingKey) pm.environment.set('trackingKey', site.trackingKey);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Website Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response OK', function () { pm.expect(pm.response.code).to.be.oneOf([200,201]); });",
+                  "const json = pm.response.json();",
+                  "const site = Array.isArray(json.data) ? json.data[0] : json.data;",
+                  "if (site && site.id) pm.environment.set('websiteId', site.id);",
+                  "if (site && site.slug) pm.environment.set('websiteSlug', site.slug);",
+                  "if (site && site.trackingKey) pm.environment.set('trackingKey', site.trackingKey);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Website",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Company Profile QA Updated\",\n  \"themeJson\": {\n    \"primary\": \"#649FF6\",\n    \"secondary\": \"#F56B71\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Publish Website",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/publish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "publish"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Tidak memakai body agar tidak memicu Fastify empty JSON body error."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response OK', function () { pm.expect(pm.response.code).to.be.oneOf([200,201]); });",
+                  "const json = pm.response.json();",
+                  "const site = Array.isArray(json.data) ? json.data[0] : json.data;",
+                  "if (site && site.id) pm.environment.set('websiteId', site.id);",
+                  "if (site && site.slug) pm.environment.set('websiteSlug', site.slug);",
+                  "if (site && site.trackingKey) pm.environment.set('trackingKey', site.trackingKey);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unpublish Website",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/unpublish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "unpublish"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response OK', function () { pm.expect(pm.response.code).to.be.oneOf([200,201]); });",
+                  "const json = pm.response.json();",
+                  "const site = Array.isArray(json.data) ? json.data[0] : json.data;",
+                  "if (site && site.id) pm.environment.set('websiteId', site.id);",
+                  "if (site && site.slug) pm.environment.set('websiteSlug', site.slug);",
+                  "if (site && site.trackingKey) pm.environment.set('trackingKey', site.trackingKey);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 - Page Setup & Navigation",
+      "item": [
+        {
+          "name": "Get Page Setup",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/page-setup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "page-setup"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Navigation Contract",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/navigation-contract",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "navigation-contract"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Page Redirects",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/page-redirects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "page-redirects"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Services Page Setup",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/pages/services/setup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "pages",
+                "services",
+                "setup"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Layanan\",\n  \"navLabel\": \"Solusi Kami\",\n  \"footerLabel\": \"Solusi Kami\",\n  \"slug\": \"solusi-kami\",\n  \"purpose\": \"Halaman untuk menampilkan layanan utama kepada calon client.\",\n  \"isPublished\": true,\n  \"isVisibleInNavbar\": true,\n  \"isVisibleInFooter\": true,\n  \"sortOrder\": 2,\n  \"seoTitle\": \"Solusi Kami\",\n  \"seoDescription\": \"Daftar layanan dan solusi yang tersedia.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Update Article Detail Setup - Should Stay Hidden",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/pages/article_detail/setup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "pages",
+                "article_detail",
+                "setup"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"navLabel\": \"Detail Artikel\",\n  \"slug\": \"article-detail\",\n  \"isPublished\": true,\n  \"isVisibleInNavbar\": true,\n  \"isVisibleInFooter\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Expected: backend menolak atau memaksa article_detail tetap hidden dari navbar/footer sesuai implementasi."
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Pages & Sections",
+      "item": [
+        {
+          "name": "List Pages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/pages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "pages"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Home Page",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/pages/home",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "pages",
+                "home"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Services Page",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/pages/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "pages",
+                "services"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Sections",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/sections",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "sections"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Section by Slot",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/sections/{{slotKey}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "sections",
+                "{{slotKey}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Choose Section Template",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/sections/{{slotKey}}/template",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "sections",
+                "{{slotKey}}",
+                "template"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"templateSectionId\": \"{{templateSectionId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Update Section Content",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/sections/{{slotKey}}/content",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "sections",
+                "{{slotKey}}",
+                "content"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contentJson\": {\n    \"title\": \"Bangun Kepercayaan Bisnis Anda\",\n    \"subtitle\": \"Contoh konten dari Postman.\",\n    \"ctaLabel\": \"Hubungi Kami\",\n    \"ctaTargetType\": \"page\",\n    \"ctaTargetPageKey\": \"contact\",\n    \"ctaCustomUrl\": \"\",\n    \"ctaUrl\": \"/contact\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Update Section Visibility",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/sections/{{slotKey}}/visibility",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "sections",
+                "{{slotKey}}",
+                "visibility"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isVisible\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Template Packs & Sections",
+      "item": [
+        {
+          "name": "Import Template Pack ZIP",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/internal/template-packs/import-zip",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "internal",
+                "template-packs",
+                "import-zip"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{internalToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{templatePackZipPath}}"
+                }
+              ]
+            },
+            "description": "Di Postman, pilih file ZIP template pack secara manual jika variable path tidak terbaca."
+          }
+        },
+        {
+          "name": "List Template Packs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/internal/template-packs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "internal",
+                "template-packs"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{internalToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response OK', function () { pm.expect(pm.response.code).to.be.oneOf([200,201]); });",
+                  "const json = pm.response.json();",
+                  "const data = Array.isArray(json.data) ? json.data[0] : json.data;",
+                  "if (data && data.id) pm.environment.set('templatePackId', data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Template Pack Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/internal/template-packs/{{templatePackId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "internal",
+                "template-packs",
+                "{{templatePackId}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{internalToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Template Pack Validation Report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/internal/template-packs/{{templatePackId}}/validation-report",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "internal",
+                "template-packs",
+                "{{templatePackId}}",
+                "validation-report"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{internalToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Active Template Sections",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/template-sections?websiteType=company_profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "template-sections"
+              ],
+              "query": [
+                {
+                  "key": "websiteType",
+                  "value": "company_profile"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Template sections loaded', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "const first = Array.isArray(json.data) ? json.data[0] : null;",
+                  "if (first && first.id) pm.environment.set('templateSectionId', first.id);",
+                  "if (first && first.slotKey) pm.environment.set('slotKey', first.slotKey);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Template Sections Include Draft",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/template-sections?websiteType=company_profile&includeDraft=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "template-sections"
+              ],
+              "query": [
+                {
+                  "key": "websiteType",
+                  "value": "company_profile"
+                },
+                {
+                  "key": "includeDraft",
+                  "value": "true"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{internalToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Template sections loaded', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "const first = Array.isArray(json.data) ? json.data[0] : null;",
+                  "if (first && first.id) pm.environment.set('templateSectionId', first.id);",
+                  "if (first && first.slotKey) pm.environment.set('slotKey', first.slotKey);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Template Section Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/template-sections/{{templateSectionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "template-sections",
+                "{{templateSectionId}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Template Sections by Slot",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/template-sections/by-slot/{{slotKey}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "template-sections",
+                "by-slot",
+                "{{slotKey}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Template sections loaded', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "const first = Array.isArray(json.data) ? json.data[0] : null;",
+                  "if (first && first.id) pm.environment.set('templateSectionId', first.id);",
+                  "if (first && first.slotKey) pm.environment.set('slotKey', first.slotKey);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "07 - Business Profile & Content CRUD",
+      "item": [
+        {
+          "name": "Get Business Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/business-profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "business-profile"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Save Business Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/business-profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "business-profile"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"DDKB Company\",\n  \"tagline\": \"Solusi bisnis yang rapi dan mudah dihubungi\",\n  \"description\": \"Profil bisnis contoh untuk manual QA.\",\n  \"vision\": \"Menjadi bisnis yang dipercaya pelanggan.\",\n  \"mission\": \"Memberikan layanan yang jelas dan responsif.\",\n  \"timelineJson\": [\n    {\n      \"year\": \"2024\",\n      \"title\": \"Mulai berjalan\"\n    }\n  ],\n  \"contactEmail\": \"hello@example.com\",\n  \"phone\": \"0221234567\",\n  \"whatsapp\": \"6281234567890\",\n  \"address\": \"Bandung, Indonesia\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "List Services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "services"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Service",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "services"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Konsultasi Bisnis\",\n  \"description\": \"Layanan konsultasi awal untuk memahami kebutuhan client.\",\n  \"imageUrl\": \"\",\n  \"sortOrder\": 1,\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response OK', function () { pm.expect(pm.response.code).to.be.oneOf([200,201]); });",
+                  "const json = pm.response.json();",
+                  "const data = Array.isArray(json.data) ? json.data[0] : json.data;",
+                  "if (data && data.id) pm.environment.set('serviceId', data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Service",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/services/{{serviceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "services",
+                "{{serviceId}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Service",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/services/{{serviceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "services",
+                "{{serviceId}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Konsultasi Bisnis Updated\",\n  \"description\": \"Deskripsi layanan sudah diperbarui.\",\n  \"sortOrder\": 1,\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete Service",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/services/{{serviceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "services",
+                "{{serviceId}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Portfolios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/portfolios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "portfolios"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Portfolio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/portfolios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "portfolios"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Project Website Company\",\n  \"description\": \"Contoh portofolio project.\",\n  \"imageUrl\": \"\",\n  \"sortOrder\": 1,\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response OK', function () { pm.expect(pm.response.code).to.be.oneOf([200,201]); });",
+                  "const json = pm.response.json();",
+                  "const data = Array.isArray(json.data) ? json.data[0] : json.data;",
+                  "if (data && data.id) pm.environment.set('portfolioId', data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Portfolio",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/portfolios/{{portfolioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "portfolios",
+                "{{portfolioId}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Project Website Company Updated\",\n  \"description\": \"Portfolio sudah diperbarui.\",\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete Portfolio",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/portfolios/{{portfolioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "portfolios",
+                "{{portfolioId}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Testimonials",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/testimonials",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "testimonials"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Testimonial",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/testimonials",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "testimonials"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Client Demo\",\n  \"role\": \"Owner\",\n  \"company\": \"Demo Company\",\n  \"quote\": \"Layanan sangat membantu dan mudah dipahami.\",\n  \"avatarUrl\": \"\",\n  \"sortOrder\": 1,\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response OK', function () { pm.expect(pm.response.code).to.be.oneOf([200,201]); });",
+                  "const json = pm.response.json();",
+                  "const data = Array.isArray(json.data) ? json.data[0] : json.data;",
+                  "if (data && data.id) pm.environment.set('testimonialId', data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Testimonial",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/testimonials/{{testimonialId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "testimonials",
+                "{{testimonialId}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quote\": \"Testimonial sudah diperbarui.\",\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete Testimonial",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/testimonials/{{testimonialId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "testimonials",
+                "{{testimonialId}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Brand Partners",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/brand-partners",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "brand-partners"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Brand Partner",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/brand-partners",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "brand-partners"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Partner Demo\",\n  \"logoUrl\": \"\",\n  \"url\": \"https://example.com\",\n  \"sortOrder\": 1,\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response OK', function () { pm.expect(pm.response.code).to.be.oneOf([200,201]); });",
+                  "const json = pm.response.json();",
+                  "const data = Array.isArray(json.data) ? json.data[0] : json.data;",
+                  "if (data && data.id) pm.environment.set('brandPartnerId', data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Brand Partner",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/brand-partners/{{brandPartnerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "brand-partners",
+                "{{brandPartnerId}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Partner Demo Updated\",\n  \"url\": \"https://example.com\",\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete Brand Partner",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/brand-partners/{{brandPartnerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "brand-partners",
+                "{{brandPartnerId}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 - Articles",
+      "item": [
+        {
+          "name": "List Articles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/articles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "articles"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Article Draft",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/articles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "articles"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Cara Memilih Layanan yang Tepat\",\n  \"slug\": \"cara-memilih-layanan-yang-tepat\",\n  \"excerpt\": \"Panduan singkat untuk calon client.\",\n  \"content\": \"Isi artikel contoh dari Postman.\",\n  \"coverImageUrl\": \"\",\n  \"seoTitle\": \"Cara Memilih Layanan yang Tepat\",\n  \"seoDescription\": \"Panduan memilih layanan yang tepat untuk kebutuhan bisnis.\",\n  \"status\": \"draft\",\n  \"sortOrder\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response OK', function () { pm.expect(pm.response.code).to.be.oneOf([200,201]); });",
+                  "const json = pm.response.json();",
+                  "const data = Array.isArray(json.data) ? json.data[0] : json.data;",
+                  "if (data && data.id) pm.environment.set('articleId', data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Article",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/articles/{{articleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "articles",
+                "{{articleId}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Publish Article",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/articles/{{articleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "articles",
+                "{{articleId}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"published\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Update Article",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/articles/{{articleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "articles",
+                "{{articleId}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Cara Memilih Layanan yang Tepat Updated\",\n  \"slug\": \"cara-memilih-layanan-yang-tepat\",\n  \"content\": \"Isi artikel yang sudah diperbarui.\",\n  \"status\": \"published\",\n  \"sortOrder\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete Article",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/articles/{{articleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "articles",
+                "{{articleId}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 - Public Site API",
+      "item": [
+        {
+          "name": "Public Site Home",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/public/sites/{{websiteSlug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "sites",
+                "{{websiteSlug}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Public site response', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });",
+                  "try { const json = pm.response.json(); if (json.data && json.data.website && json.data.website.trackingKey) pm.environment.set('trackingKey', json.data.website.trackingKey); } catch(e) {}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Public Page by Slug",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/public/sites/{{websiteSlug}}/pages/{{pageSlug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "sites",
+                "{{websiteSlug}}",
+                "pages",
+                "{{pageSlug}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Public Articles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/public/sites/{{websiteSlug}}/articles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "sites",
+                "{{websiteSlug}}",
+                "articles"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Public Article Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/public/sites/{{websiteSlug}}/articles/{{articleSlug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "sites",
+                "{{websiteSlug}}",
+                "articles",
+                "{{articleSlug}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Preview Home Page",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/preview/pages/home",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "preview",
+                "pages",
+                "home"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Preview Services Page",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/preview/pages/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "preview",
+                "pages",
+                "services"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 - Tracking, Contact & Leads",
+      "item": [
+        {
+          "name": "Track Page View",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/public/tracking/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "tracking",
+                "events"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trackingKey\": \"{{trackingKey}}\",\n  \"eventName\": \"page_view\",\n  \"visitorId\": \"visitor-postman\",\n  \"sessionId\": \"session-postman\",\n  \"pageKey\": \"home\",\n  \"pageSlug\": \"/\",\n  \"referrer\": \"postman\",\n  \"utm\": {\n    \"source\": \"postman\"\n  },\n  \"metadata\": {\n    \"manualQa\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Track Section View",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/public/tracking/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "tracking",
+                "events"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trackingKey\": \"{{trackingKey}}\",\n  \"eventName\": \"section_view\",\n  \"visitorId\": \"visitor-postman\",\n  \"sessionId\": \"session-postman\",\n  \"pageKey\": \"home\",\n  \"slotKey\": \"home.hero\",\n  \"sectionKey\": \"home.hero.clean\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Track CTA Click",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/public/tracking/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "tracking",
+                "events"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trackingKey\": \"{{trackingKey}}\",\n  \"eventName\": \"cta_click\",\n  \"visitorId\": \"visitor-postman\",\n  \"sessionId\": \"session-postman\",\n  \"pageKey\": \"home\",\n  \"slotKey\": \"home.hero\",\n  \"ctaKey\": \"hero_primary\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Track WhatsApp Click",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/public/tracking/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "tracking",
+                "events"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trackingKey\": \"{{trackingKey}}\",\n  \"eventName\": \"whatsapp_click\",\n  \"visitorId\": \"visitor-postman\",\n  \"sessionId\": \"session-postman\",\n  \"pageKey\": \"contact\",\n  \"ctaKey\": \"whatsapp\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Track Article View",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/public/tracking/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "tracking",
+                "events"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trackingKey\": \"{{trackingKey}}\",\n  \"eventName\": \"article_view\",\n  \"visitorId\": \"visitor-postman\",\n  \"sessionId\": \"session-postman\",\n  \"pageKey\": \"article_detail\",\n  \"objectType\": \"article\",\n  \"objectId\": \"{{articleId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Submit Contact Form",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/public/sites/{{websiteSlug}}/contact",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "sites",
+                "{{websiteSlug}}",
+                "contact"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Lead Postman\",\n  \"email\": \"lead@example.com\",\n  \"phone\": \"6281234567890\",\n  \"message\": \"Saya tertarik dengan layanan ini.\",\n  \"interest\": \"Konsultasi\",\n  \"sourcePage\": \"contact\",\n  \"sourceSection\": \"contact.contact_cta\",\n  \"tracking\": {\n    \"visitorId\": \"visitor-postman\",\n    \"sessionId\": \"session-postman\",\n    \"referrer\": \"postman\",\n    \"utm\": {\n      \"source\": \"postman\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response OK', function () { pm.expect(pm.response.code).to.be.oneOf([200,201]); });",
+                  "const json = pm.response.json();",
+                  "const data = Array.isArray(json.data) ? json.data[0] : json.data;",
+                  "if (data && data.id) pm.environment.set('leadId', data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Leads",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/leads",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "leads"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response OK', function () { pm.expect(pm.response.code).to.be.oneOf([200,201]); });",
+                  "const json = pm.response.json();",
+                  "const data = Array.isArray(json.data) ? json.data[0] : json.data;",
+                  "if (data && data.id) pm.environment.set('leadId', data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Recent Leads",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/leads/recent",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "leads",
+                "recent"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response OK', function () { pm.expect(pm.response.code).to.be.oneOf([200,201]); });",
+                  "const json = pm.response.json();",
+                  "const data = Array.isArray(json.data) ? json.data[0] : json.data;",
+                  "if (data && data.id) pm.environment.set('leadId', data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Lead Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/leads/{{leadId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "leads",
+                "{{leadId}}",
+                "status"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"contacted\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 - Insights",
+      "item": [
+        {
+          "name": "Insight Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/insights/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "insights",
+                "summary"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Top Pages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/insights/top-pages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "insights",
+                "top-pages"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Top Sections",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/insights/top-sections",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "insights",
+                "top-sections"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Top CTAs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/insights/top-ctas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "insights",
+                "top-ctas"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Top Services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/insights/top-services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "insights",
+                "top-services"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Top Portfolios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/insights/top-portfolios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "insights",
+                "top-portfolios"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Top Articles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/insights/top-articles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "insights",
+                "top-articles"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Traffic Sources",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/websites/{{websiteId}}/insights/traffic-sources",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "websites",
+                "{{websiteId}}",
+                "insights",
+                "traffic-sources"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ownerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

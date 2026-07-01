@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
+import EnhancedTextarea from "@/components/ui/EnhancedTextarea";
 import { 
   Briefcase, 
   Save, 
@@ -23,6 +24,8 @@ interface BusinessProfile {
   name: string;
   tagline?: string | null;
   description?: string | null;
+  logoUrl?: string | null;
+  logoAlt?: string | null;
   vision?: string | null;
   mission?: string | null;
   timelineJson?: {
@@ -51,6 +54,8 @@ export default function BusinessProfilePage() {
   const [name, setName] = useState("");
   const [tagline, setTagline] = useState("");
   const [description, setDescription] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [logoAlt, setLogoAlt] = useState("");
   const [vision, setVision] = useState("");
   const [mission, setMission] = useState("");
   const [history, setHistory] = useState("");
@@ -73,6 +78,8 @@ export default function BusinessProfilePage() {
         setName(data.name || "");
         setTagline(data.tagline || "");
         setDescription(data.description || "");
+        setLogoUrl(data.logoUrl || "");
+        setLogoAlt(data.logoAlt || "");
         setVision(data.vision || "");
         setMission(data.mission || "");
         
@@ -111,6 +118,8 @@ export default function BusinessProfilePage() {
       name,
       tagline,
       description,
+      logoUrl: logoUrl || null,
+      logoAlt: logoAlt || null,
       vision,
       mission,
       timelineJson: {
@@ -168,21 +177,21 @@ export default function BusinessProfilePage() {
         )}
 
         {successMsg && (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-sm flex items-start space-x-3 animate-fadeIn">
-            <CheckCircle className="h-5 w-5 shrink-0 text-emerald-600 mt-0.5" />
+          <div className="p-4 bg-[#649FF6]/10 border border-[#649FF6]/25 rounded-2xl text-[#3f6fae] text-sm flex items-start space-x-3 animate-fadeIn">
+            <CheckCircle className="h-5 w-5 shrink-0 text-[#649FF6] mt-0.5" />
             <span>{successMsg}</span>
           </div>
         )}
 
         {/* Global info sync banner */}
-        <div className="bg-emerald-900 text-emerald-100 rounded-3xl p-6 md:p-8 flex items-center justify-between gap-6">
+        <div className="bg-slate-900 text-slate-100 rounded-3xl p-6 md:p-8 flex items-center justify-between gap-6">
           <div className="space-y-1">
             <h3 className="font-bold text-white text-base">Sinkronisasi Otomatis Profil</h3>
-            <p className="text-xs text-emerald-200 leading-normal max-w-2xl">
+            <p className="text-xs text-slate-300 leading-normal max-w-2xl">
               Hebatnya Lentera Pasar: Data yang Anda isi di bawah ini (misalnya No WhatsApp, Alamat, atau Email) akan <strong>otomatis terintegrasi</strong> ke dalam semua template halaman yang aktif. Anda tidak perlu mengetik ulang kontak di beranda maupun di halaman hubungi kami!
             </p>
           </div>
-          <div className="h-10 w-10 shrink-0 rounded-2xl bg-emerald-800 text-emerald-300 flex items-center justify-center hidden sm:flex">
+          <div className="h-10 w-10 shrink-0 rounded-2xl bg-slate-800 text-[#B283AF] flex items-center justify-center hidden sm:flex">
             <Compass className="h-5 w-5" />
           </div>
         </div>
@@ -192,7 +201,7 @@ export default function BusinessProfilePage() {
           {/* Card 1: Informasi Dasar */}
           <div className="bg-white rounded-3xl border border-slate-200 p-6 md:p-8 shadow-sm space-y-6">
             <div className="flex items-center space-x-2 text-slate-800 border-b border-slate-100 pb-3">
-              <Briefcase className="h-5 w-5 text-emerald-600" />
+              <Briefcase className="h-5 w-5 text-[#649FF6]" />
               <span className="font-bold text-sm uppercase tracking-wide text-slate-400">Informasi Dasar Usaha</span>
             </div>
 
@@ -206,7 +215,7 @@ export default function BusinessProfilePage() {
                   placeholder="Contoh: Toko Roti Sedap"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
                 />
               </div>
 
@@ -218,19 +227,52 @@ export default function BusinessProfilePage() {
                   placeholder="Contoh: Lezat, Bergizi, dan Hangat Setiap Hari"
                   value={tagline}
                   onChange={(e) => setTagline(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
                 />
               </div>
 
+
+              <div className="space-y-1.5 md:col-span-2">
+                <label htmlFor="prof-logo-url" className="block text-sm font-semibold text-slate-700">URL Logo Bisnis</label>
+                <input
+                  id="prof-logo-url"
+                  type="url"
+                  placeholder="Tempel URL dari Media Library, contoh: http://localhost:4000/api/v1/public/media/media_xxx"
+                  value={logoUrl}
+                  onChange={(e) => setLogoUrl(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
+                />
+                <p className="text-xs text-slate-400 mt-1">Upload logo di Media Library, lalu salin URL-nya ke field ini. Logo akan tampil di navbar dan footer website publik.</p>
+              </div>
+
+              <div className="space-y-1.5 md:col-span-2">
+                <label htmlFor="prof-logo-alt" className="block text-sm font-semibold text-slate-700">Alt Text Logo</label>
+                <input
+                  id="prof-logo-alt"
+                  type="text"
+                  placeholder="Contoh: Logo Toko Roti Sedap"
+                  value={logoAlt}
+                  onChange={(e) => setLogoAlt(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
+                />
+              </div>
+
+              {logoUrl && (
+                <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-400">Preview Logo</p>
+                  <img src={logoUrl} alt={logoAlt || name || 'Logo bisnis'} className="max-h-20 rounded-xl bg-white object-contain p-2" />
+                </div>
+              )}
+
               <div className="space-y-1.5 md:col-span-2">
                 <label htmlFor="prof-desc" className="block text-sm font-semibold text-slate-700">Deskripsi Lengkap Bisnis</label>
-                <textarea
+                <EnhancedTextarea
                   id="prof-desc"
-                  rows={4}
+                  minRows={5}
                   placeholder="Tulis penjelasan mendalam mengenai produk, keunikan, dan apa yang membuat bisnis Anda menonjol..."
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                  onChange={setDescription}
+                  helperText="Deskripsi ini menjadi sumber utama untuk beberapa section dan SEO dasar website."
                 />
               </div>
             </div>
@@ -239,7 +281,7 @@ export default function BusinessProfilePage() {
           {/* Card 2: Visi, Misi & Sejarah */}
           <div className="bg-white rounded-3xl border border-slate-200 p-6 md:p-8 shadow-sm space-y-6">
             <div className="flex items-center space-x-2 text-slate-800 border-b border-slate-100 pb-3">
-              <Compass className="h-5 w-5 text-emerald-600" />
+              <Compass className="h-5 w-5 text-[#649FF6]" />
               <span className="font-bold text-sm uppercase tracking-wide text-slate-400">Visi, Misi & Sejarah</span>
             </div>
 
@@ -252,31 +294,31 @@ export default function BusinessProfilePage() {
                   placeholder="Contoh: Menjadi produsen roti keluarga nomor satu di wilayah Jabodetabek"
                   value={vision}
                   onChange={(e) => setVision(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
                 />
               </div>
 
               <div className="space-y-1.5">
                 <label htmlFor="prof-mission" className="block text-sm font-semibold text-slate-700">Misi Perusahaan</label>
-                <textarea
+                <EnhancedTextarea
                   id="prof-mission"
-                  rows={3}
+                  minRows={4}
                   placeholder="Contoh: Menggunakan bahan lokal berkualitas, menjaga sanitasi pabrik, melayani pesanan tepat waktu..."
                   value={mission}
-                  onChange={(e) => setMission(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                  onChange={setMission}
+                  helperText="Tulis poin misi per baris agar mudah dibaca di website publik."
                 />
               </div>
 
               <div className="space-y-1.5">
                 <label htmlFor="prof-history" className="block text-sm font-semibold text-slate-700">Sejarah Singkat / Milestones</label>
-                <textarea
+                <EnhancedTextarea
                   id="prof-history"
-                  rows={3}
+                  minRows={4}
                   placeholder="Bagaimana bisnis Anda didirikan dan perkembangannya hingga saat ini..."
                   value={history}
-                  onChange={(e) => setHistory(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                  onChange={setHistory}
+                  helperText="Ceritakan sejarah singkat, milestone, atau alasan bisnis ini hadir."
                 />
               </div>
             </div>
@@ -285,7 +327,7 @@ export default function BusinessProfilePage() {
           {/* Card 3: Kontak & Lokasi */}
           <div className="bg-white rounded-3xl border border-slate-200 p-6 md:p-8 shadow-sm space-y-6">
             <div className="flex items-center space-x-2 text-slate-800 border-b border-slate-100 pb-3">
-              <MapPin className="h-5 w-5 text-emerald-600" />
+              <MapPin className="h-5 w-5 text-[#649FF6]" />
               <span className="font-bold text-sm uppercase tracking-wide text-slate-400">Kontak Penghubung & Lokasi</span>
             </div>
 
@@ -302,7 +344,7 @@ export default function BusinessProfilePage() {
                     placeholder="kontak@bisnis.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                    className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
                   />
                 </div>
               </div>
@@ -319,7 +361,7 @@ export default function BusinessProfilePage() {
                     placeholder="Contoh: 0217654321"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                    className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
                   />
                 </div>
               </div>
@@ -337,7 +379,7 @@ export default function BusinessProfilePage() {
                     placeholder="Contoh: 081298765432 (Gunakan nomor tanpa spasi/tanda hubung)"
                     value={whatsapp}
                     onChange={(e) => setWhatsapp(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors font-mono font-semibold"
+                    className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors font-mono font-semibold"
                   />
                 </div>
                 <p className="text-xs text-slate-400 mt-1">
@@ -347,13 +389,13 @@ export default function BusinessProfilePage() {
 
               <div className="space-y-1.5 md:col-span-2">
                 <label htmlFor="prof-address" className="block text-sm font-semibold text-slate-700">Alamat Lengkap Kantor / Toko</label>
-                <textarea
+                <EnhancedTextarea
                   id="prof-address"
-                  rows={3}
+                  minRows={3}
                   placeholder="Tuliskan nama jalan, nomor, RT/RW, kelurahan, kecamatan, kabupaten/kota, dan kode pos toko utama Anda..."
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                  onChange={setAddress}
+                  helperText="Alamat ini dapat dipakai oleh section kontak dan footer website."
                 />
               </div>
             </div>
@@ -371,7 +413,7 @@ export default function BusinessProfilePage() {
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex items-center justify-center space-x-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/10 hover:shadow-emerald-700/20 transition active:translate-y-[1px]"
+              className="inline-flex items-center justify-center space-x-2 px-6 py-2.5 bg-[#649FF6] hover:bg-[#4f8be6] disabled:bg-[#8bb8fb] text-white text-xs font-bold rounded-xl shadow-md shadow-[#649FF6]/10 hover:shadow-[#649FF6]/20 transition active:translate-y-[1px]"
               id="btn-save-profile"
             >
               {saving ? (

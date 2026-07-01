@@ -51,9 +51,13 @@ export async function apiRequest<T>(
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
   const url = `${baseUrl}${cleanPath}`;
   
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
+  const hasBody = body !== undefined && body !== null;
+
+  const headers: Record<string, string> = {};
+
+  if (hasBody) {
+    headers["Content-Type"] = "application/json";
+  }
 
   const token = getAuthToken();
   if (token) {
@@ -64,7 +68,7 @@ export async function apiRequest<T>(
     const res = await fetch(url, {
       method,
       headers,
-      body: body ? JSON.stringify(body) : undefined,
+      body: hasBody ? JSON.stringify(body) : undefined,
     });
 
     if (res.status === 401) {
@@ -160,4 +164,66 @@ export async function apiPatch<T>(path: string, body?: any): Promise<ApiResponse
 
 export async function apiDelete<T>(path: string): Promise<ApiResponse<T>> {
   return apiRequest<T>('DELETE', path);
+}
+
+
+export async function apiUpload<T>(path: string, formData: FormData): Promise<ApiResponse<T>> {
+  const baseUrl = getApiBaseUrl();
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  const url = `${baseUrl}${cleanPath}`;
+  const headers: Record<string, string> = {};
+  const token = getAuthToken();
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers,
+      body: formData
+    });
+
+    let json: any;
+    try {
+      json = await res.json();
+    } catch {
+      if (!res.ok) {
+        throw {
+          error: {
+            code: "SERVER_ERROR",
+            message: `Gagal memproses respon dari server (Status: ${res.status}).`
+          }
+        } as ApiErrorResponse;
+      }
+      return { data: null as any };
+    }
+
+    if (!res.ok) {
+      throw json as ApiErrorResponse;
+    }
+
+    return json as ApiResponse<T>;
+  } catch (error: any) {
+    if (error && error.error && typeof error.error.message === "string") {
+      throw error;
+    }
+
+    if (error instanceof TypeError || (error.message && error.message.includes("fetch"))) {
+      throw {
+        error: {
+          code: "BACKEND_UNREACHABLE",
+          message: "Backend Lentera Pasar belum bisa dijangkau. Pastikan API berjalan di http://localhost:4000."
+        }
+      } as ApiErrorResponse;
+    }
+
+    throw {
+      error: {
+        code: "UNKNOWN_ERROR",
+        message: error.message || "Terjadi kesalahan upload yang tidak diketahui."
+      }
+    } as ApiErrorResponse;
+  }
 }

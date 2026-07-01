@@ -1,6 +1,6 @@
 # Frontend Integration Notes
 
-Stage 3 fokus pada frontend readiness untuk `apps/dashboard` dan `apps/site-renderer`. Backend masih MVP managed platform, belum SaaS penuh.
+Stage 4 fokus pada backend source of truth website structure, Articles SEO Basic, dan internal owner alignment. Backend masih MVP managed platform, belum SaaS penuh.
 
 ## Base URL
 
@@ -51,6 +51,11 @@ Error code yang perlu ditangani UI: `VALIDATION_ERROR`, `UNAUTHORIZED`, `FORBIDD
 - Aktifkan Website: `POST /websites/:websiteId/publish`
 - Lead Masuk: `GET /websites/:websiteId/leads/recent`
 - Insight Pengunjung: `GET /websites/:websiteId/insights/summary`
+- Articles: `GET/POST /websites/:websiteId/articles`
+- Article Detail: `GET/PATCH/DELETE /websites/:websiteId/articles/:articleId`
+- Top Articles: `GET /websites/:websiteId/insights/top-articles`
+- Internal Create Website for Owner: `POST /internal/owners/:ownerId/websites`
+- Internal Set Primary Website: `PATCH /internal/owners/:ownerId/primary-website`
 
 ## Site Renderer Route Mapping
 
@@ -58,6 +63,22 @@ Error code yang perlu ditangani UI: `VALIDATION_ERROR`, `UNAUTHORIZED`, `FORBIDD
 - Page: `GET /public/sites/:slug/pages/:pageSlug`
 - Tracking: `POST /public/tracking/events`
 - Contact: `POST /public/sites/:slug/contact`
+- Articles: `GET /public/sites/:slug/articles`
+- Article Detail: `GET /public/sites/:slug/articles/:articleSlug`
+
+## Company Profile Structure
+
+Company Profile sekarang terdiri dari 7 pages dan 33 section slots. Pages:
+
+- `home`
+- `about`
+- `services`
+- `portfolio`
+- `articles`
+- `article_detail`
+- `contact`
+
+`article_detail` adalah dynamic detail page dan tidak perlu masuk navigation listing biasa. Slot key selalu format `page.section`.
 
 ## Dynamic Form Notes
 
@@ -69,6 +90,10 @@ Template field types yang didukung:
 - `url`
 
 Dashboard boleh menampilkan label teknis seperti `slotKey` dan `schema` hanya untuk developer tools. UI owner sebaiknya memakai `slotLabel`, `slotDescription`, `pageLabel`, `statusLabel`, dan `websiteTypeLabel`.
+
+Template section memiliki status `draft`, `active`, atau `invalid`. Owner selection hanya memakai template `active`; internal library dapat memakai `includeDraft=true`.
+
+Tracking event tambahan: `article_view`.
 
 ## Suggested Owner UI Terms
 
