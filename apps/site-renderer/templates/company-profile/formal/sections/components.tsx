@@ -622,7 +622,7 @@ export function FormalFeaturedArticle(props: FormalSectionProps) {
 
 export function FormalArticlePreview(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiArticlePreview articles={articlesFor(props)} articlesHref={pageHref(props.siteSlug, "/articles")} title={text(content.title, "Semua Publikasi Kami")} />;
+  return <AiArticlePreview articles={articlesFor(props)} articlesHref={pageHref(props.siteSlug, "/articles")} title={text(content.title, "Semua Publikasi Kami")} subtitle={text(content.description)} />;
 }
 
 export function FormalArticleDetailHero(props: FormalSectionProps) {

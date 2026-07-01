@@ -27,13 +27,18 @@ export const ArticleDetailHero: React.FC<ArticleDetailHeroProps> = ({ article, b
           {showPublishedDate && (
             <div className="flex items-center space-x-1.5">
               <Calendar className="w-4 h-4 text-slate-500" />
-              <span>{article.publishDate}</span>
+              <span>
+                {new Date(article.publishDate).toLocaleDateString("id-ID", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  timeZone: "Asia/Jakarta", // Mengunci zona waktu ke WIB
+                })} WIB
+              </span>
             </div>
           )}
-          {/* <div className="flex items-center space-x-1.5">
-            <Clock className="w-4 h-4 text-slate-500" />
-            <span>{article.readTime}</span>
-          </div> */}
         </div>
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight leading-tight text-white mb-6">{article.title}</h1>
         {showCoverImage && article.coverImageUrl && (

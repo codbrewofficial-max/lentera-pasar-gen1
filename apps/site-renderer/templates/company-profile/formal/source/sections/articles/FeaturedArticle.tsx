@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { Calendar, Clock, ArrowRight } from "lucide-react";
+import { SectionHeading } from "../../shared/SectionHeading";
 import { ArticleItem } from "../../lib/types";
 import { Badge } from "../../shared/Badge";
 import { Button } from "../../shared/Button";
@@ -10,26 +11,22 @@ interface FeaturedArticleProps {
   articlesHref?: string;
   title?: string;
   subtitle?: string;
+  badge?: string;
   businessLogoUrl?: string;
 }
 
 export const FeaturedArticle: React.FC<FeaturedArticleProps> = ({
   article,
   articlesHref = "/articles",
-  title,
+  title = "Artikel Terbaik Kami",
   subtitle,
+  badge,
   businessLogoUrl,
 }) => {
   return (
     <section id="articles-featured" className="py-14 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {(title || subtitle) && (
-          <div className="border-b border-slate-100 pb-4 mb-10">
-            {title && <h3 className="text-lg font-semibold text-slate-900 tracking-tight">{title}</h3>}
-            {subtitle && <p className="mt-1 text-sm text-slate-500 font-light">{subtitle}</p>}
-          </div>
-        )}
-
+        <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="accent" />
         {/* Featured Card: full-width horizontal, image takes 40% */}
         <Link href={`${articlesHref}/${article.slug}`} className="group block">
           <div className="border border-slate-100 rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow grid grid-cols-1 lg:grid-cols-5">
@@ -65,7 +62,14 @@ export const FeaturedArticle: React.FC<FeaturedArticleProps> = ({
                   {article.publishDate && (
                     <span className="flex items-center gap-1">
                       <Calendar className="w-3 h-3 text-slate-400" />
-                      {article.publishDate}
+                      {new Date(article.publishDate).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        timeZone: "Asia/Jakarta", // Mengunci zona waktu ke WIB
+                      })} WIB
                     </span>
                   )}
                   {/* {article.readTime && (

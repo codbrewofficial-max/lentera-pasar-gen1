@@ -86,14 +86,10 @@ export const ContactFaq: React.FC<ContactFaqProps> = ({
                 </div>
               ) : (
                 <form className="space-y-5" onSubmit={handleSubmit}>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-1 gap-5">
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2 font-mono">Nama Lengkap</label>
                       <input name="name" required type="text" className="w-full rounded border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#649FF6]" placeholder="Nama Anda" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2 font-mono">Nama Perusahaan</label>
-                      <input name="company" type="text" className="w-full rounded border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#649FF6]" placeholder="Nama bisnis/perusahaan" />
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

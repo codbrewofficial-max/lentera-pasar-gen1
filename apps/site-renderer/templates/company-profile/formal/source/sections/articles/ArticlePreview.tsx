@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { Calendar, Clock, ArrowRight } from "lucide-react";
+import { SectionHeading } from "../../shared/SectionHeading";
 import { ArticleItem } from "../../lib/types";
 import { Card } from "../../shared/Card";
 import { Badge } from "../../shared/Badge";
@@ -10,6 +11,9 @@ interface ArticlePreviewProps {
   articles: ArticleItem[];
   articlesHref?: string;
   title?: string;
+  subtitle?: string;
+  badge?: string;
+  businessLogoUrl?: string;
 }
 
 const EMPTY_STATE = (
@@ -26,14 +30,15 @@ export const ArticlePreview: React.FC<ArticlePreviewProps> = ({
   articles,
   articlesHref = "/articles",
   title = "Semua Publikasi Kami",
+  subtitle,
+  badge,
+  businessLogoUrl
 }) => {
   return (
     <section id="articles-list-section" className="py-12 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        <div className="border-b border-slate-100 pb-4 mb-10">
-          <h3 className="text-lg font-semibold text-slate-900 tracking-tight">{title}</h3>
-        </div>
+        <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="accent" />
 
         {articles.length === 0 ? EMPTY_STATE : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -65,9 +70,16 @@ export const ArticlePreview: React.FC<ArticlePreviewProps> = ({
                   {/* Meta */}
                   <div className="flex items-center gap-3 text-xs text-slate-500 font-mono mb-3 flex-wrap">
                     {item.publishDate && (
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1 text-sm text-slate-500">
                         <Calendar className="w-3 h-3 text-slate-400" />
-                        {item.publishDate}
+                        {new Date(item.publishDate).toLocaleDateString("id-ID", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          timeZone: "Asia/Jakarta", // Mengunci zona waktu ke WIB
+                        })} WIB
                       </span>
                     )}
                     {/* {item.readTime && (
