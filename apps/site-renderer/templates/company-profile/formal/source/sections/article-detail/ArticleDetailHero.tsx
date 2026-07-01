@@ -30,10 +30,10 @@ export const ArticleDetailHero: React.FC<ArticleDetailHeroProps> = ({ article, b
               <span>{article.publishDate}</span>
             </div>
           )}
-          <div className="flex items-center space-x-1.5">
+          {/* <div className="flex items-center space-x-1.5">
             <Clock className="w-4 h-4 text-slate-500" />
             <span>{article.readTime}</span>
-          </div>
+          </div> */}
         </div>
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight leading-tight text-white mb-6">{article.title}</h1>
         {showCoverImage && article.coverImageUrl && (

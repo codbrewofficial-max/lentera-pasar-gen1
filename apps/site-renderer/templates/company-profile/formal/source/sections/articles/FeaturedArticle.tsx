@@ -68,12 +68,12 @@ export const FeaturedArticle: React.FC<FeaturedArticleProps> = ({
                       {article.publishDate}
                     </span>
                   )}
-                  {article.readTime && (
+                  {/* {article.readTime && (
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3 text-slate-400" />
                       {article.readTime}
                     </span>
-                  )}
+                  )} */}
                 </div>
 
                 {/* Title */}

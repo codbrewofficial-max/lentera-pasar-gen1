@@ -36,7 +36,7 @@ export const RelatedArticles: React.FC<RelatedArticlesProps> = ({
                 <div className="absolute top-3 left-3"><Badge variant="accent" className="bg-slate-900/80 text-white border-transparent backdrop-blur-sm">{item.category}</Badge></div>
               </div>
               <div className="p-5 flex flex-col flex-grow">
-                <div className="flex items-center space-x-3 text-xs text-slate-500 font-mono mb-2"><span className="truncate">{item.publishDate}</span><span>&bull;</span><span>{item.readTime}</span></div>
+                <div className="flex items-center space-x-3 text-xs text-slate-500 font-mono mb-2"><span className="truncate">{item.publishDate}</span></div>
                 <h4 className="text-sm md:text-base font-semibold text-slate-900 mb-2 leading-snug tracking-tight hover:text-[#649FF6] transition-colors line-clamp-2">
                   <Link href={`${baseHref}/${item.slug}`}>{item.title}</Link>
                 </h4>

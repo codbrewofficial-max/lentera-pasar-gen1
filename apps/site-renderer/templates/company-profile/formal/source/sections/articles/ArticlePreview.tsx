@@ -70,12 +70,12 @@ export const ArticlePreview: React.FC<ArticlePreviewProps> = ({
                         {item.publishDate}
                       </span>
                     )}
-                    {item.readTime && (
+                    {/* {item.readTime && (
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3 text-slate-400" />
                         {item.readTime}
                       </span>
-                    )}
+                    )} */}
                   </div>
 
                   {/* Title */}
