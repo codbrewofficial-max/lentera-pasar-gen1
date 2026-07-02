@@ -634,6 +634,9 @@ const articleBody = z.object({
   featuredOrder: z.number().int().optional()
 });
 const createOwnerWebsiteBody = websiteBody;
+const assignWebsiteOwnerBody = z.object({
+  ownerId: z.string().min(1)
+});
 const primaryWebsiteBody = z.object({ websiteId: z.string().min(1) });
 const sectionTemplateBody = z.object({ templateSectionId: z.string().min(1) });
 const sectionContentBody = z.object({ contentJson: z.record(z.unknown()) });
@@ -1264,7 +1267,65 @@ const registerInternalRoutes = () => {
 
     return ok(reply, websiteSummary(updated), "Website status updated");
   });
+  app.post("/api/v1/internal/websites", async (request: Req, reply) => {
+    const actor = await requireRole(request, ["internal_admin"]);
+    const body = createOwnerWebsiteBody.parse(request.body); // { name, slug, websiteType }
 
+    const website = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const createdWebsite = await tx.website.create({
+        data: {
+          ownerId: actor.id, // sementara "dimiliki" internal admin pembuatnya
+          websiteType: body.websiteType,
+          name: body.name,
+          slug: body.slug,
+          trackingKey: randomToken("trk")
+        }
+      });
+      await createCompanyProfileDefaults(tx, createdWebsite.id, createdWebsite.name);
+      return createdWebsite;
+    });
+
+    await createAuditLog(request, {
+      action: "internal.website_preprovisioned",
+      actor,
+      websiteId: website.id,
+      entityType: "website",
+      entityId: website.id,
+      summary: `Website ${website.slug} dibuat tanpa owner oleh ${actor.email}`,
+      metadata: { websiteSlug: website.slug }
+    });
+
+    return created(reply, websiteSummary(website), "Website pre-provisioned berhasil dibuat");
+  });
+  app.patch("/api/v1/internal/websites/:websiteId/assign-owner", async (request: Req, reply) => {
+    const actor = await requireRole(request, ["internal_admin"]);
+    const body = assignWebsiteOwnerBody.parse(request.body);
+
+    const website = await prisma.website.findUnique({ where: { id: request.params?.websiteId } });
+    if (!website) throw new AppError(404, "WEBSITE_NOT_FOUND", "Website not found");
+
+    const owner = await prisma.user.findUnique({ where: { id: body.ownerId } });
+    if (!owner || owner.role !== "owner_admin") {
+      throw new AppError(404, "OWNER_NOT_FOUND", "Owner not found");
+    }
+
+    const updated = await prisma.website.update({
+      where: { id: website.id },
+      data: { ownerId: owner.id }
+    });
+
+    await createAuditLog(request, {
+      action: "internal.website_owner_assigned",
+      actor,
+      websiteId: website.id,
+      entityType: "website",
+      entityId: website.id,
+      summary: `Kepemilikan website ${website.slug} dipindah ke owner ${owner.email}`,
+      metadata: { previousOwnerId: website.ownerId, newOwnerId: owner.id }
+    });
+
+    return ok(reply, websiteSummary(updated), "Owner website berhasil di-assign");
+  });
   app.patch("/api/v1/internal/owners/:ownerId/status", async (request: Req, reply) => {
     const actor = await requireRole(request, ["internal_admin"]);
     const body = ownerStatusBody.parse(request.body);
@@ -1290,8 +1351,24 @@ const registerInternalRoutes = () => {
   });
   app.get("/api/v1/internal/websites", async (request, reply) => {
     await requireRole(request, ["internal_admin"]);
-    const websites = await prisma.website.findMany({ include: { owner: true }, orderBy: { createdAt: "desc" } });
-    return ok(reply, websites.map((site: any) => ({ ...site, owner: publicUser(site.owner) })), "Websites loaded");
+    const websites = await prisma.website.findMany({
+      include: {
+        owner: true, // pastikan ini ada
+        _count: { select: { pages: true, sections: true } }
+      },
+      orderBy: { createdAt: "desc" }
+    });
+    return ok(
+      reply,
+      websites.map((w) => ({
+        ...websiteSummary(w),
+        ownerId: w.ownerId,
+        ownerName: w.owner?.name,
+        ownerRole: w.owner?.role,                        // <-- BARU
+        isUnassigned: w.owner?.role === "internal_admin"  // <-- BARU
+      })),
+      "Websites loaded"
+    );
   });
   app.get("/api/v1/internal/websites/:websiteId", async (request: Req, reply) => {
     await requireRole(request, ["internal_admin"]);

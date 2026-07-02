@@ -6,6 +6,7 @@ import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
 import {
   Globe,
+  Plus,
   Search,
   AlertCircle,
   CheckCircle,
@@ -14,7 +15,8 @@ import {
   RefreshCw,
   ShieldCheck,
   ShieldAlert,
-  ShieldOff
+  ShieldOff,
+  UserX
 } from "lucide-react";
 
 type LifecycleStatus = "active" | "suspended" | "nonactive";
@@ -31,6 +33,8 @@ interface WebsiteItem {
   lifecycleStatusLabel?: string;
   ownerId?: string | number;
   ownerName?: string;
+  ownerRole?: string;
+  isUnassigned?: boolean;
   pagesCount?: number;
   sectionsCount?: number;
 }
@@ -90,6 +94,15 @@ export default function InternalWebsitesPage() {
   const [syncingId, setSyncingId] = useState<string | number | null>(null);
   const [syncConfirmWeb, setSyncConfirmWeb] = useState<WebsiteItem | null>(null);
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
+
+  // Pre-provisioning (buat website tanpa owner) state
+  const [isPreProvisionOpen, setIsPreProvisionOpen] = useState(false);
+  const [preProvisionForm, setPreProvisionForm] = useState({
+    name: "",
+    slug: "",
+    websiteType: "company_profile"
+  });
+  const [preProvisioning, setPreProvisioning] = useState(false);
 
   const fetchWebsites = async () => {
     setLoading(true);
@@ -179,12 +192,36 @@ export default function InternalWebsitesPage() {
     }
   };
 
+  const handlePreProvision = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!preProvisionForm.name || !preProvisionForm.slug) {
+      setErrorMsg("Nama website dan slug wajib diisi.");
+      return;
+    }
+    setPreProvisioning(true);
+    setErrorMsg("");
+    try {
+      await apiCall("POST", "internal/websites", preProvisionForm);
+      setIsPreProvisionOpen(false);
+      setPreProvisionForm({ name: "", slug: "", websiteType: "company_profile" });
+      showSuccess("Website tanpa owner berhasil dibuat. Assign ke owner lewat halaman Owner Bisnis.");
+      fetchWebsites();
+    } catch (err: any) {
+      console.error("Pre-provision website error:", err);
+      setErrorMsg(err.error?.message || "Gagal membuat website.");
+    } finally {
+      setPreProvisioning(false);
+    }
+  };
+
   const filteredWebsites = websites.filter(
     (web) =>
       web.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       web.slug?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       web.ownerName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const unassignedCount = websites.filter((w) => w.isUnassigned || w.ownerRole === "internal_admin").length;
 
   if (authorized === false) {
     return (
@@ -225,10 +262,10 @@ export default function InternalWebsitesPage() {
 
         <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm text-xs text-slate-500 leading-normal">
           <p>
-            Website di panel ini tidak bisa dihapus permanen. Untuk membatasi akses sebuah website
-            (misalnya karena tunggakan pembayaran atau pelanggaran), gunakan status{" "}
-            <strong>Ditangguhkan</strong> atau <strong>Non-Aktif</strong>. Website berstatus selain{" "}
-            <strong>Aktif</strong> otomatis tidak bisa diakses publik walau statusnya sudah Published.
+            Website di panel ini tidak bisa dihapus permanen. Untuk membatasi akses sebuah website,
+            gunakan status <strong>Ditangguhkan</strong> atau <strong>Non-Aktif</strong>. Kamu juga bisa
+            pre-provisioning website tanpa owner dulu di sini ({unassignedCount} menunggu assign), lalu
+            di-assign ke owner bisnis tertentu lewat halaman <strong>Owner Bisnis</strong>.
           </p>
         </div>
 
@@ -243,6 +280,12 @@ export default function InternalWebsitesPage() {
               className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
             />
           </div>
+          <button
+            onClick={() => setIsPreProvisionOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl"
+          >
+            <Plus className="h-4 w-4" /> Buat Website Tanpa Owner
+          </button>
         </div>
 
         {loading ? (
@@ -259,63 +302,132 @@ export default function InternalWebsitesPage() {
         ) : (
           <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
             <div className="divide-y divide-slate-100">
-              {filteredWebsites.map((web) => (
-                <div key={web.id} className="p-5 flex flex-col md:flex-row md:items-center gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="text-sm font-bold text-slate-800 truncate">{web.name}</h4>
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${lifecycleBadgeClass(
-                          web.lifecycleStatus
-                        )}`}
-                      >
-                        {lifecycleIcon(web.lifecycleStatus)}
-                        {web.lifecycleStatusLabel ||
-                          LIFECYCLE_OPTIONS.find((o) => o.value === web.lifecycleStatus)?.label ||
-                          web.lifecycleStatus}
-                      </span>
-                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">
-                        {web.statusLabel || web.status}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-400 mt-1">/{web.slug}</p>
-                    <div className="flex items-center gap-3 mt-2 text-[11px] text-slate-400">
-                      {web.ownerName && (
-                        <span className="flex items-center gap-1">
-                          <User className="h-3 w-3" /> {web.ownerName}
+              {filteredWebsites.map((web) => {
+                const isUnassigned = web.isUnassigned || web.ownerRole === "internal_admin";
+                return (
+                  <div key={web.id} className="p-5 flex flex-col md:flex-row md:items-center gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="text-sm font-bold text-slate-800 truncate">{web.name}</h4>
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${lifecycleBadgeClass(
+                            web.lifecycleStatus
+                          )}`}
+                        >
+                          {lifecycleIcon(web.lifecycleStatus)}
+                          {web.lifecycleStatusLabel ||
+                            LIFECYCLE_OPTIONS.find((o) => o.value === web.lifecycleStatus)?.label ||
+                            web.lifecycleStatus}
                         </span>
-                      )}
-                      {typeof web.pagesCount === "number" && <span>{web.pagesCount} halaman</span>}
-                      {typeof web.sectionsCount === "number" && <span>{web.sectionsCount} section</span>}
+                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">
+                          {web.statusLabel || web.status}
+                        </span>
+                        {isUnassigned && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border bg-violet-50 text-violet-700 border-violet-200">
+                            <UserX className="h-3 w-3" /> Belum Ada Owner
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-400 mt-1">/{web.slug}</p>
+                      <div className="flex items-center gap-3 mt-2 text-[11px] text-slate-400">
+                        {web.ownerName && !isUnassigned && (
+                          <span className="flex items-center gap-1">
+                            <User className="h-3 w-3" /> {web.ownerName}
+                          </span>
+                        )}
+                        {typeof web.pagesCount === "number" && <span>{web.pagesCount} halaman</span>}
+                        {typeof web.sectionsCount === "number" && <span>{web.sectionsCount} section</span>}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      {LIFECYCLE_OPTIONS.filter((o) => o.value !== web.lifecycleStatus).map((option) => (
+                        <button
+                          key={option.value}
+                          disabled={statusSavingId === web.id}
+                          onClick={() => setStatusConfirm({ web, status: option.value })}
+                          className="px-3 py-1.5 text-[11px] font-semibold rounded-lg border border-slate-200 text-slate-600 hover:border-slate-400 hover:text-slate-900 disabled:opacity-50"
+                        >
+                          Jadikan {option.label}
+                        </button>
+                      ))}
+                      <button
+                        disabled={syncingId === web.id}
+                        onClick={() => setSyncConfirmWeb(web)}
+                        className="px-3 py-1.5 text-[11px] font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-white disabled:opacity-50 flex items-center gap-1"
+                      >
+                        <RefreshCw className={`h-3 w-3 ${syncingId === web.id ? "animate-spin" : ""}`} />
+                        Sync
+                      </button>
                     </div>
                   </div>
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    {LIFECYCLE_OPTIONS.filter((o) => o.value !== web.lifecycleStatus).map((option) => (
-                      <button
-                        key={option.value}
-                        disabled={statusSavingId === web.id}
-                        onClick={() => setStatusConfirm({ web, status: option.value })}
-                        className="px-3 py-1.5 text-[11px] font-semibold rounded-lg border border-slate-200 text-slate-600 hover:border-slate-400 hover:text-slate-900 disabled:opacity-50"
-                      >
-                        Jadikan {option.label}
-                      </button>
-                    ))}
-                    <button
-                      disabled={syncingId === web.id}
-                      onClick={() => setSyncConfirmWeb(web)}
-                      className="px-3 py-1.5 text-[11px] font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-white disabled:opacity-50 flex items-center gap-1"
-                    >
-                      <RefreshCw className={`h-3 w-3 ${syncingId === web.id ? "animate-spin" : ""}`} />
-                      Sync
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
       </div>
+
+      {/* Modal buat website tanpa owner */}
+      {isPreProvisionOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <form onSubmit={handlePreProvision} className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-start justify-between">
+              <h3 className="text-base font-bold text-slate-800">Buat Website Tanpa Owner</h3>
+              <button
+                type="button"
+                onClick={() => setIsPreProvisionOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-500">
+              Website ini akan dibuat sebagai "mengambang" dulu (belum ada owner bisnis). Nanti bisa
+              di-assign ke owner tertentu lewat halaman Owner Bisnis.
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-slate-600">Nama Website</label>
+                <input
+                  type="text"
+                  value={preProvisionForm.name}
+                  onChange={(e) => setPreProvisionForm({ ...preProvisionForm, name: e.target.value })}
+                  className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-600">Slug</label>
+                <input
+                  type="text"
+                  value={preProvisionForm.slug}
+                  onChange={(e) => setPreProvisionForm({ ...preProvisionForm, slug: e.target.value })}
+                  className="w-full mt-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                  placeholder="nama-usaha"
+                  required
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsPreProvisionOpen(false)}
+                className="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={preProvisioning}
+                className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-white disabled:opacity-50"
+              >
+                {preProvisioning ? "Membuat..." : "Buat Website"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Modal konfirmasi ubah status */}
       {statusConfirm && (
@@ -331,10 +443,7 @@ export default function InternalWebsitesPage() {
               Ubah status website <strong>{statusConfirm.web.name}</strong> menjadi{" "}
               <strong>{LIFECYCLE_OPTIONS.find((o) => o.value === statusConfirm.status)?.label}</strong>?
               {statusConfirm.status !== "active" && (
-                <>
-                  {" "}
-                  Website ini akan langsung berhenti bisa diakses publik selama status ini aktif.
-                </>
+                <> Website ini akan langsung berhenti bisa diakses publik selama status ini aktif.</>
               )}
             </p>
             <div className="flex justify-end gap-2 pt-2">
