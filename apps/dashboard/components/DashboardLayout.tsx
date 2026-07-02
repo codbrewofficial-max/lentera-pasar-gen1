@@ -72,10 +72,11 @@ function userInitials(name: string) {
 }
 
 function NavButton({ item, onClick }: { item: NavItem; onClick: (href: string) => void }) {
-  // Submenu otomatis terbuka jika ada anak menu yang sedang aktif
+  // Mengecek apakah salah satu anak menu sedang aktif berdasarkan kecocokan awal URL
   const hasActiveChild = item.children?.some((child) => child.active) || false;
   const [isOpen, setIsOpen] = useState(hasActiveChild);
 
+  // Otomatis buka sidebar group jika ada child yang aktif saat page reload / navigasi
   useEffect(() => {
     if (hasActiveChild) {
       setIsOpen(true);
@@ -118,7 +119,7 @@ function NavButton({ item, onClick }: { item: NavItem; onClick: (href: string) =
         )}
       </button>
 
-      {/* Render Submenu jika ada children dan status isOpen true */}
+      {/* Render Submenu */}
       {item.children && isOpen && (
         <div className="pl-9 pr-2 space-y-1 border-l-2 border-slate-100 ml-5 animate-fadeIn">
           {item.children.map((child) => (
@@ -127,7 +128,7 @@ function NavButton({ item, onClick }: { item: NavItem; onClick: (href: string) =
               onClick={() => onClick(child.href)}
               className={`w-full text-left block px-3 py-1.5 text-[11px] font-semibold rounded-lg transition ${
                 child.active
-                  ? "text-[#3f6fae] font-bold"
+                  ? "text-[#3f6fae] font-bold bg-slate-50"
                   : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
@@ -282,12 +283,14 @@ export default function DashboardLayout({
               description: "Hasil kerja, kegiatan, project, atau studi kasus.",
               icon: FolderKanban,
               href: `/websites/${websiteId}/content/portfolio`,
+              // Menggunakan penanda utama kelompok portfolio
               active: pathname?.includes(`/websites/${websiteId}/content/portfolio`) || false,
               children: [
                 {
                   label: "Semua Portfolio",
                   href: `/websites/${websiteId}/content/portfolio`,
-                  active: pathname === `/websites/${websiteId}/content/portfolio`
+                  // Aktif jika berada di halaman list, create, maupun edit portfolio, tapi BUKAN halaman kategori
+                  active: (pathname?.includes(`/websites/${websiteId}/content/portfolio`) && !pathname?.includes(`portfolio-categories`)) || false
                 },
                 {
                   label: "Kategori Portfolio",
@@ -306,7 +309,8 @@ export default function DashboardLayout({
                 {
                   label: "Semua Artikel",
                   href: `/websites/${websiteId}/content/articles`,
-                  active: pathname === `/websites/${websiteId}/content/articles`
+                  // Aktif jika berada di halaman list, create, maupun edit artikel, tapi BUKAN halaman kategori
+                  active: (pathname?.includes(`/websites/${websiteId}/content/articles`) && !pathname?.includes(`article-categories`)) || false
                 },
                 {
                   label: "Kategori Artikel",
