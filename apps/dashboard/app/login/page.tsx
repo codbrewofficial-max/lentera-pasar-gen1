@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { apiCall } from "@/lib/api";
 import { Mail, Lock, Eye, EyeOff, AlertCircle, ArrowRight } from "lucide-react";
 import BrandMark from "@/components/brand/BrandMark";
@@ -26,7 +27,7 @@ function LoginContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  
+
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -39,8 +40,6 @@ function LoginContent() {
       });
     }
   }, [searchParams]);
-
-
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,7 +59,7 @@ function LoginContent() {
       });
 
       setSuccessMsg("Masuk berhasil! Mengalihkan ke dashboard...");
-      
+
       // Save local states (already done in apiCall helper but we can confirm)
       if (response.data.token) {
         localStorage.setItem("LP_AUTH_TOKEN", response.data.token);
@@ -74,6 +73,12 @@ function LoginContent() {
       console.error("Login error:", err);
       if (err.error?.code === "INVALID_CREDENTIALS") {
         setErrorMsg("Email atau kata sandi Anda salah. Pastikan menggunakan kredensial demo.");
+      } else if (err.error?.code === "ACCOUNT_NON_ACTIVE") {
+        setErrorMsg("Akun Anda saat ini non-aktif. Hubungi tim internal Lentera Pasar untuk mengaktifkan kembali.");
+      } else if (err.error?.code === "ACCOUNT_SUSPENDED") {
+        setErrorMsg("Akun Anda sedang ditangguhkan sementara. Hubungi tim internal Lentera Pasar.");
+      } else if (err.error?.code === "ACCOUNT_BANNED" || err.error?.code === "ACCOUNT_BLACKLISTED") {
+        setErrorMsg("Akun Anda tidak dapat digunakan. Hubungi tim internal Lentera Pasar untuk info lebih lanjut.");
       } else {
         setErrorMsg(err.error?.message || "Terjadi kesalahan sistem. Silakan coba lagi.");
       }
@@ -142,9 +147,14 @@ function LoginContent() {
           </div>
 
           <div>
-            <label htmlFor="password-input" className="block text-sm font-medium text-slate-700 mb-1.5">
-              Kata Sandi
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label htmlFor="password-input" className="block text-sm font-medium text-slate-700">
+                Kata Sandi
+              </label>
+              <Link href="/forgot-password" className="text-xs font-semibold text-[#649FF6] hover:text-[#4f8be6]">
+                Lupa kata sandi?
+              </Link>
+            </div>
             <div className="relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
                 <Lock className="h-5 w-5" />
@@ -188,6 +198,13 @@ function LoginContent() {
             )}
           </button>
         </form>
+
+        <p className="mt-5 text-center text-sm text-slate-500">
+          Belum punya akun?{" "}
+          <Link href="/register" className="font-semibold text-[#649FF6] hover:text-[#4f8be6]">
+            Daftar di sini
+          </Link>
+        </p>
 
         {/* Demo Quick Accounts */}
         <div className="mt-8 pt-6 border-t border-slate-100" id="demo-accounts-container">

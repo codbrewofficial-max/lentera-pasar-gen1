@@ -123,6 +123,7 @@ export const servicesData: ServiceItem[] = [
 export const portfolioData: PortfolioItem[] = [
   {
     id: "restrukturisasi-energi",
+    slug: "restrukturisasi-energi",
     title: "Restrukturisasi Organisasi PT Nusantara Energi",
     category: "Restrukturisasi & Manajemen",
     clientName: "PT Nusantara Energi Tbk",
@@ -135,6 +136,7 @@ export const portfolioData: PortfolioItem[] = [
   },
   {
     id: "kepatuhan-legalitas-pma",
+    slug: "kepatuhan-legalitas-pma",
     title: "Kepatuhan Hukum & Izin PMA MedTech Global",
     category: "Legalitas & Kepatuhan",
     clientName: "MedTech Global Corp Inc.",
@@ -147,6 +149,7 @@ export const portfolioData: PortfolioItem[] = [
   },
   {
     id: "audit-pajak-konstruksi",
+    slug: "audit-pajak-konstruksi",
     title: "Optimasi Audit Pajak Agung Beton Pratama",
     category: "Pajak & Keuangan",
     clientName: "PT Agung Beton Pratama",
@@ -159,6 +162,7 @@ export const portfolioData: PortfolioItem[] = [
   },
   {
     id: "implementasi-esg-agro",
+    slug: "implementasi-esg-agro",
     title: "Implementasi ESG & Strategi CSR Bumi Agro Lestari",
     category: "Lingkungan & ESG",
     clientName: "PT Bumi Agro Lestari",
@@ -171,6 +175,7 @@ export const portfolioData: PortfolioItem[] = [
   },
   {
     id: "manajemen-risiko-fintech",
+    slug: "manajemen-risiko-fintech",
     title: "Mitigasi Risiko Regulasi Digital Finansial Utama",
     category: "Manajemen Risiko",
     clientName: "PT Finansial Utama Indonesia",
@@ -183,6 +188,7 @@ export const portfolioData: PortfolioItem[] = [
   },
   {
     id: "legalitas-merger-logistik",
+    slug: "legalitas-merger-logistik",
     title: "M&A Legal Due Diligence Nusantara Logistik",
     category: "Legalitas & Kepatuhan",
     clientName: "Nusantara Cargo Group",

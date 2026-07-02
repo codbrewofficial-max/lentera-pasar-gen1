@@ -60,12 +60,28 @@ const websiteSummary = (website: any) => ({
   websiteTypeLabel: getWebsiteTypeLabel(website.websiteType),
   status: website.status,
   statusLabel: getWebsiteStatusLabel(website.status),
+  lifecycleStatus: website.lifecycleStatus,
+  lifecycleStatusLabel: WEBSITE_LIFECYCLE_LABELS[website.lifecycleStatus],
   trackingKey: website.trackingKey,
   publicUrl: publicUrlFor(website),
   previewPath: `/websites/${website.id}/preview/pages/home`,
   createdAt: website.createdAt,
   updatedAt: website.updatedAt
 });
+
+const getPlatformSetting = async () => {
+  const existing = await prisma.platformSetting.findUnique({ where: { id: "singleton" } });
+  if (existing) return existing;
+  // Belum ada baris sama sekali (fresh install) -> buat default mati (false)
+  return prisma.platformSetting.create({
+    data: { id: "singleton", publicActivationEnabled: false }
+  });
+};
+
+const isPublicActivationEnabled = async () => {
+  const setting = await getPlatformSetting();
+  return setting.publicActivationEnabled;
+};
 
 const normalizeFieldType = (type: unknown) => {
   if (type === "image") return "image_url";
@@ -142,6 +158,8 @@ const ownerContract = (owner: any) => ({
   email: owner.email,
   role: owner.role,
   whatsapp: owner.whatsapp || null,
+  accountStatus: owner.accountStatus,
+  accountStatusLabel: USER_ACCOUNT_STATUS_LABELS[owner.accountStatus],
   primaryWebsiteId: owner.primaryWebsiteId || null,
   primaryWebsite: owner.primaryWebsite ? websiteSummary(owner.primaryWebsite) : null,
   websitesCount: owner._count?.websites ?? owner.websites?.length ?? 0,
@@ -630,6 +648,9 @@ const articleBody = z.object({
   featuredOrder: z.number().int().optional()
 });
 const createOwnerWebsiteBody = websiteBody;
+const assignWebsiteOwnerBody = z.object({
+  ownerId: z.string().min(1)
+});
 const primaryWebsiteBody = z.object({ websiteId: z.string().min(1) });
 const sectionTemplateBody = z.object({ templateSectionId: z.string().min(1) });
 const sectionContentBody = z.object({ contentJson: z.record(z.unknown()) });
@@ -667,6 +688,33 @@ const contactBody = z.object({
     })
     .optional()
 });
+
+const websiteStatusBody = z.object({
+  status: z.enum(["active", "suspended", "nonactive"])
+});
+
+const ownerStatusBody = z.object({
+  status: z.enum(["active", "non_active", "suspended", "banned", "blacklisted"])
+});
+
+const publicActivationBody = z.object({
+  enabled: z.boolean()
+});
+
+const WEBSITE_LIFECYCLE_LABELS: Record<string, string> = {
+  active: "Aktif",
+  suspended: "Ditangguhkan",
+  nonactive: "Non-Aktif"
+};
+
+const USER_ACCOUNT_STATUS_LABELS: Record<string, string> = {
+  active: "Aktif",
+  non_active: "Non-Aktif",
+  suspended: "Ditangguhkan",
+  banned: "Diblokir",
+  blacklisted: "Daftar Hitam"
+};
+
 
 const registerPlugins = async () => {
   await app.register(cors, {
@@ -858,6 +906,13 @@ const recordTracking = async (request: FastifyRequest, input: z.infer<typeof tra
 
 const registerAuthRoutes = () => {
   app.post("/api/v1/auth/register", { config: { rateLimit: apiConfig.rateLimits.auth } }, async (request, reply) => {
+    if (!(await isPublicActivationEnabled())) {
+      throw new AppError(
+        403,
+        "PUBLIC_REGISTRATION_DISABLED",
+        "Pendaftaran akun publik belum dibuka. Silakan hubungi tim Lentera Pasar untuk info lebih lanjut."
+      );
+    }
     const body = authBody.parse(request.body);
     const count = await prisma.user.count();
     // Akun pertama tetap jadi internal_admin untuk bootstrap sistem (tidak ada admin lain
@@ -920,6 +975,28 @@ const registerAuthRoutes = () => {
         metadata: { email: body.email.toLowerCase() }
       });
       throw new AppError(401, "INVALID_CREDENTIALS", "Invalid email or password");
+    }
+    if (user.role === "owner_admin" && user.accountStatus !== "active") {
+      const statusInfo: Record<string, { code: string; message: string }> = {
+        non_active: {
+          code: "ACCOUNT_NON_ACTIVE",
+          message: "Akun Anda saat ini non-aktif. Hubungi tim internal Lentera Pasar untuk mengaktifkan kembali."
+        },
+        suspended: {
+          code: "ACCOUNT_SUSPENDED",
+          message: "Akun Anda sedang ditangguhkan sementara. Hubungi tim internal Lentera Pasar."
+        },
+        banned: {
+          code: "ACCOUNT_BANNED",
+          message: "Akun Anda telah diblokir oleh tim internal Lentera Pasar."
+        },
+        blacklisted: {
+          code: "ACCOUNT_BLACKLISTED",
+          message: "Akun Anda masuk daftar hitam dan tidak dapat digunakan."
+        }
+      };
+      const info = statusInfo[user.accountStatus];
+      if (info) throw new AppError(403, info.code, info.message);
     }
     const authUser = { id: user.id, role: user.role, email: user.email } as AuthUser;
     await createAuditLog(request, {
@@ -1068,6 +1145,10 @@ const registerCoreRoutes = () => {
     }, "Deployment health loaded");
   });
   app.get("/api/v1/website-types", async (_request, reply) => ok(reply, WEBSITE_TYPES, "Website types loaded"));
+  app.get("/api/v1/settings/public-activation", async (_request, reply) => {
+    const enabled = await isPublicActivationEnabled();
+    return ok(reply, { enabled }, "Public activation setting loaded");
+  });
 };
 
 const registerInternalRoutes = () => {
@@ -1193,10 +1274,131 @@ const registerInternalRoutes = () => {
     });
     return ok(reply, ownerContract(updated), "Primary website updated");
   });
+  app.patch("/api/v1/internal/websites/:websiteId/status", async (request: Req, reply) => {
+    const actor = await requireRole(request, ["internal_admin"]);
+    const body = websiteStatusBody.parse(request.body);
+    const website = await prisma.website.findUnique({ where: { id: request.params?.websiteId } });
+    if (!website) throw new AppError(404, "WEBSITE_NOT_FOUND", "Website not found");
+
+    const updated = await prisma.website.update({
+      where: { id: website.id },
+      data: { lifecycleStatus: body.status }
+    });
+
+    await createAuditLog(request, {
+      action: "internal.website_status_updated",
+      actor,
+      websiteId: website.id,
+      entityType: "website",
+      entityId: website.id,
+      summary: `Status website ${website.slug} diubah dari ${website.lifecycleStatus} ke ${body.status}`,
+      metadata: { previousStatus: website.lifecycleStatus, newStatus: body.status }
+    });
+
+    return ok(reply, websiteSummary(updated), "Website status updated");
+  });
+  app.post("/api/v1/internal/websites", async (request: Req, reply) => {
+    const actor = await requireRole(request, ["internal_admin"]);
+    const body = createOwnerWebsiteBody.parse(request.body); // { name, slug, websiteType }
+
+    const website = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const createdWebsite = await tx.website.create({
+        data: {
+          ownerId: actor.id, // sementara "dimiliki" internal admin pembuatnya
+          websiteType: body.websiteType,
+          name: body.name,
+          slug: body.slug,
+          trackingKey: randomToken("trk")
+        }
+      });
+      await createCompanyProfileDefaults(tx, createdWebsite.id, createdWebsite.name);
+      return createdWebsite;
+    });
+
+    await createAuditLog(request, {
+      action: "internal.website_preprovisioned",
+      actor,
+      websiteId: website.id,
+      entityType: "website",
+      entityId: website.id,
+      summary: `Website ${website.slug} dibuat tanpa owner oleh ${actor.email}`,
+      metadata: { websiteSlug: website.slug }
+    });
+
+    return created(reply, websiteSummary(website), "Website pre-provisioned berhasil dibuat");
+  });
+  app.patch("/api/v1/internal/websites/:websiteId/assign-owner", async (request: Req, reply) => {
+    const actor = await requireRole(request, ["internal_admin"]);
+    const body = assignWebsiteOwnerBody.parse(request.body);
+
+    const website = await prisma.website.findUnique({ where: { id: request.params?.websiteId } });
+    if (!website) throw new AppError(404, "WEBSITE_NOT_FOUND", "Website not found");
+
+    const owner = await prisma.user.findUnique({ where: { id: body.ownerId } });
+    if (!owner || owner.role !== "owner_admin") {
+      throw new AppError(404, "OWNER_NOT_FOUND", "Owner not found");
+    }
+
+    const updated = await prisma.website.update({
+      where: { id: website.id },
+      data: { ownerId: owner.id }
+    });
+
+    await createAuditLog(request, {
+      action: "internal.website_owner_assigned",
+      actor,
+      websiteId: website.id,
+      entityType: "website",
+      entityId: website.id,
+      summary: `Kepemilikan website ${website.slug} dipindah ke owner ${owner.email}`,
+      metadata: { previousOwnerId: website.ownerId, newOwnerId: owner.id }
+    });
+
+    return ok(reply, websiteSummary(updated), "Owner website berhasil di-assign");
+  });
+  app.patch("/api/v1/internal/owners/:ownerId/status", async (request: Req, reply) => {
+    const actor = await requireRole(request, ["internal_admin"]);
+    const body = ownerStatusBody.parse(request.body);
+    const owner = await prisma.user.findUnique({ where: { id: request.params?.ownerId } });
+    if (!owner || owner.role !== "owner_admin") throw new AppError(404, "OWNER_NOT_FOUND", "Owner not found");
+
+    const updated = await prisma.user.update({
+      where: { id: owner.id },
+      data: { accountStatus: body.status },
+      include: { primaryWebsite: true, _count: { select: { websites: true } } }
+    });
+
+    await createAuditLog(request, {
+      action: "internal.owner_status_updated",
+      actor,
+      entityType: "user",
+      entityId: owner.id,
+      summary: `Status owner ${owner.email} diubah dari ${owner.accountStatus} ke ${body.status}`,
+      metadata: { previousStatus: owner.accountStatus, newStatus: body.status }
+    });
+
+    return ok(reply, ownerContract(updated), "Owner status updated");
+  });
   app.get("/api/v1/internal/websites", async (request, reply) => {
     await requireRole(request, ["internal_admin"]);
-    const websites = await prisma.website.findMany({ include: { owner: true }, orderBy: { createdAt: "desc" } });
-    return ok(reply, websites.map((site: any) => ({ ...site, owner: publicUser(site.owner) })), "Websites loaded");
+    const websites = await prisma.website.findMany({
+      include: {
+        owner: true, // pastikan ini ada
+        _count: { select: { pages: true, sections: true } }
+      },
+      orderBy: { createdAt: "desc" }
+    });
+    return ok(
+      reply,
+      websites.map((w) => ({
+        ...websiteSummary(w),
+        ownerId: w.ownerId,
+        ownerName: w.owner?.name,
+        ownerRole: w.owner?.role,                        // <-- BARU
+        isUnassigned: w.owner?.role === "internal_admin"  // <-- BARU
+      })),
+      "Websites loaded"
+    );
   });
   app.get("/api/v1/internal/websites/:websiteId", async (request: Req, reply) => {
     await requireRole(request, ["internal_admin"]);
@@ -1268,6 +1470,29 @@ const registerInternalRoutes = () => {
       totalSections: after.sections
     }, "Struktur website berhasil disinkronkan ke versi terbaru.");
 });
+  app.patch("/api/v1/internal/settings/public-activation", async (request: Req, reply) => {
+    const actor = await requireRole(request, ["internal_admin"]);
+    const body = publicActivationBody.parse(request.body);
+
+    const before = await getPlatformSetting();
+    const updated = await prisma.platformSetting.upsert({
+      where: { id: "singleton" },
+      update: { publicActivationEnabled: body.enabled, updatedByUserId: actor.id },
+      create: { id: "singleton", publicActivationEnabled: body.enabled, updatedByUserId: actor.id }
+    });
+
+    await createAuditLog(request, {
+      category: "security",
+      action: "internal.public_activation_toggled",
+      actor,
+      entityType: "platform_setting",
+      entityId: "singleton",
+      summary: `Aktivasi publik diubah dari ${before.publicActivationEnabled} ke ${body.enabled} oleh ${actor.email}`,
+      metadata: { previousValue: before.publicActivationEnabled, newValue: body.enabled }
+    });
+
+    return ok(reply, { enabled: updated.publicActivationEnabled }, "Public activation setting updated");
+  });
 };
 
 const registerWebsiteRoutes = () => {
@@ -1281,6 +1506,14 @@ const registerWebsiteRoutes = () => {
   });
   app.post("/api/v1/websites", async (request, reply) => {
     const user = await requireRole(request, ["owner_admin", "internal_admin"]);
+    const actor = await requireAuth(request);
+    if (actor.role === "owner_admin" && !(await isPublicActivationEnabled())) {
+      throw new AppError(
+        403,
+        "SELF_SERVICE_WEBSITE_DISABLED",
+        "Pembuatan website mandiri belum dibuka. Website Anda saat ini hanya bisa dibuatkan oleh tim internal Lentera Pasar."
+      );
+    }
     const body = websiteBody.parse(request.body);
     const website = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const created = await tx.website.create({
@@ -2479,11 +2712,17 @@ const registerPublicRoutes = () => {
   app.get("/api/v1/public/sites/:slug", async (request: Req, reply) => {
     const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" } });
     if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
+    if (website.lifecycleStatus !== "active") {
+      throw new AppError(403, "WEBSITE_UNAVAILABLE", "Website ini sedang tidak aktif dan tidak dapat diakses publik.");
+    }
     return ok(reply, await buildPublicPage(website.id, { pageKey: "home" }, { publicOnly: true }), "Public page loaded");
   });
   app.get("/api/v1/public/sites/:slug/pages/:pageSlug", async (request: Req, reply) => {
     const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" } });
     if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
+    if (website.lifecycleStatus !== "active") {
+      throw new AppError(403, "WEBSITE_UNAVAILABLE", "Website ini sedang tidak aktif dan tidak dapat diakses publik.");
+    }
     const requestedSlug = cleanPageSlug(request.params?.pageSlug || "");
     const page = await prisma.websitePage.findFirst({ where: { websiteId: website.id, slug: requestedSlug, isPublished: true } });
     if (!page) {
@@ -2506,6 +2745,9 @@ const registerPublicRoutes = () => {
   app.get("/api/v1/public/sites/:slug/articles", async (request: Req, reply) => {
     const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" }, include: { businessProfile: true } });
     if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
+    if (website.lifecycleStatus !== "active") {
+      throw new AppError(403, "WEBSITE_UNAVAILABLE", "Website ini sedang tidak aktif dan tidak dapat diakses publik.");
+    }
     const articles = await prisma.article.findMany({
       where: { websiteId: website.id, status: "published" },
       orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }, { publishedAt: "desc" }],
@@ -2516,6 +2758,9 @@ const registerPublicRoutes = () => {
   app.get("/api/v1/public/sites/:slug/articles/:articleSlug", async (request: Req, reply) => {
     const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" }, include: { businessProfile: true } });
     if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
+    if (website.lifecycleStatus !== "active") {
+      throw new AppError(403, "WEBSITE_UNAVAILABLE", "Website ini sedang tidak aktif dan tidak dapat diakses publik.");
+    }
     const article = await prisma.article.findFirst({
       where: { websiteId: website.id, slug: request.params?.articleSlug, status: "published" },
       include: { category: true }
@@ -2560,7 +2805,9 @@ const registerPublicRoutes = () => {
   app.get("/api/v1/public/sites/:slug/portfolios/:portfolioId", async (request: Req, reply) => {
     const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" }, include: { businessProfile: true } });
     if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
-
+    if (website.lifecycleStatus !== "active") {
+      throw new AppError(403, "WEBSITE_UNAVAILABLE", "Website ini sedang tidak aktif dan tidak dapat diakses publik.");
+    }
     const identifier = request.params?.portfolioId;
     const portfolio =
       (await prisma.portfolio.findFirst({ where: { websiteId: website.id, slug: identifier, isActive: true }, include: { category: true } })) ||
@@ -2616,6 +2863,9 @@ const registerPublicRoutes = () => {
   app.post("/api/v1/public/sites/:slug/contact", { config: { rateLimit: apiConfig.rateLimits.contact } }, async (request: Req, reply) => {
     const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" } });
     if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
+    if (website.lifecycleStatus !== "active") {
+      throw new AppError(403, "WEBSITE_UNAVAILABLE", "Website ini sedang tidak aktif dan tidak dapat diakses publik.");
+    }
     const body = contactBody.parse(request.body);
     const lead = await prisma.lead.create({
       data: {

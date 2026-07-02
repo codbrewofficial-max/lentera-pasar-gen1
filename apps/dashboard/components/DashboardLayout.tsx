@@ -25,7 +25,8 @@ import {
   HelpCircle,
   Image as ImageIcon,
   Tags,
-  CalendarDays
+  CalendarDays,
+  Lock
 } from "lucide-react";
 import BrandMark from "@/components/brand/BrandMark";
 import BrandSignature from "@/components/brand/BrandSignature";
@@ -371,6 +372,13 @@ export default function DashboardLayout({
                 icon: Package,
                 href: "/internal/template-packs",
                 active: pathname === "/internal/template-packs"
+              },
+              {
+                label: "Pengaturan Publik",
+                description: "Buka/tutup pendaftaran mandiri & pembuatan website owner.",
+                icon: Lock,
+                href: "/internal/settings",
+                active: pathname === "/internal/settings"
               }
             ]
           }

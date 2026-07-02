@@ -4,7 +4,7 @@ export const formalCompanyProfileTemplate = {
   key: "company_profile_formal",
   slug: "formal",
   name: "Company Profile Formal",
-  description: "Template company profile formal berbasis output Google AI Studio yang sudah dipecah ke 7 halaman dan 33 section.",
+  description: "Template company profile formal berbasis output Google AI Studio yang sudah dipecah ke 8 halaman dan 37 section.",
   slotComponents: {
     "home.hero": "FormalHomeHero",
     "home.profile_summary": "FormalHomeProfileSummary",
@@ -39,6 +39,11 @@ export const formalCompanyProfileTemplate = {
     "article_detail.article_content": "FormalArticleContent",
     "article_detail.related_articles": "FormalRelatedArticles",
     "article_detail.article_cta": "FormalArticleCta",
+
+    "portfolio_detail.portfolio_detail_hero": "FormalPortfolioDetailHero",
+    "portfolio_detail.portfolio_detail_content": "FormalPortfolioDetailContent",
+    "portfolio_detail.related_portfolios": "FormalRelatedPortfolios",
+    "portfolio_detail.portfolio_detail_cta": "FormalPortfolioDetailCta",
 
     "contact.contact_hero": "FormalContactHero",
     "contact.contact_information": "FormalContactInformation",

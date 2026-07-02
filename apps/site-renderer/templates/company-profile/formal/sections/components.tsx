@@ -195,6 +195,7 @@ function mapPortfolio(item: CrudItem, index: number): PortfolioItem {
     challenge: text(item.challenge, "Tantangan utama proyek ini membutuhkan perencanaan yang rapi dan eksekusi yang terukur."),
     solution: text(item.solution, "Tim menyusun pendekatan kerja yang sistematis sesuai kebutuhan klien."),
     result: text(item.result, "Hasil pekerjaan membantu klien mendapatkan proses yang lebih jelas dan terarah."),
+    slug: text(item.slug),
   };
 }
 function mapBrand(item: CrudItem, index: number): BrandItem {
@@ -696,6 +697,7 @@ export function FormalContactCta(props: FormalSectionProps) {
 import { PortfolioDetailHero as AiPortfolioDetailHero } from "../source/sections/portfolio-detail/PortfolioDetailHero";
 import { PortfolioDetailContent as AiPortfolioDetailContent } from "../source/sections/portfolio-detail/PortfolioDetailContent";
 import { PortfolioDetailCta as AiPortfolioDetailCta } from "../source/sections/portfolio-detail/PortfolioDetailCta";
+import { RelatedPortfolios as AiRelatedPortfolios } from "../source/sections/portfolio-detail/RelatedPortfolios";
 
 export function FormalPortfolioDetailHero(props: FormalSectionProps) {
   const content = contentOf(props.section);
@@ -717,6 +719,23 @@ export function FormalPortfolioDetailContent(props: FormalSectionProps) {
 export function FormalPortfolioDetailCta(props: FormalSectionProps) {
   const content = contentOf(props.section);
   return <AiPortfolioDetailCta title={text(content.title)} description={text(content.description)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} />;
+}
+
+export function FormalRelatedPortfolios(props: FormalSectionProps) {
+  const content = contentOf(props.section);
+  const sectionData = props.section.data as any;
+  const currentProject = sectionData?.portfolio ? mapPortfolio(sectionData.portfolio, 0) : undefined;
+  const relatedRaw = sectionData?.relatedPortfolios || sectionData?.portfolios || [];
+  const related = relatedRaw.map((item: CrudItem, index: number) => mapPortfolio(item, index));
+  return (
+    <AiRelatedPortfolios
+      portfolios={related}
+      currentSlug={currentProject?.slug}
+      title={text(content.title, "Portofolio Terkait")}
+      subtitle={text(content.description, "Lihat proyek lain yang mungkin menarik untuk Anda.")}
+      portfolioDetailHref={(id: string) => pageHref(props.siteSlug, `/portfolio/${id}`)}
+    />
+  );
 }
 
 export const formalSectionComponents: Record<string, FormalSectionComponent> = {
@@ -756,5 +775,6 @@ export const formalSectionComponents: Record<string, FormalSectionComponent> = {
 
   FormalPortfolioDetailHero,
   FormalPortfolioDetailContent,
+  FormalRelatedPortfolios,
   FormalPortfolioDetailCta,
 };
