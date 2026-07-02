@@ -278,6 +278,7 @@ model Portfolio {
   title       String
   description String?
   imageUrl    String?
+  slug        String
   sortOrder   Int      @default(0)
   isFeatured  Boolean  @default(false)
   featuredOrder Int    @default(0)
@@ -288,6 +289,7 @@ model Portfolio {
   @@index([websiteId, sortOrder])
   @@index([websiteId, isFeatured, featuredOrder])
   @@index([websiteId, categoryId])
+  @@unique([websiteId, slug])
 }
 
 model Testimonial {

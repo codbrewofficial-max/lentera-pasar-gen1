@@ -527,6 +527,9 @@ const listItemBody = z.object({
   featuredOrder: z.number().int().optional(),
   isActive: z.boolean().optional()
 });
+const portfolioBody = listItemBody.extend({
+  slug: z.string().min(1).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be lowercase kebab-case")
+});
 const testimonialBody = z.object({
   name: z.string().min(1),
   role: z.string().nullable().optional(),
@@ -1810,6 +1813,10 @@ const registerCrud = (
       const category = await prisma.portfolioCategory.findFirst({ where: { id: data.categoryId, websiteId: website.id } });
       if (!category) throw new AppError(404, "PORTFOLIO_CATEGORY_NOT_FOUND", "Portfolio category not found");
     }
+    if (base === "portfolios") {
+      const existingSlug = await prisma.portfolio.findFirst({ where: { websiteId: website.id, slug: (data as any).slug } });
+      if (existingSlug) throw new AppError(409, "PORTFOLIO_SLUG_EXISTS", "Portfolio slug already exists for this website");
+    }
     const row = await (model as any).create({ data: { ...data, websiteId: website.id }, ...(include ? { include } : {}) });
     await createAuditLog(request, {
       action: `${base}.created`,
@@ -1837,6 +1844,10 @@ const registerCrud = (
     if (base === "portfolios" && data.categoryId) {
       const category = await prisma.portfolioCategory.findFirst({ where: { id: data.categoryId, websiteId: website.id } });
       if (!category) throw new AppError(404, "PORTFOLIO_CATEGORY_NOT_FOUND", "Portfolio category not found");
+    }
+    if (base === "portfolios" && (data as any).slug && (data as any).slug !== existing.slug) {
+      const existingSlug = await prisma.portfolio.findFirst({ where: { websiteId: website.id, slug: (data as any).slug, id: { not: existing.id } } });
+      if (existingSlug) throw new AppError(409, "PORTFOLIO_SLUG_EXISTS", "Portfolio slug already exists for this website");
     }
     const row = await (model as any).update({ where: { id: existing.id }, data, ...(include ? { include } : {}) });
     await createAuditLog(request, {
@@ -2736,7 +2747,7 @@ export const buildApp = async () => {
   registerTemplateRoutes();
   registerContentRoutes();
   registerCrud("services", listItemBody);
-  registerCrud("portfolios", listItemBody);
+  registerCrud("portfolios", portfolioBody);
   registerCrud("testimonials", testimonialBody);
   registerCrud("brand-partners", brandBody);
 
