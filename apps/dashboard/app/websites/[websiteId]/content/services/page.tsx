@@ -6,6 +6,7 @@ import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
 import BooleanRadio from "@/components/ui/BooleanRadio";
 import EnhancedTextarea from "@/components/ui/EnhancedTextarea";
+import Pagination from "@/components/ui/Pagination";
 import {
   HeartHandshake,
   Briefcase,
@@ -58,6 +59,10 @@ export default function ServicesCrudPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [pageMeta, setPageMeta] = useState({ pageSize: 12, total: 0, totalPages: 1 });
+
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -80,12 +85,19 @@ export default function ServicesCrudPage() {
   const [deletingItem, setDeletingItem] = useState<ServiceItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const fetchItems = async () => {
+  const fetchItems = async (targetPage = page) => {
     setLoading(true);
     setErrorMsg("");
     try {
-      const res = await apiCall<ServiceItem[]>("GET", `websites/${websiteId}/services`);
+      const res = await apiCall<ServiceItem[]>("GET", `websites/${websiteId}/services?page=${targetPage}&pageSize=${pageMeta.pageSize}`);
       setItems(res.data || []);
+      if (res.meta?.pagination) {
+        setPageMeta({
+          pageSize: res.meta.pagination.pageSize,
+          total: res.meta.pagination.total,
+          totalPages: res.meta.pagination.totalPages
+        });
+      }
     } catch (err: any) {
       console.error("Fetch services error:", err);
       setErrorMsg(err.error?.message || "Gagal memuat daftar layanan.");
@@ -97,10 +109,14 @@ export default function ServicesCrudPage() {
   useEffect(() => {
     if (websiteId) {
       Promise.resolve().then(() => {
-        fetchItems();
+        fetchItems(page);
       });
     }
-  }, [websiteId]);
+  }, [websiteId, page]);
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
 
   const showSuccess = (msg: string) => {
     setSuccessMsg(msg);
@@ -167,7 +183,7 @@ export default function ServicesCrudPage() {
         showSuccess("Layanan baru berhasil ditambahkan!");
       }
       setIsFormOpen(false);
-      fetchItems();
+      fetchItems(page);
     } catch (err: any) {
       console.error("Save service error:", err);
       setErrorMsg(err.error?.message || "Gagal menyimpan layanan.");
@@ -184,7 +200,11 @@ export default function ServicesCrudPage() {
       await apiCall("DELETE", `websites/${websiteId}/services/${deletingItem.id}`);
       showSuccess("Layanan berhasil dihapus!");
       setDeletingItem(null);
-      fetchItems();
+      if (items.length === 1 && page > 1) {
+        setPage(page - 1);
+      } else {
+        fetchItems(page);
+      }
     } catch (err: any) {
       console.error("Delete service error:", err);
       setErrorMsg(err.error?.message || "Gagal menghapus layanan.");
@@ -358,6 +378,17 @@ export default function ServicesCrudPage() {
               );
             })}
           </div>
+        )}
+
+        {!loading && filteredItems.length > 0 && (
+          <Pagination
+            page={page}
+            totalPages={pageMeta.totalPages}
+            total={pageMeta.total}
+            pageSize={pageMeta.pageSize}
+            onPageChange={handlePageChange}
+            itemLabel="layanan"
+          />
         )}
 
         {/* Modal Form Dialog */}

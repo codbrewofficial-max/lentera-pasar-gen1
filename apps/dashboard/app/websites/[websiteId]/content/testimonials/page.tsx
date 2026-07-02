@@ -7,6 +7,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import BooleanRadio from "@/components/ui/BooleanRadio";
 import EnhancedTextarea from "@/components/ui/EnhancedTextarea";
 import MediaPickerInput from "@/components/ui/MediaPickerInput";
+import Pagination from "@/components/ui/Pagination";
 import {
   MessageSquare,
   Plus,
@@ -45,6 +46,10 @@ export default function TestimonialCrudPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [pageMeta, setPageMeta] = useState({ pageSize: 12, total: 0, totalPages: 1 });
+
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -67,12 +72,19 @@ export default function TestimonialCrudPage() {
   const [deletingItem, setDeletingItem] = useState<TestimonialItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const fetchItems = async () => {
+  const fetchItems = async (targetPage = page) => {
     setLoading(true);
     setErrorMsg("");
     try {
-      const res = await apiCall<TestimonialItem[]>("GET", `websites/${websiteId}/testimonials`);
+      const res = await apiCall<TestimonialItem[]>("GET", `websites/${websiteId}/testimonials?page=${targetPage}&pageSize=${pageMeta.pageSize}`);
       setItems(res.data || []);
+      if (res.meta?.pagination) {
+        setPageMeta({
+          pageSize: res.meta.pagination.pageSize,
+          total: res.meta.pagination.total,
+          totalPages: res.meta.pagination.totalPages
+        });
+      }
     } catch (err: any) {
       console.error("Fetch testimonials error:", err);
       setErrorMsg(err.error?.message || "Gagal memuat testimoni pelanggan.");
@@ -84,10 +96,14 @@ export default function TestimonialCrudPage() {
   useEffect(() => {
     if (websiteId) {
       Promise.resolve().then(() => {
-        fetchItems();
+        fetchItems(page);
       });
     }
-  }, [websiteId]);
+  }, [websiteId, page]);
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
 
   const showSuccess = (msg: string) => {
     setSuccessMsg(msg);
@@ -154,7 +170,7 @@ export default function TestimonialCrudPage() {
         showSuccess("Testimoni baru berhasil disimpan!");
       }
       setIsFormOpen(false);
-      fetchItems();
+      fetchItems(page);
     } catch (err: any) {
       console.error("Save testimonial error:", err);
       setErrorMsg(err.error?.message || "Gagal menyimpan testimoni.");
@@ -171,7 +187,11 @@ export default function TestimonialCrudPage() {
       await apiCall("DELETE", `websites/${websiteId}/testimonials/${deletingItem.id}`);
       showSuccess("Testimoni berhasil dihapus!");
       setDeletingItem(null);
-      fetchItems();
+      if (items.length === 1 && page > 1) {
+        setPage(page - 1);
+      } else {
+        fetchItems(page);
+      }
     } catch (err: any) {
       console.error("Delete testimonial error:", err);
       setErrorMsg(err.error?.message || "Gagal menghapus testimoni.");
@@ -362,6 +382,17 @@ export default function TestimonialCrudPage() {
               </div>
             ))}
           </div>
+        )}
+
+        {!loading && filteredItems.length > 0 && (
+          <Pagination
+            page={page}
+            totalPages={pageMeta.totalPages}
+            total={pageMeta.total}
+            pageSize={pageMeta.pageSize}
+            onPageChange={handlePageChange}
+            itemLabel="testimoni"
+          />
         )}
 
         {/* Modal Form Dialog */}

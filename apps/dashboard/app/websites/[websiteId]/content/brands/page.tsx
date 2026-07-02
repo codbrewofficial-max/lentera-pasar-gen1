@@ -6,6 +6,7 @@ import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
 import BooleanRadio from "@/components/ui/BooleanRadio";
 import MediaPickerInput from "@/components/ui/MediaPickerInput";
+import Pagination from "@/components/ui/Pagination";
 import {
   Award,
   Plus,
@@ -41,6 +42,10 @@ export default function BrandCrudPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [pageMeta, setPageMeta] = useState({ pageSize: 12, total: 0, totalPages: 1 });
+
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -59,12 +64,19 @@ export default function BrandCrudPage() {
   const [deletingItem, setDeletingItem] = useState<BrandItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const fetchItems = async () => {
+  const fetchItems = async (targetPage = page) => {
     setLoading(true);
     setErrorMsg("");
     try {
-      const res = await apiCall<BrandItem[]>("GET", `websites/${websiteId}/brand-partners`);
+      const res = await apiCall<BrandItem[]>("GET", `websites/${websiteId}/brand-partners?page=${targetPage}&pageSize=${pageMeta.pageSize}`);
       setItems(res.data || []);
+      if (res.meta?.pagination) {
+        setPageMeta({
+          pageSize: res.meta.pagination.pageSize,
+          total: res.meta.pagination.total,
+          totalPages: res.meta.pagination.totalPages
+        });
+      }
     } catch (err: any) {
       console.error("Fetch brands error:", err);
       setErrorMsg(err.error?.message || "Gagal memuat logo partner / brand.");
@@ -76,10 +88,14 @@ export default function BrandCrudPage() {
   useEffect(() => {
     if (websiteId) {
       Promise.resolve().then(() => {
-        fetchItems();
+        fetchItems(page);
       });
     }
-  }, [websiteId]);
+  }, [websiteId, page]);
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
 
   const showSuccess = (msg: string) => {
     setSuccessMsg(msg);
@@ -136,7 +152,7 @@ export default function BrandCrudPage() {
         showSuccess("Logo brand rekanan baru berhasil disimpan!");
       }
       setIsFormOpen(false);
-      fetchItems();
+      fetchItems(page);
     } catch (err: any) {
       console.error("Save brand error:", err);
       setErrorMsg(err.error?.message || "Gagal menyimpan data rekanan.");
@@ -153,7 +169,11 @@ export default function BrandCrudPage() {
       await apiCall("DELETE", `websites/${websiteId}/brand-partners/${deletingItem.id}`);
       showSuccess("Logo brand rekanan berhasil dihapus!");
       setDeletingItem(null);
-      fetchItems();
+      if (items.length === 1 && page > 1) {
+        setPage(page - 1);
+      } else {
+        fetchItems(page);
+      }
     } catch (err: any) {
       console.error("Delete brand error:", err);
       setErrorMsg(err.error?.message || "Gagal menghapus data rekanan.");
@@ -306,6 +326,17 @@ export default function BrandCrudPage() {
               </div>
             ))}
           </div>
+        )}
+
+        {!loading && filteredItems.length > 0 && (
+          <Pagination
+            page={page}
+            totalPages={pageMeta.totalPages}
+            total={pageMeta.total}
+            pageSize={pageMeta.pageSize}
+            onPageChange={handlePageChange}
+            itemLabel="brand/partner"
+          />
         )}
 
         {/* Modal Form Dialog */}

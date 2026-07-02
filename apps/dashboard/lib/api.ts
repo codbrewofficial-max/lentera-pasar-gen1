@@ -1,8 +1,18 @@
 // lib/api.ts
 
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
 export interface ApiResponse<T> {
   data: T;
   message?: string;
+  meta?: {
+    pagination?: PaginationMeta;
+  };
 }
 
 export interface ApiErrorResponse {

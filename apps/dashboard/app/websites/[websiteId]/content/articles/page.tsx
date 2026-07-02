@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
 import { AlertCircle, CheckCircle, Edit2, FileText, Plus, Search, Trash2 } from "lucide-react";
+import Pagination from "@/components/ui/Pagination";
 
 interface ArticleCategory {
   id: string;
@@ -48,12 +49,22 @@ export default function ArticlesListPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
-  const fetchItems = async () => {
+  const [page, setPage] = useState(1);
+  const [pageMeta, setPageMeta] = useState({ pageSize: 12, total: 0, totalPages: 1 });
+
+  const fetchItems = async (targetPage = page) => {
     setLoading(true);
     setErrorMsg("");
     try {
-      const articlesRes = await apiCall<ArticleItem[]>("GET", `websites/${websiteId}/articles`);
+      const articlesRes = await apiCall<ArticleItem[]>("GET", `websites/${websiteId}/articles?page=${targetPage}&pageSize=${pageMeta.pageSize}`);
       setItems(articlesRes.data || []);
+      if (articlesRes.meta?.pagination) {
+        setPageMeta({
+          pageSize: articlesRes.meta.pagination.pageSize,
+          total: articlesRes.meta.pagination.total,
+          totalPages: articlesRes.meta.pagination.totalPages
+        });
+      }
     } catch (err: any) {
       setErrorMsg(err.error?.message || err.message || "Gagal memuat artikel.");
     } finally {
@@ -62,8 +73,12 @@ export default function ArticlesListPage() {
   };
 
   useEffect(() => {
-    if (websiteId) fetchItems();
-  }, [websiteId]);
+    if (websiteId) fetchItems(page);
+  }, [websiteId, page]);
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
 
   const showSuccess = (message: string) => {
     setSuccessMsg(message);
@@ -78,7 +93,11 @@ export default function ArticlesListPage() {
       await apiCall("DELETE", `websites/${websiteId}/articles/${deletingItem.id}`);
       setDeletingItem(null);
       showSuccess("Artikel berhasil dihapus.");
-      fetchItems();
+      if (items.length === 1 && page > 1) {
+        setPage(page - 1);
+      } else {
+        fetchItems(page);
+      }
     } catch (err: any) {
       setErrorMsg(err.error?.message || err.message || "Gagal menghapus artikel.");
     } finally {
@@ -170,6 +189,17 @@ export default function ArticlesListPage() {
               </div>
             ))}
           </div>
+        )}
+
+        {!loading && filteredItems.length > 0 && (
+          <Pagination
+            page={page}
+            totalPages={pageMeta.totalPages}
+            total={pageMeta.total}
+            pageSize={pageMeta.pageSize}
+            onPageChange={handlePageChange}
+            itemLabel="artikel"
+          />
         )}
 
         {deletingItem && (

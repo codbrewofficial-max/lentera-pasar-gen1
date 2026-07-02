@@ -15,6 +15,7 @@ import {
   PlusCircle,
   Tag
 } from "lucide-react";
+import Pagination from "@/components/ui/Pagination";
 
 interface PortfolioCategory {
   id: string;
@@ -56,15 +57,25 @@ export default function PortfolioListPage() {
   const [successMsg, setSuccessMsg] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
+  const [page, setPage] = useState(1);
+  const [pageMeta, setPageMeta] = useState({ pageSize: 12, total: 0, totalPages: 1 });
+
   const [deletingItem, setDeletingItem] = useState<PortfolioItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const fetchItems = async () => {
+  const fetchItems = async (targetPage = page) => {
     setLoading(true);
     setErrorMsg("");
     try {
-      const portfolioRes = await apiCall<PortfolioItem[]>("GET", `websites/${websiteId}/portfolios`);
+      const portfolioRes = await apiCall<PortfolioItem[]>("GET", `websites/${websiteId}/portfolios?page=${targetPage}&pageSize=${pageMeta.pageSize}`);
       setItems(portfolioRes.data || []);
+      if (portfolioRes.meta?.pagination) {
+        setPageMeta({
+          pageSize: portfolioRes.meta.pagination.pageSize,
+          total: portfolioRes.meta.pagination.total,
+          totalPages: portfolioRes.meta.pagination.totalPages
+        });
+      }
     } catch (err: any) {
       console.error("Fetch portfolios error:", err);
       setErrorMsg(err.error?.message || "Gagal memuat daftar portfolio.");
@@ -75,9 +86,13 @@ export default function PortfolioListPage() {
 
   useEffect(() => {
     if (websiteId) {
-      fetchItems();
+      fetchItems(page);
     }
-  }, [websiteId]);
+  }, [websiteId, page]);
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
 
   const showSuccess = (msg: string) => {
     setSuccessMsg(msg);
@@ -92,7 +107,11 @@ export default function PortfolioListPage() {
       await apiCall("DELETE", `websites/${websiteId}/portfolios/${deletingItem.id}`);
       showSuccess("Item portfolio berhasil dihapus!");
       setDeletingItem(null);
-      fetchItems();
+      if (items.length === 1 && page > 1) {
+        setPage(page - 1);
+      } else {
+        fetchItems(page);
+      }
     } catch (err: any) {
       console.error("Delete portfolio error:", err);
       setErrorMsg(err.error?.message || "Gagal menghapus portfolio.");
@@ -267,6 +286,17 @@ export default function PortfolioListPage() {
               </div>
             ))}
           </div>
+        )}
+
+        {!loading && filteredItems.length > 0 && (
+          <Pagination
+            page={page}
+            totalPages={pageMeta.totalPages}
+            total={pageMeta.total}
+            pageSize={pageMeta.pageSize}
+            onPageChange={handlePageChange}
+            itemLabel="portfolio"
+          />
         )}
 
         {/* Delete Confirmation Simple Dialog */}

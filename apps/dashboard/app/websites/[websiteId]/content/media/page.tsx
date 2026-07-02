@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { apiCall, apiUpload, getApiBaseUrl } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
 import { AlertCircle, CheckCircle, Copy, FileImage, Image, Info, RefreshCw, Trash2, Upload } from "lucide-react";
+import Pagination from "@/components/ui/Pagination";
 
 type MediaAsset = {
   id: string;
@@ -41,6 +42,9 @@ export default function MediaLibraryPage() {
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
+  const [page, setPage] = useState(1);
+  const [pageMeta, setPageMeta] = useState({ pageSize: 12, total: 0, totalPages: 1 });
+
   const baseUrl = useMemo(() => getApiBaseUrl().replace(/\/$/, ""), []);
   const apiOrigin = useMemo(() => {
     try {
@@ -67,12 +71,19 @@ export default function MediaLibraryPage() {
     return `${baseUrl}${normalizedPath}`;
   };
 
-  const fetchItems = async () => {
+  const fetchItems = async (targetPage = page) => {
     setLoading(true);
     setErrorMsg("");
     try {
-      const res = await apiCall<MediaAsset[]>("GET", `websites/${websiteId}/media`);
+      const res = await apiCall<MediaAsset[]>("GET", `websites/${websiteId}/media?page=${targetPage}&pageSize=${pageMeta.pageSize}`);
       setItems(res.data || []);
+      if (res.meta?.pagination) {
+        setPageMeta({
+          pageSize: res.meta.pagination.pageSize,
+          total: res.meta.pagination.total,
+          totalPages: res.meta.pagination.totalPages
+        });
+      }
     } catch (err: any) {
       setErrorMsg(err.error?.message || err.message || "Gagal memuat media library.");
     } finally {
@@ -81,8 +92,12 @@ export default function MediaLibraryPage() {
   };
 
   useEffect(() => {
-    if (websiteId) fetchItems();
-  }, [websiteId]);
+    if (websiteId) fetchItems(page);
+  }, [websiteId, page]);
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
 
   const showSuccess = (message: string) => {
     setSuccessMsg(message);
@@ -124,7 +139,11 @@ export default function MediaLibraryPage() {
       setSelectedFile(null);
       setAltText("");
       showSuccess("Media berhasil diupload dan siap dipakai di field gambar/URL.");
-      fetchItems();
+      if (page !== 1) {
+        setPage(1);
+      } else {
+        fetchItems(1);
+      }
     } catch (err: any) {
       setErrorMsg(err.error?.message || err.message || "Gagal upload media. Cek ukuran, format, dan log backend.");
     } finally {
@@ -139,7 +158,11 @@ export default function MediaLibraryPage() {
     try {
       await apiCall("DELETE", `websites/${websiteId}/media/${asset.id}`);
       showSuccess("Media berhasil dihapus.");
-      fetchItems();
+      if (items.length === 1 && page > 1) {
+        setPage(page - 1);
+      } else {
+        fetchItems(page);
+      }
     } catch (err: any) {
       setErrorMsg(err.error?.message || err.message || "Gagal menghapus media.");
     } finally {
@@ -238,7 +261,7 @@ export default function MediaLibraryPage() {
             <h3 className="text-sm font-bold text-slate-900">Daftar Media</h3>
             <p className="text-[10px] text-slate-400">{items.length} media tersimpan</p>
           </div>
-          <button onClick={fetchItems} className="inline-flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-[#649FF6] hover:bg-white rounded-xl transition">
+          <button onClick={() => fetchItems(page)} className="inline-flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-[#649FF6] hover:bg-white rounded-xl transition">
             <RefreshCw className="h-4 w-4" />
             Refresh Data
           </button>
@@ -292,6 +315,17 @@ export default function MediaLibraryPage() {
               );
             })}
           </div>
+        )}
+
+        {!loading && items.length > 0 && (
+          <Pagination
+            page={page}
+            totalPages={pageMeta.totalPages}
+            total={pageMeta.total}
+            pageSize={pageMeta.pageSize}
+            onPageChange={handlePageChange}
+            itemLabel="media"
+          />
         )}
       </div>
     </DashboardLayout>
