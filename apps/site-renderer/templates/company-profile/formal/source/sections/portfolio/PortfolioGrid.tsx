@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import { CheckCircle, HelpCircle, ShieldCheck } from "lucide-react";
 import { PortfolioItem } from "../../lib/types";
 import { Card } from "../../shared/Card";
@@ -10,6 +11,7 @@ interface PortfolioGridProps {
   activeCategory: string;
   title?: string;
   subtitle?: string;
+  portfolioDetailHref?: (id: string) => string;
 }
 
 export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
@@ -17,6 +19,7 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
   activeCategory,
   title,
   subtitle,
+  portfolioDetailHref,
 }) => {
   // Filter portfolios locally if not already handled
   const filtered = activeCategory === "Semua" 
@@ -80,6 +83,12 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
                 {project.description}
               </p>
 
+              <Link
+                href={portfolioDetailHref ? portfolioDetailHref(project.id) : `/portfolio/${project.id}`}
+                className="inline-flex items-center text-sm font-semibold text-[#649FF6] hover:underline"
+              >
+                Lihat Detail Proyek →
+              </Link>
             </div>
           </div>
         ))}

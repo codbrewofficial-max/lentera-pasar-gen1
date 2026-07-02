@@ -1,4 +1,4 @@
-import type { ApiResponse, ArticleDetailPayload, ArticleSummary, PublicPagePayload, RedirectPayload } from './types';
+import type { ApiResponse, ArticleDetailPayload, ArticleSummary, PortfolioDetailPayload, PublicPagePayload, RedirectPayload } from './types';
 
 const DEFAULT_API_BASE_URL = 'http://localhost:4000/api/v1';
 
@@ -68,6 +68,10 @@ export function getPublicArticleDetail(siteSlug: string, articleSlug: string) {
   return apiGet<ArticleDetailPayload>(`/public/sites/${siteSlug}/articles/${articleSlug}`);
 }
 
+export function getPublicPortfolioDetail(siteSlug: string, portfolioId: string) {
+  return apiGet<PortfolioDetailPayload>(`/public/sites/${siteSlug}/portfolios/${portfolioId}`);
+}
+
 export function submitContact(siteSlug: string, payload: Record<string, any>) {
   return apiPost(`/public/sites/${siteSlug}/contact`, payload);
 }
@@ -77,10 +81,7 @@ export async function submitTracking(payload: Record<string, any>) {
     return await apiPost(`/public/tracking/events`, payload);
   } catch (error) {
     // Tracking tidak boleh merusak pengalaman pengunjung.
-    // Di mode development tetap tampilkan pesan agar bug API mudah dilacak.
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn('[tracking] failed:', error);
-    }
+    console.warn('Tracking event failed:', error);
     return null;
   }
 }

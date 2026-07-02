@@ -212,7 +212,11 @@ function PreviewCards({
     <div className="mt-10 grid gap-5 md:grid-cols-3">
       {limited.map((item, index) => {
         const img = imageOf(item);
-        const href = type === 'articles' ? getArticleDetailHref(siteSlug, payload, item.slug) : '#';
+        const href = type === 'articles'
+          ? getArticleDetailHref(siteSlug, payload, item.slug)
+          : type === 'portfolios'
+            ? getPortfolioDetailHref(siteSlug, item.id)
+            : '#';
 
         const body = (
           <article className="lp-card h-full overflow-hidden">
@@ -242,7 +246,7 @@ function PreviewCards({
           </article>
         );
 
-        return type === 'articles' ? (
+        return type === 'articles' || type === 'portfolios' ? (
           <a key={item.id || index} href={href} className="block h-full">
             {body}
           </a>
@@ -261,6 +265,10 @@ function getArticleDetailHref(siteSlug: string, payload: PublicPagePayload | und
   const basePath = articlesTarget?.path || '/articles';
   const cleanBase = basePath.replace(/\/$/, '') || '/articles';
   return getSiteHref(siteSlug, `${cleanBase}/${articleSlug || ''}`);
+}
+
+function getPortfolioDetailHref(siteSlug: string, portfolioId?: string | null) {
+  return getSiteHref(siteSlug, `/portfolio/${portfolioId || ''}`);
 }
 
 function HeroSection(props: SectionProps) {
@@ -659,6 +667,71 @@ function ArticleCtaSection(props: SectionProps) {
   return <CtaContactSection {...props} />;
 }
 
+function PortfolioDetailHeroSection(props: SectionProps) {
+  const sectionData = props.section.data as any;
+  const portfolio = sectionData?.portfolio;
+  const c = props.section.content || {};
+  const showCoverImage = boolValue(c.showCoverImage ?? c.displayCoverImage, true);
+  const categoryName = portfolio ? categoryNameOf(portfolio) : null;
+
+  return (
+    <section className="bg-slate-50 py-16 md:py-24">
+      <div className="lp-container max-w-4xl">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="lp-eyebrow">Portfolio</p>
+          {categoryName && <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">{categoryName}</span>}
+        </div>
+        <h1 className="mt-4 text-4xl font-black tracking-tight md:text-6xl">
+          {portfolio?.title || props.payload.seo?.title || 'Detail Portfolio'}
+        </h1>
+        {portfolio?.description && <p className="mt-5 text-lg leading-8 text-slate-600">{portfolio.description}</p>}
+        {showCoverImage && portfolio?.imageUrl && (
+          <img src={portfolio.imageUrl} alt={portfolio.title} className="mt-10 aspect-[16/8] w-full rounded-[32px] object-cover" />
+        )}
+      </div>
+    </section>
+  );
+}
+
+function PortfolioDetailContentSection(props: SectionProps) {
+  const sectionData = props.section.data as any;
+  const portfolio = sectionData?.portfolio;
+  const c = props.section.content || {};
+  const width = maxWidthClass(c.contentMaxWidth || c.maxContentWidth || c.maxWidth || c.contentWidth || c.width);
+
+  return (
+    <section className="lp-section">
+      <div className={`lp-container ${width} prose-lite whitespace-pre-line text-slate-700`}>
+        {portfolio?.description || 'Detail proyek belum tersedia.'}
+      </div>
+    </section>
+  );
+}
+
+function RelatedPortfoliosSection(props: SectionProps) {
+  const c = props.section.content || {};
+  const sectionData = props.section.data as any;
+  return (
+    <section className="lp-section bg-slate-50">
+      <div className="lp-container">
+        <Heading title={text(c.title, 'Portfolio Terkait')} description={text(c.description, '')} />
+        <PreviewCards
+          items={sectionData.relatedPortfolios || sectionData.portfolios || []}
+          type="portfolios"
+          siteSlug={props.siteSlug}
+          payload={props.payload}
+          limit={3}
+          emptyTitle="Belum ada portfolio terkait"
+          emptyDescription="Portfolio terkait akan tampil ketika ada portfolio lain yang aktif."
+        />
+      </div>
+    </section>
+  );
+}
+
+function PortfolioDetailCtaSection(props: SectionProps) {
+  return <CtaContactSection {...props} />;
+}
 
 function FaqList({ items, emptyTitle, emptyDescription }: { items: CrudItem[]; emptyTitle: string; emptyDescription: string }) {
   if (!items.length) {
@@ -842,6 +915,11 @@ export const companyProfileCleanComponents: Record<string, SectionComponent> = {
   CompanyProfileCleanArticleContent: ArticleContentSection,
   CompanyProfileCleanRelatedArticles: RelatedArticlesSection,
   CompanyProfileCleanArticleCta: CtaContactSection,
+
+  CompanyProfileCleanPortfolioDetailHero: PortfolioDetailHeroSection,
+  CompanyProfileCleanPortfolioDetailContent: PortfolioDetailContentSection,
+  CompanyProfileCleanRelatedPortfolios: RelatedPortfoliosSection,
+  CompanyProfileCleanPortfolioDetailCta: PortfolioDetailCtaSection,
 
   CompanyProfileCleanContactHero: PageHeroSection,
   CompanyProfileCleanContactInformation: ContactInformationSection,

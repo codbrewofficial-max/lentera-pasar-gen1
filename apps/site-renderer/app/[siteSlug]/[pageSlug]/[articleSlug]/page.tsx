@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import { SiteShell } from '@/components/layout/SiteShell';
 import { RenderArticleDetail, RenderSections } from '@/components/sections/SectionRegistry';
 import { ArticleTracking } from '@/components/tracking/PageTracking';
-import { getPublicArticleDetail, getPublicPage } from '@/lib/api';
+import { getPublicArticleDetail, getPublicHomePage, getPublicPage } from '@/lib/api';
 import { getSiteHref } from '@/lib/links';
 import { getArticleSeoDescription, getArticleSeoTitle } from '@/lib/seo';
 
@@ -48,7 +48,26 @@ export default async function ArticleDetailFromCustomArticlesSlugPage({ params }
   if (!detail) notFound();
 
   const articleTemplate = await getPublicPage(siteSlug, 'article-detail').catch(() => null);
-  const shellPayload = articleTemplate && !('redirect' in articleTemplate)
+  const hasArticleTemplate = articleTemplate && !('redirect' in articleTemplate) && (articleTemplate.page.sections?.length ?? 0) > 0;
+
+  let fallbackThemeSections: any[] = [];
+  if (!hasArticleTemplate) {
+    const homePage = await getPublicHomePage(siteSlug).catch(() => null);
+    const referenceTheme = homePage?.page?.sections?.find((section) => section.templateTheme)?.templateTheme;
+    if (referenceTheme) {
+      fallbackThemeSections = [
+        {
+          id: 'article-detail-theme-probe',
+          slotKey: 'article_detail.theme_probe',
+          templateTheme: referenceTheme,
+          content: {},
+          data: {}
+        }
+      ];
+    }
+  }
+
+  const shellPayload = hasArticleTemplate
     ? articleTemplate
     : {
         website: detail.website,
@@ -67,11 +86,11 @@ export default async function ArticleDetailFromCustomArticlesSlugPage({ params }
           isDynamicDetailPage: true,
           seoTitle: detail.seo?.title,
           seoDescription: detail.seo?.description,
-          sections: []
+          sections: fallbackThemeSections
         }
       };
 
-  const payloadWithArticleSections = articleTemplate && !('redirect' in articleTemplate)
+  const payloadWithArticleSections = hasArticleTemplate
     ? {
         ...articleTemplate,
         page: {

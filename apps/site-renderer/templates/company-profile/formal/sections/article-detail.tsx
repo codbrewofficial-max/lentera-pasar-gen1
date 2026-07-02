@@ -1,4 +1,5 @@
 import { FormalButtonGroup, FormalCard, FormalEmpty, FormalHeading, FormalImageFrame, FormalSection, boolValue, descriptionOf, formatDate, getArticleHref, imageOf, maxWidthClass, text, titleOf, type FormalSectionProps } from '../shared';
+import { SectionHeading } from "../source/shared/SectionHeading";
 
 // Schema: showPublishedDate, showCoverImage
 export function FormalArticleDetailHero(props: FormalSectionProps) {
@@ -72,10 +73,12 @@ export function FormalRelatedArticles(props: FormalSectionProps) {
   const items = (props.section.data?.relatedArticles || []).slice(0, 3);
   return (
     <FormalSection muted>
-      <FormalHeading
-        eyebrow="Artikel Terkait"
+      <SectionHeading
         title={text(c.title, 'Bacaan yang Masih Relevan')}
-        description={text(c.description, 'Artikel terkait diprioritaskan dari kategori yang sama, lalu artikel published terbaru.')}
+        subtitle={text(c.description, 'Artikel terkait diprioritaskan dari kategori yang sama, lalu artikel published terbaru.')}
+        badge="Artikel Terkait"
+        badgeVariant="primary"
+        align="left"
       />
       {items.length ? (
         <div className="mt-10 grid gap-6 md:grid-cols-3">
