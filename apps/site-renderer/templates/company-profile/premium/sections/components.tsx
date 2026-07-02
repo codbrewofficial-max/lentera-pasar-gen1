@@ -34,6 +34,11 @@ import { PremiumArticleContent } from "../source/sections/article-detail/Premium
 import { PremiumRelatedArticles } from "../source/sections/article-detail/PremiumRelatedArticles";
 import { PremiumArticleCta } from "../source/sections/article-detail/PremiumArticleCta";
 
+import { PremiumPortfolioDetailHero } from "../source/sections/portfolio-detail/PremiumPortfolioDetailHero";
+import { PremiumPortfolioDetailContent } from "../source/sections/portfolio-detail/PremiumPortfolioDetailContent";
+import { PremiumRelatedPortfolios } from "../source/sections/portfolio-detail/PremiumRelatedPortfolios";
+import { PremiumPortfolioDetailCta } from "../source/sections/portfolio-detail/PremiumPortfolioDetailCta";
+
 import { PremiumContactHero } from "../source/sections/contact/PremiumContactHero";
 import { PremiumContactInformation } from "../source/sections/contact/PremiumContactInformation";
 import { PremiumMapsLocation } from "../source/sections/contact/PremiumMapsLocation";
@@ -205,6 +210,12 @@ function articlesFor(props: PremiumSectionProps): ArticleItem[] {
 function currentArticleFor(props: PremiumSectionProps): ArticleItem | undefined {
   const raw = props.section.data?.article;
   return raw ? mapArticle(raw, props.payload, 0) : undefined;
+}
+
+function currentPortfolioFor(props: PremiumSectionProps): PortfolioItem | undefined {
+  const sectionData = props.section.data as any;
+  const raw = sectionData.portfolio;
+  return raw ? mapPortfolio(raw, 0) : undefined;
 }
 
 function servicesFor(props: PremiumSectionProps): ServiceItem[] | undefined {
@@ -532,6 +543,58 @@ export function PremiumArticleCtaSection(props: PremiumSectionProps) {
   );
 }
 
+// ---- Portfolio Detail ----
+
+export function PremiumPortfolioDetailHeroSection(props: PremiumSectionProps) {
+  const content = contentOf(props.section);
+  return (
+    <PremiumPortfolioDetailHero
+      showCoverImage={boolValue(content.showCoverImage, true) ? "true" : "false"}
+      badge={text(content.badge, "Studi Kasus")}
+      project={currentPortfolioFor(props)}
+    />
+  );
+}
+
+export function PremiumPortfolioDetailContentSection(props: PremiumSectionProps) {
+  const content = contentOf(props.section);
+  return (
+    <PremiumPortfolioDetailContent
+      contentMaxWidth={text(content.contentMaxWidth, "max-w-2xl")}
+      showShareHint={boolValue(content.showShareHint, true) ? "true" : "false"}
+      project={currentPortfolioFor(props)}
+    />
+  );
+}
+
+export function PremiumRelatedPortfoliosSection(props: PremiumSectionProps) {
+  const content = contentOf(props.section);
+  const current = currentPortfolioFor(props);
+  const sectionData = props.section.data as any;
+  const relatedRaw = sectionData.relatedPortfolios || sectionData.portfolios || [];
+  const related = relatedRaw.map((item: CrudItem, index: number) => mapPortfolio(item, index));
+  return (
+    <PremiumRelatedPortfolios
+      title={text(content.title, "Karya Pilihan Lainnya")}
+      description={text(content.description, "Jelajahi rangkaian karya lain dari portofolio kami yang menonjolkan standar kualitas dan detail yang sama.")}
+      currentId={current?.id}
+      portfolios={related.length ? related : undefined}
+    />
+  );
+}
+
+export function PremiumPortfolioDetailCtaSection(props: PremiumSectionProps) {
+  const content = contentOf(props.section);
+  return (
+    <PremiumPortfolioDetailCta
+      title={text(content.title)}
+      description={text(content.description)}
+      ctaLabel={text(content.ctaLabel)}
+      ctaUrl={sectionHref(props, "cta", "/contact")}
+    />
+  );
+}
+
 // ---- Contact ----
 
 export function PremiumContactHeroSection(props: PremiumSectionProps) {
@@ -625,6 +688,11 @@ export const premiumSectionComponents: Record<string, PremiumSectionComponent> =
   PremiumArticleContent: PremiumArticleContentSection,
   PremiumRelatedArticles: PremiumRelatedArticlesSection,
   PremiumArticleCta: PremiumArticleCtaSection,
+
+  PremiumPortfolioDetailHero: PremiumPortfolioDetailHeroSection,
+  PremiumPortfolioDetailContent: PremiumPortfolioDetailContentSection,
+  PremiumRelatedPortfolios: PremiumRelatedPortfoliosSection,
+  PremiumPortfolioDetailCta: PremiumPortfolioDetailCtaSection,
 
   PremiumContactHero: PremiumContactHeroSection,
   PremiumContactInformation: PremiumContactInformationSection,
