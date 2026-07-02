@@ -68,7 +68,7 @@ export const PortfolioPreview: React.FC<HomePortfolioPreviewProps> = ({
                 </p>
 
                 <Button
-                  href={`${allPortfolioHref}#${project.id}`}
+                  href={`/portfolio/${project.id}`}
                   variant="text"
                   size="sm"
                   iconRight={<ArrowRight className="w-4 h-4 ml-1" />}

@@ -64,8 +64,12 @@ export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
   }, [pathname]);
 
   // PERBAIKAN 2: Fungsi cek aktif menggunakan `href` yang sudah di-resolve agar konsisten
-  const isLinkActive = (href: string) => {
+  // PERBAIKAN 4: Tambahan pageKey matching agar detail dinamis (article_detail, portfolio_detail)
+  // tetap menyalakan menu induknya (articles / portfolio) meski path persis tidak cocok.
+  const isLinkActive = (href: string, linkPageKey?: string) => {
     if (href === homeHref) return pathname === href;
+    if (linkPageKey === 'articles' && pathname?.includes('/articles/')) return true;
+    if (linkPageKey === 'portfolio' && pathname?.includes('/portfolio/')) return true;
     return pathname === href || pathname?.startsWith(`${href}/`);
   };
 
@@ -100,9 +104,9 @@ export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
+           <nav className="hidden md:flex items-center space-x-8">
             {resolvedLinks.map((link) => {
-              const active = isLinkActive(link.href); // Menggunakan link.href
+              const active = isLinkActive(link.href, link.pageKey);
               return (
                 <Link
                   key={link.path}
@@ -146,7 +150,7 @@ export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
       >
         <div className="px-4 pt-4 pb-6 space-y-3">
           {resolvedLinks.map((link) => {
-            const active = isLinkActive(link.href); // PERBAIKAN 3: Sekarang disamakan pakai link.href
+            const active = isLinkActive(link.href, link.pageKey); // PERBAIKAN 3: Sekarang disamakan pakai link.href
             return (
               <Link
                 key={link.path}

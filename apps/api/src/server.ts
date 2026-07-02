@@ -260,6 +260,7 @@ const isValidPageSlug = (value: string) => value === "" || /^[a-z0-9]+(?:-[a-z0-
 
 const pagePublicPath = (page: any) => {
   if (page.pageKey === "article_detail") return "/articles/:articleSlug";
+  if (page.pageKey === "portfolio_detail") return "/portfolio/:portfolioId";
   if (page.pageKey === "home") return "/";
   return `/${page.slug}`;
 };

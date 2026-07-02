@@ -49,7 +49,7 @@ export const PAGE_SECTION_RULES = {
     articles: ["article_hero", "featured_article", "article_preview"],
     article_detail: ["article_detail_hero", "article_content", "related_articles", "article_cta"],
     contact: ["contact_hero", "contact_information", "maps_location", "contact_faq", "contact_cta"],
-    portfolio_detail: ["portfolio_detail_hero", "portfolio_detail_content", "portfolio_detail_cta"]
+    portfolio_detail: ["portfolio_detail_hero", "portfolio_detail_content", "related_portfolios", "portfolio_detail_cta"]
   },
   catalog_product: {
     home: ["hero", "category_preview", "featured_products", "advantages", "testimonials", "whatsapp_cta"],
@@ -198,6 +198,7 @@ export const COMPANY_PROFILE_SECTION_SLOT_LABELS = {
   "contact.contact_cta": "CTA Kontak",
   "portfolio_detail.portfolio_detail_hero": "Pembuka Detail Portfolio",
   "portfolio_detail.portfolio_detail_content": "Isi Detail Portfolio",
+  "portfolio_detail.related_portfolios": "Portfolio Terkait",
   "portfolio_detail.portfolio_detail_cta": "CTA Detail Portfolio"
 } as const;
 
