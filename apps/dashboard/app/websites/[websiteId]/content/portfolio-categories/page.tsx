@@ -229,15 +229,15 @@ export default function CategoryCrudPage() {
         )}
 
         {isFormOpen && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-            <div className="bg-white rounded-t-3xl sm:rounded-3xl shadow-xl w-full sm:max-w-xl border border-slate-100 flex flex-col max-h-[92vh] sm:max-h-[90vh] overflow-hidden animate-slideUp">
-              <div className="p-4 sm:p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
-                <h3 className="font-bold text-slate-800 text-sm sm:text-base">{editingItem ? "Edit Kategori" : "Tambah Kategori"}</h3>
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl shadow-xl w-full max-w-lg border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden animate-slideUp">
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                <h3 className="font-bold text-slate-800 text-base">{editingItem ? "Edit Kategori" : "Tambah Kategori"}</h3>
                 <button onClick={() => setIsFormOpen(false)} className="p-2 hover:bg-slate-50 text-slate-400 hover:text-slate-600 rounded-xl transition">
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
+              <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 flex-1">
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Nama Kategori</label>
                   <input
@@ -259,23 +259,21 @@ export default function CategoryCrudPage() {
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Deskripsi</label>
                   <RichTextEditor id={`${endpoint}-description`} minHeight={110} value={formData.description} onChange={(value) => setFormData({ ...formData, description: value })} helperText="Deskripsi singkat untuk membantu pengelolaan konten." />
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Urutan</label>
-                    <input
-                      type="number"
-                      value={formData.sortOrder}
-                      onChange={(event) => setFormData({ ...formData, sortOrder: Number(event.target.value) })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6]"
-                    />
-                  </div>
-                  <BooleanRadio id={`${endpoint}-is-active`} label="Status" value={formData.isActive} onChange={(value) => setFormData({ ...formData, isActive: value })} />
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Urutan</label>
+                  <input
+                    type="number"
+                    value={formData.sortOrder}
+                    onChange={(event) => setFormData({ ...formData, sortOrder: Number(event.target.value) })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6]"
+                  />
                 </div>
-                <div className="pt-4 border-t border-slate-100 flex flex-col-reverse sm:flex-row justify-end gap-3 shrink-0">
-                  <button type="button" onClick={() => setIsFormOpen(false)} className="px-4 py-2.5 sm:py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition">Batal</button>
-                  <button type="submit" disabled={saving} className="inline-flex items-center justify-center gap-2 px-5 py-2.5 sm:py-2 bg-[#649FF6] hover:bg-[#4f8be6] disabled:bg-[#8bb8fb] text-white text-xs font-bold rounded-xl shadow-md transition">
+                <BooleanRadio id={`${endpoint}-is-active`} label="Status" value={formData.isActive} onChange={(value) => setFormData({ ...formData, isActive: value })} />
+                <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+                  <button type="button" onClick={() => setIsFormOpen(false)} className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition">Batal</button>
+                  <button type="submit" disabled={saving} className="inline-flex items-center space-x-1 px-5 py-2 bg-[#649FF6] hover:bg-[#4f8be6] disabled:bg-[#8bb8fb] text-white text-xs font-bold rounded-xl shadow-md transition">
                     <Save className="h-4 w-4" />
-                    {saving ? "Menyimpan..." : "Simpan Kategori"}
+                    <span>{saving ? "Menyimpan..." : "Simpan Kategori"}</span>
                   </button>
                 </div>
               </form>
@@ -284,13 +282,13 @@ export default function CategoryCrudPage() {
         )}
 
         {deletingItem && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-            <div className="bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-xl w-full sm:max-w-sm border border-slate-100 space-y-4 animate-scaleUp">
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl p-6 shadow-xl w-full max-w-sm border border-slate-100 space-y-4 animate-scaleUp">
               <h3 className="font-bold text-slate-900 text-base">Konfirmasi Hapus</h3>
               <p className="text-xs text-slate-500 leading-relaxed">Hapus kategori <strong>{deletingItem.name}</strong>? Konten yang memakai kategori ini akan kehilangan kategori.</p>
-              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
-                <button onClick={() => setDeletingItem(null)} className="px-4 py-2.5 sm:py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition">Batal</button>
-                <button onClick={handleDelete} disabled={deleting} className="px-4 py-2.5 sm:py-2 bg-rose-600 hover:bg-rose-700 disabled:bg-rose-400 text-white text-xs font-bold rounded-xl transition">
+              <div className="flex justify-end gap-2 pt-2">
+                <button onClick={() => setDeletingItem(null)} className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition">Batal</button>
+                <button onClick={handleDelete} disabled={deleting} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 disabled:bg-rose-400 text-white text-xs font-bold rounded-xl transition shadow-md shadow-rose-600/10">
                   {deleting ? "Menghapus..." : "Ya, Hapus"}
                 </button>
               </div>

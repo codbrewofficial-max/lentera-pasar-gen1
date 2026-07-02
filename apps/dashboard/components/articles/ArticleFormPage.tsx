@@ -7,6 +7,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import BooleanRadio from "@/components/ui/BooleanRadio";
 import EnhancedTextarea from "@/components/ui/EnhancedTextarea";
 import RichTextEditor from "@/components/ui/RichTextEditor";
+import MediaPickerInput from "@/components/ui/MediaPickerInput";
 import { Save, AlertCircle, CheckCircle, X } from "lucide-react";
 
 interface ArticleCategory {
@@ -45,8 +46,6 @@ const emptyForm = {
   excerpt: "",
   content: "",
   coverImageUrl: "",
-  seoTitle: "",
-  seoDescription: "",
   status: "draft" as "draft" | "published",
   sortOrder: 0,
   isFeatured: false,
@@ -90,8 +89,6 @@ export default function ArticleFormPage({ mode }: { mode: "create" | "edit" }) {
               excerpt: item.excerpt || "",
               content: item.content || "",
               coverImageUrl: item.coverImageUrl || "",
-              seoTitle: item.seoTitle || "",
-              seoDescription: item.seoDescription || "",
               status: item.status || "draft",
               sortOrder: item.sortOrder ?? 0,
               isFeatured: item.isFeatured ?? false,
@@ -150,8 +147,8 @@ export default function ArticleFormPage({ mode }: { mode: "create" | "edit" }) {
         excerpt: formData.excerpt || null,
         content: formData.content,
         coverImageUrl: formData.coverImageUrl || null,
-        seoTitle: formData.seoTitle || null,
-        seoDescription: formData.seoDescription || null,
+        seoTitle: formData.title,
+        seoDescription: formData.excerpt || null,
         status: formData.status,
         sortOrder: Number(formData.sortOrder) || 0,
         isFeatured: formData.isFeatured,
@@ -230,6 +227,7 @@ export default function ArticleFormPage({ mode }: { mode: "create" | "edit" }) {
                 onChange={(e) => handleTitleChange(e.target.value)}
                 className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
               />
+              <p className="text-[10px] text-slate-400">Judul ini otomatis menjadi SEO Title.</p>
             </div>
 
             <div className="space-y-1">
@@ -278,7 +276,7 @@ export default function ArticleFormPage({ mode }: { mode: "create" | "edit" }) {
                 value={formData.excerpt}
                 onChange={(value) => setFormData({ ...formData, excerpt: value })}
                 maxLength={180}
-                helperText="Ringkasan pendek ini dipakai untuk daftar artikel dan fallback SEO description."
+                helperText="Ringkasan pendek ini dipakai untuk daftar artikel dan otomatis menjadi SEO Description."
               />
             </div>
 
@@ -297,26 +295,15 @@ export default function ArticleFormPage({ mode }: { mode: "create" | "edit" }) {
             </div>
 
             <div className="space-y-1 sm:col-span-2">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">URL Cover Image</label>
-              <input
-                type="url"
+              <MediaPickerInput
+                id="article-cover"
+                label="URL Cover Image"
                 value={formData.coverImageUrl}
-                onChange={(e) => setFormData({ ...formData, coverImageUrl: e.target.value })}
-                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
-              />
-              {formData.coverImageUrl && (
-                <div className="mt-2 rounded-xl overflow-hidden border border-slate-200 bg-slate-50 max-h-56">
-                  <img src={formData.coverImageUrl} alt="Pratinjau cover" className="w-full h-56 object-cover" />
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-1">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">SEO Title</label>
-              <input
-                value={formData.seoTitle}
-                onChange={(e) => setFormData({ ...formData, seoTitle: e.target.value })}
-                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
+                onChange={(url) => setFormData({ ...formData, coverImageUrl: url })}
+                picsumSeedPrefix="article-cover"
+                picsumSize={{ width: 1200, height: 630 }}
+                aspect="wide"
+                helperText="Pilih dari Media Library, generate otomatis, atau tempel URL gambar cover artikel."
               />
             </div>
 
@@ -330,7 +317,7 @@ export default function ArticleFormPage({ mode }: { mode: "create" | "edit" }) {
               />
             </div>
 
-            <div className="space-y-1">
+            <div className={formData.isFeatured ? "space-y-1" : "hidden"}>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Urutan Unggulan</label>
               <input
                 type="number"
@@ -348,18 +335,6 @@ export default function ArticleFormPage({ mode }: { mode: "create" | "edit" }) {
                 value={formData.isFeatured}
                 onChange={(value) => setFormData({ ...formData, isFeatured: value })}
                 description="Artikel unggulan akan diprioritaskan di section Featured Article dan daftar artikel."
-              />
-            </div>
-
-            <div className="space-y-1 sm:col-span-2">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">SEO Description</label>
-              <EnhancedTextarea
-                id="article-seo-description"
-                minRows={2}
-                value={formData.seoDescription}
-                onChange={(value) => setFormData({ ...formData, seoDescription: value })}
-                maxLength={160}
-                helperText="Idealnya 120-160 karakter untuk snippet pencarian."
               />
             </div>
           </div>

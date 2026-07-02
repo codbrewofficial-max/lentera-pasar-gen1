@@ -6,6 +6,7 @@ import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
 import EnhancedTextarea from "@/components/ui/EnhancedTextarea";
 import BooleanRadio from "@/components/ui/BooleanRadio";
+import MediaPickerInput from "@/components/ui/MediaPickerInput";
 import {
   Users, Plus, Edit2, Trash2,
   AlertCircle, CheckCircle, Save, X, PlusCircle
@@ -270,13 +271,14 @@ export default function TeamMemberCrudPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">URL Foto (Opsional)</label>
-                  <input
-                    type="url"
-                    placeholder="https://example.com/foto.jpg"
+                  <MediaPickerInput
+                    id="team-image"
+                    label="URL Foto (Opsional)"
                     value={formData.imageUrl}
-                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
+                    onChange={(url) => setFormData({ ...formData, imageUrl: url })}
+                    picsumSeedPrefix="team-member"
+                    picsumSize={{ width: 400, height: 400 }}
+                    aspect="square"
                   />
                 </div>
 

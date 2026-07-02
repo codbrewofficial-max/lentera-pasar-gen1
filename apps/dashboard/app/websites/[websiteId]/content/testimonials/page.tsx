@@ -6,6 +6,7 @@ import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
 import BooleanRadio from "@/components/ui/BooleanRadio";
 import EnhancedTextarea from "@/components/ui/EnhancedTextarea";
+import MediaPickerInput from "@/components/ui/MediaPickerInput";
 import {
   MessageSquare,
   Plus,
@@ -57,6 +58,7 @@ export default function TestimonialCrudPage() {
     avatarUrl: "",
     rating: 5,
     quote: "",
+    sortOrder: 0,
     isActive: true
   });
   const [saving, setSaving] = useState(false);
@@ -101,6 +103,7 @@ export default function TestimonialCrudPage() {
       avatarUrl: "",
       rating: 5,
       quote: "",
+      sortOrder: items.length,
       isActive: true
     });
     setIsFormOpen(true);
@@ -115,6 +118,7 @@ export default function TestimonialCrudPage() {
       avatarUrl: item.avatarUrl || "",
       rating: item.rating ?? 5,
       quote: item.quote,
+      sortOrder: item.sortOrder ?? 0,
       isActive: item.isActive ?? true
     });
     setIsFormOpen(true);
@@ -136,7 +140,7 @@ export default function TestimonialCrudPage() {
         company: formData.company,
         quote: formData.quote,
         avatarUrl: formData.avatarUrl,
-        sortOrder: editingItem?.sortOrder ?? 0,
+        sortOrder: Number(formData.sortOrder) || 0,
         isActive: formData.isActive
       };
 
@@ -177,12 +181,14 @@ export default function TestimonialCrudPage() {
   };
 
   // Filter items
-  const filteredItems = items.filter((item) =>
-    item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.quote?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.role?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.company?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredItems = items
+    .filter((item) =>
+      item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.quote?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.role?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.company?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
   return (
     <DashboardLayout
@@ -426,16 +432,14 @@ export default function TestimonialCrudPage() {
 
                 {/* Avatar URL */}
                 <div className="space-y-1">
-                  <label htmlFor="test-avatar" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
-                    URL Gambar Profil / Avatar (Opsional)
-                  </label>
-                  <input
+                  <MediaPickerInput
                     id="test-avatar"
-                    type="url"
-                    placeholder="Contoh: https://i.pravatar.cc/150?img=12"
+                    label="URL Gambar Profil / Avatar (Opsional)"
                     value={formData.avatarUrl}
-                    onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors font-mono"
+                    onChange={(url) => setFormData({ ...formData, avatarUrl: url })}
+                    picsumSeedPrefix="testimonial-avatar"
+                    picsumSize={{ width: 300, height: 300 }}
+                    aspect="square"
                   />
                 </div>
 
@@ -476,6 +480,22 @@ export default function TestimonialCrudPage() {
                     onChange={(value) => setFormData({ ...formData, quote: value })}
                     helperText="Testimoni yang spesifik biasanya lebih dipercaya daripada kalimat terlalu umum."
                   />
+                </div>
+
+                {/* Sort Order */}
+                <div className="space-y-1">
+                  <label htmlFor="test-sort" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
+                    Urutan Tampil
+                  </label>
+                  <input
+                    id="test-sort"
+                    type="number"
+                    min="0"
+                    value={formData.sortOrder}
+                    onChange={(e) => setFormData({ ...formData, sortOrder: Number(e.target.value) })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
+                  />
+                  <p className="text-[10px] text-slate-400">Angka kecil tampil lebih dulu di halaman publik.</p>
                 </div>
 
                 {/* Status Toggle */}

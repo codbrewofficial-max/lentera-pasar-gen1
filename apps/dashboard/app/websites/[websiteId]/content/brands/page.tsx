@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
 import BooleanRadio from "@/components/ui/BooleanRadio";
+import MediaPickerInput from "@/components/ui/MediaPickerInput";
 import {
   Award,
   Plus,
@@ -342,17 +343,15 @@ export default function BrandCrudPage() {
 
                 {/* Logo URL */}
                 <div className="space-y-1">
-                  <label htmlFor="brand-logo" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
-                    URL File Logo Rekanan <span className="text-rose-500">*</span>
-                  </label>
-                  <input
+                  <MediaPickerInput
                     id="brand-logo"
-                    type="url"
+                    label="URL File Logo Rekanan"
                     required
-                    placeholder="Contoh: https://picsum.photos/seed/logo/200/100"
                     value={formData.logoUrl}
-                    onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors font-mono"
+                    onChange={(url) => setFormData({ ...formData, logoUrl: url })}
+                    picsumSeedPrefix="brand-logo"
+                    picsumSize={{ width: 200, height: 100 }}
+                    aspect="wide"
                   />
                 </div>
 

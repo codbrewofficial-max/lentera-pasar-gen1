@@ -6,6 +6,7 @@ import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
 import BooleanRadio from "@/components/ui/BooleanRadio";
 import RichTextEditor from "@/components/ui/RichTextEditor";
+import MediaPickerInput from "@/components/ui/MediaPickerInput";
 import {
   Save,
   AlertCircle,
@@ -275,23 +276,17 @@ export default function PortfolioFormPage({ mode }: { mode: "create" | "edit" })
 
           {/* Image URL */}
           <div className="space-y-1">
-            <label htmlFor="port-image" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
-              URL Gambar Dokumentasi Kerja <span className="text-rose-500">*</span>
-            </label>
-            <input
+            <MediaPickerInput
               id="port-image"
-              type="url"
+              label="URL Gambar Dokumentasi Kerja"
               required
-              placeholder="Contoh: https://picsum.photos/seed/portfolio/800/600"
               value={formData.imageUrl}
-              onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors font-mono"
+              onChange={(url) => setFormData({ ...formData, imageUrl: url })}
+              picsumSeedPrefix="portfolio"
+              picsumSize={{ width: 800, height: 600 }}
+              aspect="video"
+              helperText="Pilih dari Media Library, generate otomatis, atau tempel URL gambar dokumentasi kerja."
             />
-            {formData.imageUrl && (
-              <div className="mt-2 rounded-xl overflow-hidden border border-slate-200 bg-slate-50 max-h-56">
-                <img src={formData.imageUrl} alt="Pratinjau" className="w-full h-56 object-cover" />
-              </div>
-            )}
           </div>
 
           {/* Description */}
@@ -318,18 +313,20 @@ export default function PortfolioFormPage({ mode }: { mode: "create" | "edit" })
               onChange={(value) => setFormData({ ...formData, isFeatured: value })}
               description="Pilih Ya agar portfolio ini bisa muncul di Home. Home hanya mengambil 3 portfolio unggulan teratas."
             />
-            <div className="space-y-1">
-              <label htmlFor="port-featured-order" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Urutan Unggulan</label>
-              <input
-                id="port-featured-order"
-                type="number"
-                min="0"
-                value={formData.featuredOrder}
-                onChange={(e) => setFormData({ ...formData, featuredOrder: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
-              />
-              <p className="text-[10px] text-slate-400">Angka kecil tampil lebih dulu. Untuk Home, sistem hanya mengambil maksimal 3 portfolio unggulan.</p>
-            </div>
+            {formData.isFeatured && (
+              <div className="space-y-1">
+                <label htmlFor="port-featured-order" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Urutan Unggulan</label>
+                <input
+                  id="port-featured-order"
+                  type="number"
+                  min="0"
+                  value={formData.featuredOrder}
+                  onChange={(e) => setFormData({ ...formData, featuredOrder: Number(e.target.value) })}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
+                />
+                <p className="text-[10px] text-slate-400">Angka kecil tampil lebih dulu. Untuk Home, sistem hanya mengambil maksimal 3 portfolio unggulan.</p>
+              </div>
+            )}
           </div>
 
           {/* Status Toggle */}
