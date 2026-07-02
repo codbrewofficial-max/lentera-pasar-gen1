@@ -7,6 +7,8 @@ export const verifyPassword = (password: string, hash: string) => bcrypt.compare
 
 export const randomToken = (prefix: string) => `${prefix}_${crypto.randomBytes(24).toString("hex")}`;
 
+export const hashToken = (token: string) => crypto.createHash("sha256").update(token).digest("hex");
+
 export const hashIp = (ip: string | undefined) => {
   if (!ip) return null;
   return crypto

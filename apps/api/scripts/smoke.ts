@@ -135,6 +135,80 @@ async function main() {
 
   await request("/api/v1/health");
 
+  // --- Auth lifecycle: register -> verify email -> forgot/reset password -> resend verification ---
+  const smokeUserEmail = `smoke-user-${unique}@lenterapasar.test`;
+  const registerResult = await request("/api/v1/auth/register", {
+    method: "POST",
+    body: JSON.stringify({ name: `Smoke User ${unique}`, email: smokeUserEmail, password: "password123" })
+  });
+  assert(registerResult.data.user.role === "user", "Public registration must default to role 'user', not owner_admin");
+  assert(registerResult.data.user.emailVerifiedAt == null, "Freshly registered user should not be email-verified yet");
+  const verificationToken = registerResult.data.debugVerificationToken;
+  assert(typeof verificationToken === "string" && verificationToken.length > 0, "Register response missing debugVerificationToken (non-production mode only)");
+  const smokeUserToken = registerResult.data.token;
+
+  await expectStatus("/api/v1/internal/owners", 403, { headers: auth(smokeUserToken) });
+
+  await expectStatus("/api/v1/auth/verify-email", 400, {
+    method: "POST",
+    body: JSON.stringify({ token: "verify_invalid_token_00000000000000000000" })
+  });
+  const verifyResult = await request("/api/v1/auth/verify-email", {
+    method: "POST",
+    body: JSON.stringify({ token: verificationToken })
+  });
+  assert(verifyResult.data.emailVerifiedAt, "verify-email should set emailVerifiedAt");
+  const meAfterVerify = await request("/api/v1/auth/me", { headers: auth(smokeUserToken) });
+  assert(meAfterVerify.data.emailVerifiedAt, "/auth/me should reflect emailVerifiedAt after verification");
+
+  const resendResult = await request("/api/v1/auth/resend-verification", { method: "POST", headers: auth(smokeUserToken) });
+  assert(resendResult.data === true, "Resend verification on an already-verified user should be a no-op returning true");
+
+  await expectStatus("/api/v1/auth/reset-password", 400, {
+    method: "POST",
+    body: JSON.stringify({ token: "reset_invalid_token_000000000000000000000", password: "newpassword123" })
+  });
+  const forgotResult = await request("/api/v1/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email: smokeUserEmail })
+  });
+  const resetToken = forgotResult.data.debugResetToken;
+  assert(typeof resetToken === "string" && resetToken.length > 0, "forgot-password response missing debugResetToken (non-production mode only)");
+
+  // forgot-password untuk email yang tidak terdaftar tetap harus balas sukses generik (anti user-enumeration)
+  const forgotUnknown = await request("/api/v1/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email: `smoke-unknown-${unique}@lenterapasar.test` })
+  });
+  assert(typeof forgotUnknown.message === "string" && forgotUnknown.message.length > 0, "forgot-password for unknown email should still return a generic success message");
+
+  await request("/api/v1/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ token: resetToken, password: "newpassword123" })
+  });
+  await expectStatus("/api/v1/auth/login", 401, {
+    method: "POST",
+    body: JSON.stringify({ email: smokeUserEmail, password: "password123" })
+  });
+  await request("/api/v1/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email: smokeUserEmail, password: "newpassword123" })
+  });
+
+  // Registrasi kedua khusus untuk menguji resend-verification pada akun yang BELUM diverifikasi
+  const smokeUserEmail2 = `smoke-user-unverified-${unique}@lenterapasar.test`;
+  const registerResult2 = await request("/api/v1/auth/register", {
+    method: "POST",
+    body: JSON.stringify({ name: `Smoke User Unverified ${unique}`, email: smokeUserEmail2, password: "password123" })
+  });
+  const smokeUserToken2 = registerResult2.data.token;
+  const resendResult2 = await request("/api/v1/auth/resend-verification", { method: "POST", headers: auth(smokeUserToken2) });
+  const resentToken = resendResult2.data.debugVerificationToken;
+  assert(typeof resentToken === "string" && resentToken.length > 0, "resend-verification response missing debugVerificationToken (non-production mode only)");
+  const verifyResult2 = await request("/api/v1/auth/verify-email", { method: "POST", body: JSON.stringify({ token: resentToken }) });
+  assert(verifyResult2.data.emailVerifiedAt, "resend-verification token should also successfully verify email");
+
+  // --- Internal/Owner demo login ---
   const internalLogin = await request("/api/v1/auth/login", {
     method: "POST",
     body: JSON.stringify({ email: "internal@lenterapasar.test", password: "password123" })
@@ -199,7 +273,7 @@ async function main() {
   await expectStatus(`/api/v1/public/sites/${slug}`, 404);
 
   const pages = await request(`/api/v1/websites/${websiteId}/pages`, { headers: auth(smokeOwnerToken) });
-  assert(pages.data.length === 7, `Expected 7 default pages, got ${pages.data.length}`);
+  assert(pages.data.length === 8, `Expected 8 default pages, got ${pages.data.length}`);
   assert(pages.data.find((page: any) => page.pageKey === "article_detail")?.isDynamicDetailPage === true, "article_detail page missing dynamic flag");
   assert(typeof pages.data[0].sectionCount === "number", "Pages list missing sectionCount");
   assert(typeof pages.data[0].filledSectionCount === "number", "Pages list missing filledSectionCount");
@@ -207,7 +281,7 @@ async function main() {
   assert(homePage.data.sections[0].slotLabel, "Page detail section missing slotLabel");
 
   const sections = await request(`/api/v1/websites/${websiteId}/sections`, { headers: auth(smokeOwnerToken) });
-  assert(sections.data.length === 33, `Expected 33 default sections, got ${sections.data.length}`);
+  assert(sections.data.length === 37, `Expected 37 default sections, got ${sections.data.length}`);
   const initialHeroSection = await request(`/api/v1/websites/${websiteId}/sections/home.hero`, { headers: auth(smokeOwnerToken) });
   assert(initialHeroSection.data.slotLabel === "Hero", "Section detail missing slotLabel");
   assert("effectiveContent" in initialHeroSection.data, "Section detail missing effectiveContent");
@@ -226,17 +300,17 @@ async function main() {
   const activePackKey = `smoke-company-profile-full-${unique}`;
   const importedPack = await importTemplatePack(activePackKey, internalToken, { full: true });
   assert(importedPack.data.templatePack.status === "active", "Valid template pack did not become active");
-  assert(importedPack.data.summary.expectedSlots === 33, "Template pack summary expectedSlots must be 33");
-  assert(importedPack.data.summary.validSections === 33, "Valid template pack should import 33 valid sections");
+  assert(importedPack.data.summary.expectedSlots === 37, "Template pack summary expectedSlots must be 37");
+  assert(importedPack.data.summary.validSections === 37, "Valid template pack should import 37 valid sections");
   const importedPackDetail = await request(`/api/v1/internal/template-packs/${importedPack.data.templatePack.id}`, { headers: auth(internalToken) });
-  assert(importedPackDetail.data.sections.length === 33, "Template pack detail missing sections");
+  assert(importedPackDetail.data.sections.length === 37, "Template pack detail missing sections");
   const ownerHeroTemplatesAfterPack = await request("/api/v1/template-sections?websiteType=company_profile&slotKey=home.hero", { headers: auth(smokeOwnerToken) });
   assert(ownerHeroTemplatesAfterPack.data.some((template: any) => template.sectionKey === `${activePackKey}.home.hero.smoke`), "Active imported template not visible to owner selection");
 
   const draftPackKey = `smoke-company-profile-draft-${unique}`;
   const draftPack = await importTemplatePack(draftPackKey, internalToken, { full: false });
   assert(draftPack.data.templatePack.status === "draft", "Incomplete template pack did not become draft");
-  assert(draftPack.data.summary.expectedSlots === 33, "Draft pack summary expectedSlots must be 33");
+  assert(draftPack.data.summary.expectedSlots === 37, "Draft pack summary expectedSlots must be 37");
   assert(draftPack.data.warnings.length > 0, "Draft pack should include missing slot warnings");
   const ownerHeroTemplatesAfterDraft = await request("/api/v1/template-sections?websiteType=company_profile&slotKey=home.hero", { headers: auth(smokeOwnerToken) });
   assert(!ownerHeroTemplatesAfterDraft.data.some((template: any) => template.sectionKey === `${draftPackKey}.home.hero.smoke`), "Draft imported template should not be visible to owner selection");
@@ -315,11 +389,17 @@ async function main() {
   });
   assert(patchedPortfolioCategory.data.name === "Smoke Portfolio Category Patched", "Portfolio category PATCH did not update name");
 
+  // PNG asli 1x1 pixel transparan (bukan teks biasa), karena backend sekarang memproses
+  // upload lewat sharp (resize + convert ke WebP) dan akan menolak file yang bukan gambar valid.
+  const tinyPngBase64 =
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
   const mediaFormData = new FormData();
-  mediaFormData.append("file", new Blob([Buffer.from("smoke image")], { type: "image/png" }), `smoke-${unique}.png`);
+  mediaFormData.append("file", new Blob([Buffer.from(tinyPngBase64, "base64")], { type: "image/png" }), `smoke-${unique}.png`);
   mediaFormData.append("altText", "Smoke media alt text");
   const media = await requestMultipart(`/api/v1/websites/${websiteId}/media`, mediaFormData, smokeOwnerToken);
   assert(media.data.url, "Media upload missing URL");
+  assert(media.data.mimeType === "image/webp", "Uploaded media should be converted to image/webp");
+  assert(media.data.filename.endsWith(".webp"), "Uploaded media filename should end with .webp");
   await request(`/api/v1/websites/${websiteId}/media/${media.data.id}`, {
     method: "PATCH",
     headers: auth(smokeOwnerToken),
@@ -344,7 +424,7 @@ async function main() {
   const portfolio = await request(`/api/v1/websites/${websiteId}/portfolios`, {
     method: "POST",
     headers: auth(smokeOwnerToken),
-    body: JSON.stringify({ categoryId: portfolioCategory.data.id, title: "Smoke Portfolio", description: "Smoke portfolio", imageUrl: "https://example.com/portfolio.jpg", sortOrder: 1, isActive: true })
+    body: JSON.stringify({ categoryId: portfolioCategory.data.id, title: "Smoke Portfolio", slug: `smoke-portfolio-${unique}`, description: "Smoke portfolio", imageUrl: "https://example.com/portfolio.jpg", sortOrder: 1, isActive: true })
   });
   await request(`/api/v1/websites/${websiteId}/portfolios/${portfolio.data.id}`, { headers: auth(smokeOwnerToken) });
   const patchedPortfolio = await request(`/api/v1/websites/${websiteId}/portfolios/${portfolio.data.id}`, {
@@ -414,6 +494,20 @@ async function main() {
   assert(publishedArticle.data.publishedAt, "Published article missing publishedAt");
   assert(publishedArticle.data.category?.id === articleCategory.data.id, "Article category relation missing");
 
+  const publicTestPortfolio = await request(`/api/v1/websites/${websiteId}/portfolios`, {
+    method: "POST",
+    headers: auth(smokeOwnerToken),
+    body: JSON.stringify({
+      categoryId: portfolioCategory.data.id,
+      title: "Smoke Portfolio Public",
+      slug: `smoke-portfolio-public-${unique}`,
+      description: "Smoke portfolio kept alive for public detail endpoint testing",
+      imageUrl: "https://example.com/portfolio-public.jpg",
+      sortOrder: 1,
+      isActive: true
+    })
+  });
+
   await request(`/api/v1/websites/${websiteId}/publish`, { method: "POST", headers: auth(smokeOwnerToken) });
   const publicHome = await request(`/api/v1/public/sites/${slug}`);
   assert(publicHome.data.page.pageKey === "home", "Public site did not return home page");
@@ -430,6 +524,21 @@ async function main() {
   const publicArticle = await request(`/api/v1/public/sites/${slug}/articles/${publishedArticle.data.slug}`);
   assert(publicArticle.data.article.id === article.data.id, "Public article detail returned wrong article");
   assert(publicArticle.data.seo.title === "Smoke Article SEO", "Public article SEO title mismatch");
+
+  // --- Public portfolio detail endpoint (by slug, and fallback by id) ---
+  const publicPortfolioBySlug = await request(`/api/v1/public/sites/${slug}/portfolios/${publicTestPortfolio.data.slug}`);
+  assert(publicPortfolioBySlug.data.portfolio.id === publicTestPortfolio.data.id, "Public portfolio detail (by slug) returned wrong portfolio");
+  assert(publicPortfolioBySlug.data.portfolio.slug === publicTestPortfolio.data.slug, "Public portfolio detail missing slug");
+  assert(Array.isArray(publicPortfolioBySlug.data.relatedPortfolios), "Public portfolio detail missing relatedPortfolios array");
+  assert(Array.isArray(publicPortfolioBySlug.data.portfolioDetailSections), "Public portfolio detail missing portfolioDetailSections array");
+  assert(publicPortfolioBySlug.data.seo?.title, "Public portfolio detail missing seo.title");
+  assert(publicPortfolioBySlug.data.navigation?.navbar?.items?.length >= 1, "Public portfolio detail missing navigation.navbar.items");
+
+  const publicPortfolioById = await request(`/api/v1/public/sites/${slug}/portfolios/${publicTestPortfolio.data.id}`);
+  assert(publicPortfolioById.data.portfolio.id === publicTestPortfolio.data.id, "Public portfolio detail (by id fallback) returned wrong portfolio");
+
+  await expectStatus(`/api/v1/public/sites/${slug}/portfolios/nonexistent-slug-${unique}`, 404);
+
   const preview = await request(`/api/v1/websites/${websiteId}/preview/pages/home`, { headers: auth(smokeOwnerToken) });
   assert(preview.data.isPreview === true, "Preview response missing isPreview true");
 

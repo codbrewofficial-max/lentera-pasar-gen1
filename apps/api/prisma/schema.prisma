@@ -10,6 +10,7 @@ datasource db {
 enum UserRole {
   internal_admin
   owner_admin
+  user
 }
 
 enum WebsiteStatus {
@@ -53,6 +54,11 @@ model User {
   primaryWebsite   Website?  @relation("PrimaryWebsite", fields: [primaryWebsiteId], references: [id], onDelete: SetNull)
   websites         Website[] @relation("OwnerWebsites")
   auditLogs        AuditLog[] @relation("ActorAuditLogs")
+  emailVerifiedAt            DateTime?
+  emailVerificationTokenHash String?
+  emailVerificationExpiresAt DateTime?
+  passwordResetTokenHash     String?
+  passwordResetExpiresAt     DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 }

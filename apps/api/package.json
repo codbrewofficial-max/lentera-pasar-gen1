@@ -14,6 +14,7 @@
     "backfill:company-profile-structure": "tsx scripts/backfill-company-profile-structure.ts",
     "db:reset:keep-users": "tsx scripts/reset-keep-users.ts",
     "smoke": "tsx scripts/smoke.ts",
+    "smoke:cleanup": "tsx scripts/smoke-cleanup.ts",
     "backfill:page-navigation": "tsx scripts/backfill-page-navigation.ts",
     "check:deployment": "tsx scripts/check-deployment.ts"
   },
@@ -29,12 +30,15 @@
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.4.5",
     "fastify": "^4.28.1",
+    "nodemailer": "^6.9.15",
+    "sharp": "^0.33.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/adm-zip": "^0.5.7",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.14.15",
+    "@types/nodemailer": "^6.4.16",
     "prisma": "^5.22.0",
     "tsx": "^4.16.2",
     "typescript": "^5.5.4"

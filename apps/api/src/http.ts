@@ -54,6 +54,23 @@ export const toErrorPayload = (error: unknown, request?: FastifyRequest) => {
       }
     };
   }
+  // @fastify/rate-limit melempar error biasa (bukan AppError) dengan statusCode 429.
+  // Tanpa ini, error rate-limit yang sah malah nyamar jadi 500 INTERNAL_ERROR dan
+  // menyembunyikan penyebab aslinya dari pemakai API.
+  const maybeStatusCode = (error as { statusCode?: number })?.statusCode;
+  if (maybeStatusCode === 429) {
+    return {
+      statusCode: 429,
+      body: {
+        error: {
+          code: "RATE_LIMIT_EXCEEDED",
+          message: error instanceof Error ? error.message : "Too many requests",
+          details: {},
+          requestId
+        }
+      }
+    };
+  }
   return {
     statusCode: 500,
     body: {
@@ -67,7 +84,11 @@ export const toErrorPayload = (error: unknown, request?: FastifyRequest) => {
   };
 };
 
-export const publicUser = <T extends { passwordHash?: string }>(user: T) => {
-  const { passwordHash: _passwordHash, ...safeUser } = user;
+export const publicUser = <T extends {
+  passwordHash?: string;
+  emailVerificationTokenHash?: string | null;
+  passwordResetTokenHash?: string | null;
+}>(user: T) => {
+  const { passwordHash: _passwordHash, emailVerificationTokenHash: _evth, passwordResetTokenHash: _prth, ...safeUser } = user;
   return safeUser;
 };
