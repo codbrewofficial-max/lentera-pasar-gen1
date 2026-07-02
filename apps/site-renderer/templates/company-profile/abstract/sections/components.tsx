@@ -34,6 +34,11 @@ import { AbstractArticleContent } from "../source/sections/article-detail/Abstra
 import { AbstractRelatedArticles } from "../source/sections/article-detail/AbstractRelatedArticles";
 import { AbstractArticleCta } from "../source/sections/article-detail/AbstractArticleCta";
 
+import { AbstractPortfolioDetailHero } from "../source/sections/portfolio-detail/AbstractPortfolioDetailHero";
+import { AbstractPortfolioDetailContent } from "../source/sections/portfolio-detail/AbstractPortfolioDetailContent";
+import { AbstractRelatedPortfolios } from "../source/sections/portfolio-detail/AbstractRelatedPortfolios";
+import { AbstractPortfolioDetailCta } from "../source/sections/portfolio-detail/AbstractPortfolioDetailCta";
+
 import { AbstractContactHero } from "../source/sections/contact/AbstractContactHero";
 import { AbstractContactInformation } from "../source/sections/contact/AbstractContactInformation";
 import { AbstractMapsLocation } from "../source/sections/contact/AbstractMapsLocation";
@@ -189,6 +194,12 @@ function articlesFor(props: AbstractSectionProps): ArticleItem[] {
 function currentArticleFor(props: AbstractSectionProps): ArticleItem | undefined {
   const raw = props.section.data?.article;
   return raw ? mapArticle(raw, props.payload, 0) : undefined;
+}
+
+function currentPortfolioFor(props: AbstractSectionProps): PortfolioItem | undefined {
+  const sectionData = props.section.data as any;
+  const raw = sectionData.portfolio;
+  return raw ? mapPortfolio(raw, 0) : undefined;
 }
 
 function servicesFor(props: AbstractSectionProps): ServiceItem[] | undefined {
@@ -510,6 +521,58 @@ export function AbstractArticleCtaSection(props: AbstractSectionProps) {
   );
 }
 
+// ---- Portfolio Detail ----
+
+export function AbstractPortfolioDetailHeroSection(props: AbstractSectionProps) {
+  const content = contentOf(props.section);
+  return (
+    <AbstractPortfolioDetailHero
+      showCoverImage={boolValue(content.showCoverImage, true) ? "true" : "false"}
+      badge={text(content.badge, "Studi Kasus")}
+      project={currentPortfolioFor(props)}
+    />
+  );
+}
+
+export function AbstractPortfolioDetailContentSection(props: AbstractSectionProps) {
+  const content = contentOf(props.section);
+  return (
+    <AbstractPortfolioDetailContent
+      contentMaxWidth={text(content.contentMaxWidth, "max-w-3xl")}
+      showShareHint={boolValue(content.showShareHint, true) ? "true" : "false"}
+      project={currentPortfolioFor(props)}
+    />
+  );
+}
+
+export function AbstractRelatedPortfoliosSection(props: AbstractSectionProps) {
+  const content = contentOf(props.section);
+  const current = currentPortfolioFor(props);
+  const sectionData = props.section.data as any;
+  const relatedRaw = sectionData.relatedPortfolios || sectionData.portfolios || [];
+  const related = relatedRaw.map((item: CrudItem, index: number) => mapPortfolio(item, index));
+  return (
+    <AbstractRelatedPortfolios
+      title={text(content.title, "Karya Terkait Lainnya")}
+      description={text(content.description, "Eksplorasi proyek lain yang membawa pendekatan visual berani serupa.")}
+      currentId={current?.id}
+      portfolios={related.length ? related : undefined}
+    />
+  );
+}
+
+export function AbstractPortfolioDetailCtaSection(props: AbstractSectionProps) {
+  const content = contentOf(props.section);
+  return (
+    <AbstractPortfolioDetailCta
+      title={text(content.title)}
+      description={text(content.description)}
+      ctaLabel={text(content.ctaLabel)}
+      ctaUrl={sectionHref(props, "cta", "/contact")}
+    />
+  );
+}
+
 // ---- Contact ----
 
 export function AbstractContactHeroSection(props: AbstractSectionProps) {
@@ -605,6 +668,11 @@ export const abstractSectionComponents: Record<string, AbstractSectionComponent>
   AbstractArticleContent: AbstractArticleContentSection,
   AbstractRelatedArticles: AbstractRelatedArticlesSection,
   AbstractArticleCta: AbstractArticleCtaSection,
+
+  AbstractPortfolioDetailHero: AbstractPortfolioDetailHeroSection,
+  AbstractPortfolioDetailContent: AbstractPortfolioDetailContentSection,
+  AbstractRelatedPortfolios: AbstractRelatedPortfoliosSection,
+  AbstractPortfolioDetailCta: AbstractPortfolioDetailCtaSection,
 
   AbstractContactHero: AbstractContactHeroSection,
   AbstractContactInformation: AbstractContactInformationSection,

@@ -4,7 +4,7 @@ export const abstractCompanyProfileTemplate = {
   key: "company_profile_abstract",
   slug: "abstract",
   name: "Company Profile Abstract",
-  description: "Template company profile kreatif, eksperimental, dan ekspresif berbasis output Google AI Studio, dipecah ke 7 halaman dan 33 section.",
+  description: "Template company profile kreatif, eksperimental, dan ekspresif berbasis output Google AI Studio, dipecah ke 8 halaman dan 37 section.",
   slotComponents: {
     "home.hero": "AbstractHomeHero",
     "home.profile_summary": "AbstractHomeProfileSummary",
@@ -39,6 +39,11 @@ export const abstractCompanyProfileTemplate = {
     "article_detail.article_content": "AbstractArticleContent",
     "article_detail.related_articles": "AbstractRelatedArticles",
     "article_detail.article_cta": "AbstractArticleCta",
+
+    "portfolio_detail.portfolio_detail_hero": "AbstractPortfolioDetailHero",
+    "portfolio_detail.portfolio_detail_content": "AbstractPortfolioDetailContent",
+    "portfolio_detail.related_portfolios": "AbstractRelatedPortfolios",
+    "portfolio_detail.portfolio_detail_cta": "AbstractPortfolioDetailCta",
 
     "contact.contact_hero": "AbstractContactHero",
     "contact.contact_information": "AbstractContactInformation",

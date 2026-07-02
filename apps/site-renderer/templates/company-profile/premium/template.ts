@@ -4,7 +4,7 @@ export const premiumCompanyProfileTemplate = {
   key: "company_profile_premium",
   slug: "premium",
   name: "Company Profile Premium",
-  description: "Template company profile elegan dan eksklusif berbasis output Google AI Studio, dipecah ke 7 halaman dan 33 section.",
+  description: "Template company profile elegan dan eksklusif berbasis output Google AI Studio, dipecah ke 8 halaman dan 37 section.",
   slotComponents: {
     "home.hero": "PremiumHomeHero",
     "home.profile_summary": "PremiumHomeProfileSummary",
@@ -39,6 +39,11 @@ export const premiumCompanyProfileTemplate = {
     "article_detail.article_content": "PremiumArticleContent",
     "article_detail.related_articles": "PremiumRelatedArticles",
     "article_detail.article_cta": "PremiumArticleCta",
+
+    "portfolio_detail.portfolio_detail_hero": "PremiumPortfolioDetailHero",
+    "portfolio_detail.portfolio_detail_content": "PremiumPortfolioDetailContent",
+    "portfolio_detail.related_portfolios": "PremiumRelatedPortfolios",
+    "portfolio_detail.portfolio_detail_cta": "PremiumPortfolioDetailCta",
 
     "contact.contact_hero": "PremiumContactHero",
     "contact.contact_information": "PremiumContactInformation",

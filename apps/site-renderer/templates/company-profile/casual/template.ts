@@ -4,7 +4,7 @@ export const casualCompanyProfileTemplate = {
   key: "company_profile_casual",
   slug: "casual",
   name: "Company Profile Casual",
-  description: "Template company profile ramah, ringan, dan mudah didekati berbasis output Google AI Studio, dipecah ke 7 halaman dan 33 section.",
+  description: "Template company profile ramah, ringan, dan mudah didekati berbasis output Google AI Studio, dipecah ke 8 halaman dan 37 section.",
   slotComponents: {
     "home.hero": "CasualHomeHero",
     "home.profile_summary": "CasualHomeProfileSummary",
@@ -39,6 +39,11 @@ export const casualCompanyProfileTemplate = {
     "article_detail.article_content": "CasualArticleContent",
     "article_detail.related_articles": "CasualRelatedArticles",
     "article_detail.article_cta": "CasualArticleCta",
+
+    "portfolio_detail.portfolio_detail_hero": "CasualPortfolioDetailHero",
+    "portfolio_detail.portfolio_detail_content": "CasualPortfolioDetailContent",
+    "portfolio_detail.related_portfolios": "CasualRelatedPortfolios",
+    "portfolio_detail.portfolio_detail_cta": "CasualPortfolioDetailCta",
 
     "contact.contact_hero": "CasualContactHero",
     "contact.contact_information": "CasualContactInformation",

@@ -40,6 +40,11 @@ import { CasualMapsLocation } from "../source/sections/contact/CasualMapsLocatio
 import { CasualContactFaq } from "../source/sections/contact/CasualContactFaq";
 import { CasualContactCta } from "../source/sections/contact/CasualContactCta";
 
+import { CasualPortfolioDetailHero } from "../source/sections/portfolio-detail/CasualPortfolioDetailHero";
+import { CasualPortfolioDetailContent } from "../source/sections/portfolio-detail/CasualPortfolioDetailContent";
+import { CasualRelatedPortfolios } from "../source/sections/portfolio-detail/CasualRelatedPortfolios";
+import { CasualPortfolioDetailCta } from "../source/sections/portfolio-detail/CasualPortfolioDetailCta";
+
 import type { ServiceItem, PortfolioItem, ArticleItem, TeamMember, TimelineItem, FaqItem } from "../source/lib/dummy-data";
 import type { CrudItem, PublicPagePayload, PublicSection } from "@/lib/types";
 import { getSiteHref, resolveTargetHref } from "@/lib/links";
@@ -192,6 +197,12 @@ function articlesFor(props: CasualSectionProps): ArticleItem[] {
 function currentArticleFor(props: CasualSectionProps): ArticleItem | undefined {
   const raw = props.section.data?.article;
   return raw ? mapArticle(raw, props.payload, 0) : undefined;
+}
+
+function currentPortfolioFor(props: CasualSectionProps): PortfolioItem | undefined {
+  const sectionData = props.section.data as any;
+  const raw = sectionData.portfolio;
+  return raw ? mapPortfolio(raw, 0) : undefined;
 }
 
 function servicesFor(props: CasualSectionProps): ServiceItem[] | undefined {
@@ -525,6 +536,58 @@ export function CasualArticleCtaSection(props: CasualSectionProps) {
   );
 }
 
+// ---- Portfolio Detail ----
+
+export function CasualPortfolioDetailHeroSection(props: CasualSectionProps) {
+  const content = contentOf(props.section);
+  return (
+    <CasualPortfolioDetailHero
+      showCoverImage={boolValue(content.showCoverImage, true) ? "true" : "false"}
+      badge={text(content.badge, "Studi Kasus")}
+      project={currentPortfolioFor(props)}
+    />
+  );
+}
+
+export function CasualPortfolioDetailContentSection(props: CasualSectionProps) {
+  const content = contentOf(props.section);
+  return (
+    <CasualPortfolioDetailContent
+      contentMaxWidth={text(content.contentMaxWidth, "max-w-3xl")}
+      showShareHint={boolValue(content.showShareHint, true) ? "true" : "false"}
+      project={currentPortfolioFor(props)}
+    />
+  );
+}
+
+export function CasualRelatedPortfoliosSection(props: CasualSectionProps) {
+  const content = contentOf(props.section);
+  const current = currentPortfolioFor(props);
+  const sectionData = props.section.data as any;
+  const relatedRaw = sectionData.relatedPortfolios || sectionData.portfolios || [];
+  const related = relatedRaw.map((item: CrudItem, index: number) => mapPortfolio(item, index));
+  return (
+    <CasualRelatedPortfolios
+      title={text(content.title, "Proyek Lain yang Mungkin Kamu Suka")}
+      description={text(content.description, "Intip beberapa kolaborasi seru kami lainnya bareng pemilik UMKM keren.")}
+      currentId={current?.id}
+      portfolios={related.length ? related : undefined}
+    />
+  );
+}
+
+export function CasualPortfolioDetailCtaSection(props: CasualSectionProps) {
+  const content = contentOf(props.section);
+  return (
+    <CasualPortfolioDetailCta
+      title={text(content.title)}
+      description={text(content.description)}
+      ctaLabel={text(content.ctaLabel)}
+      ctaUrl={sectionHref(props, "cta", "/contact")}
+    />
+  );
+}
+
 // ---- Contact ----
 
 export function CasualContactHeroSection(props: CasualSectionProps) {
@@ -620,6 +683,11 @@ export const casualSectionComponents: Record<string, CasualSectionComponent> = {
   CasualArticleContent: CasualArticleContentSection,
   CasualRelatedArticles: CasualRelatedArticlesSection,
   CasualArticleCta: CasualArticleCtaSection,
+
+  CasualPortfolioDetailHero: CasualPortfolioDetailHeroSection,
+  CasualPortfolioDetailContent: CasualPortfolioDetailContentSection,
+  CasualRelatedPortfolios: CasualRelatedPortfoliosSection,
+  CasualPortfolioDetailCta: CasualPortfolioDetailCtaSection,
 
   CasualContactHero: CasualContactHeroSection,
   CasualContactInformation: CasualContactInformationSection,
