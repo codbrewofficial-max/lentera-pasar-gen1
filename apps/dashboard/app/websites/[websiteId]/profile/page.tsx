@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
+import RichTextEditor from "@/components/ui/RichTextEditor";
 import EnhancedTextarea from "@/components/ui/EnhancedTextarea";
 import { 
   Briefcase, 
@@ -58,7 +59,6 @@ export default function BusinessProfilePage() {
   const [logoAlt, setLogoAlt] = useState("");
   const [vision, setVision] = useState("");
   const [mission, setMission] = useState("");
-  const [history, setHistory] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -82,10 +82,6 @@ export default function BusinessProfilePage() {
         setLogoAlt(data.logoAlt || "");
         setVision(data.vision || "");
         setMission(data.mission || "");
-        
-        const firstTimeline = data.timelineJson?.items?.[0];
-        setHistory(firstTimeline?.description || "");
-        
         setEmail(data.contactEmail || "");
         setPhone(data.phone || "");
         setWhatsapp(data.whatsapp || "");
@@ -122,15 +118,6 @@ export default function BusinessProfilePage() {
       logoAlt: logoAlt || null,
       vision,
       mission,
-      timelineJson: {
-        items: [
-          {
-            year: "",
-            title: "Sejarah Singkat",
-            description: history
-          }
-        ]
-      },
       contactEmail: email,
       phone,
       whatsapp,
@@ -266,9 +253,9 @@ export default function BusinessProfilePage() {
 
               <div className="space-y-1.5 md:col-span-2">
                 <label htmlFor="prof-desc" className="block text-sm font-semibold text-slate-700">Deskripsi Lengkap Bisnis</label>
-                <EnhancedTextarea
+                <RichTextEditor
                   id="prof-desc"
-                  minRows={5}
+                  minHeight={140}
                   placeholder="Tulis penjelasan mendalam mengenai produk, keunikan, dan apa yang membuat bisnis Anda menonjol..."
                   value={description}
                   onChange={setDescription}
@@ -288,38 +275,43 @@ export default function BusinessProfilePage() {
             <div className="grid grid-cols-1 gap-6">
               <div className="space-y-1.5">
                 <label htmlFor="prof-vision" className="block text-sm font-semibold text-slate-700">Visi Perusahaan</label>
-                <input
+                <RichTextEditor
                   id="prof-vision"
-                  type="text"
+                  minHeight={100}
                   placeholder="Contoh: Menjadi produsen roti keluarga nomor satu di wilayah Jabodetabek"
                   value={vision}
-                  onChange={(e) => setVision(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
+                  onChange={setVision}
+                  helperText="Tulis visi perusahaan secara ringkas dan jelas."
                 />
               </div>
 
               <div className="space-y-1.5">
                 <label htmlFor="prof-mission" className="block text-sm font-semibold text-slate-700">Misi Perusahaan</label>
-                <EnhancedTextarea
+                <RichTextEditor
                   id="prof-mission"
-                  minRows={4}
+                  minHeight={120}
                   placeholder="Contoh: Menggunakan bahan lokal berkualitas, menjaga sanitasi pabrik, melayani pesanan tepat waktu..."
                   value={mission}
                   onChange={setMission}
-                  helperText="Tulis poin misi per baris agar mudah dibaca di website publik."
+                  helperText="Gunakan daftar poin agar misi mudah dibaca di website publik."
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label htmlFor="prof-history" className="block text-sm font-semibold text-slate-700">Sejarah Singkat / Milestones</label>
-                <EnhancedTextarea
-                  id="prof-history"
-                  minRows={4}
-                  placeholder="Bagaimana bisnis Anda didirikan dan perkembangannya hingga saat ini..."
-                  value={history}
-                  onChange={setHistory}
-                  helperText="Ceritakan sejarah singkat, milestone, atau alasan bisnis ini hadir."
-                />
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <p className="text-sm font-semibold text-slate-700">Sejarah Singkat / Milestones</p>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Kelola timeline sejarah dan milestone bisnis Anda (per tahun) di halaman khusus Timeline.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => router.push(`/websites/${websiteId}/content/timeline`)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 hover:border-[#649FF6] hover:text-[#649FF6] text-slate-600 text-xs font-bold rounded-xl shadow-sm transition shrink-0"
+                >
+                  Kelola Timeline
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </button>
               </div>
             </div>
           </div>
