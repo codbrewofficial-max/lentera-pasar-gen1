@@ -18,6 +18,20 @@ enum WebsiteStatus {
   published
 }
 
+enum WebsiteLifecycleStatus {
+  active
+  suspended
+  nonactive
+}
+
+enum UserAccountStatus {
+  active
+  non_active
+  suspended
+  banned
+  blacklisted
+}
+
 enum LeadStatus {
   new
   contacted
@@ -50,6 +64,7 @@ model User {
   role             UserRole
   whatsapp         String?
   phone            String?
+  accountStatus    UserAccountStatus @default(active)
   primaryWebsiteId String?
   primaryWebsite   Website?  @relation("PrimaryWebsite", fields: [primaryWebsiteId], references: [id], onDelete: SetNull)
   websites         Website[] @relation("OwnerWebsites")
@@ -61,6 +76,8 @@ model User {
   passwordResetExpiresAt     DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
+
+  @@index([accountStatus])
 }
 
 model Website {
@@ -71,6 +88,7 @@ model Website {
   name            String
   slug            String            @unique
   status          WebsiteStatus     @default(draft)
+  lifecycleStatus WebsiteLifecycleStatus @default(active)
   trackingKey     String            @unique
   themeJson       Json?
   pages           WebsitePage[]
@@ -98,6 +116,7 @@ model Website {
   @@index([ownerId])
   @@index([websiteType])
   @@index([status])
+  @@index([lifecycleStatus])
 }
 
 model WebsitePage {

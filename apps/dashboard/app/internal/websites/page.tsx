@@ -6,19 +6,18 @@ import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
 import {
   Globe,
-  Plus,
   Search,
-  Edit2,
-  Trash2,
   AlertCircle,
   CheckCircle,
-  Save,
   X,
-  Eye,
-  Settings,
   User,
-  RefreshCw
+  RefreshCw,
+  ShieldCheck,
+  ShieldAlert,
+  ShieldOff
 } from "lucide-react";
+
+type LifecycleStatus = "active" | "suspended" | "nonactive";
 
 interface WebsiteItem {
   id: string | number;
@@ -28,6 +27,8 @@ interface WebsiteItem {
   websiteTypeLabel?: string;
   status: "draft" | "published";
   statusLabel?: string;
+  lifecycleStatus: LifecycleStatus;
+  lifecycleStatusLabel?: string;
   ownerId?: string | number;
   ownerName?: string;
   pagesCount?: number;
@@ -41,6 +42,36 @@ interface SyncResult {
   totalSections: number;
 }
 
+const LIFECYCLE_OPTIONS: { value: LifecycleStatus; label: string }[] = [
+  { value: "active", label: "Aktif" },
+  { value: "suspended", label: "Ditangguhkan" },
+  { value: "nonactive", label: "Non-Aktif" }
+];
+
+const lifecycleBadgeClass = (status: LifecycleStatus) => {
+  switch (status) {
+    case "active":
+      return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    case "suspended":
+      return "bg-amber-50 text-amber-700 border-amber-200";
+    case "nonactive":
+    default:
+      return "bg-slate-100 text-slate-600 border-slate-200";
+  }
+};
+
+const lifecycleIcon = (status: LifecycleStatus) => {
+  switch (status) {
+    case "active":
+      return <ShieldCheck className="h-3.5 w-3.5" />;
+    case "suspended":
+      return <ShieldAlert className="h-3.5 w-3.5" />;
+    case "nonactive":
+    default:
+      return <ShieldOff className="h-3.5 w-3.5" />;
+  }
+};
+
 export default function InternalWebsitesPage() {
   const router = useRouter();
   const [authorized, setAuthorized] = useState<boolean | null>(null);
@@ -49,25 +80,13 @@ export default function InternalWebsitesPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
-  // Search & Filter
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Form State
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingWeb, setEditingWeb] = useState<WebsiteItem | null>(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    slug: "",
-    websiteType: "company_profile",
-    status: "draft" as "draft" | "published"
-  });
-  const [saving, setSaving] = useState(false);
+  // Status change state
+  const [statusConfirm, setStatusConfirm] = useState<{ web: WebsiteItem; status: LifecycleStatus } | null>(null);
+  const [statusSavingId, setStatusSavingId] = useState<string | number | null>(null);
 
-  // Delete State
-  const [deletingWeb, setDeletingWeb] = useState<WebsiteItem | null>(null);
-  const [deleting, setDeleting] = useState(false);
-
-  // Sync State
+  // Sync state
   const [syncingId, setSyncingId] = useState<string | number | null>(null);
   const [syncConfirmWeb, setSyncConfirmWeb] = useState<WebsiteItem | null>(null);
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
@@ -118,63 +137,23 @@ export default function InternalWebsitesPage() {
     setTimeout(() => setSuccessMsg(""), 4000);
   };
 
-  const handleOpenAdd = () => {
-    setEditingWeb(null);
-    setFormData({
-      name: "",
-      slug: "",
-      websiteType: "company_profile",
-      status: "draft"
-    });
-    setIsFormOpen(true);
-  };
-
-  const handleOpenEdit = (web: WebsiteItem) => {
-    setEditingWeb(web);
-    setFormData({
-      name: web.name,
-      slug: web.slug,
-      websiteType: web.websiteType || "company_profile",
-      status: web.status || "draft"
-    });
-    setIsFormOpen(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name || !formData.slug) {
-      setErrorMsg("Nama website dan subdomain slug wajib diisi.");
-      return;
-    }
-
-    setSaving(true);
+  const handleConfirmStatusChange = async () => {
+    if (!statusConfirm) return;
+    setStatusSavingId(statusConfirm.web.id);
     setErrorMsg("");
     try {
-      if (editingWeb) {
-        setErrorMsg("Endpoint update website internal belum tersedia di backend.");
-      } else {
-        setErrorMsg("Endpoint buat website internal belum tersedia di backend.");
-      }
+      await apiCall("PATCH", `internal/websites/${statusConfirm.web.id}/status`, {
+        status: statusConfirm.status
+      });
+      const label = LIFECYCLE_OPTIONS.find((o) => o.value === statusConfirm.status)?.label;
+      showSuccess(`Status website "${statusConfirm.web.name}" berhasil diubah menjadi ${label}.`);
+      setStatusConfirm(null);
+      fetchWebsites();
     } catch (err: any) {
-      console.error("Save website error:", err);
-      setErrorMsg(err.error?.message || "Gagal menyimpan konfigurasi website.");
+      console.error("Change website status error:", err);
+      setErrorMsg(err.error?.message || "Gagal mengubah status website.");
     } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!deletingWeb) return;
-    setDeleting(true);
-    setErrorMsg("");
-    try {
-      setErrorMsg("Endpoint hapus website internal belum tersedia di backend.");
-      setDeletingWeb(null);
-    } catch (err: any) {
-      console.error("Delete website error:", err);
-      setErrorMsg(err.error?.message || "Gagal menghapus website.");
-    } finally {
-      setDeleting(false);
+      setStatusSavingId(null);
     }
   };
 
@@ -200,10 +179,11 @@ export default function InternalWebsitesPage() {
     }
   };
 
-  const filteredWebsites = websites.filter((web) =>
-    web.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    web.slug?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    web.ownerName?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredWebsites = websites.filter(
+    (web) =>
+      web.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      web.slug?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      web.ownerName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (authorized === false) {
@@ -213,7 +193,10 @@ export default function InternalWebsitesPage() {
           <AlertCircle className="h-12 w-12 text-rose-500 mx-auto" />
           <h3 className="text-lg font-bold text-slate-800">Akses Terbatas</h3>
           <p className="text-sm text-slate-500">Halaman ini hanya untuk tim internal Labkerkomit.</p>
-          <button onClick={() => router.push("/websites")} className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl">
+          <button
+            onClick={() => router.push("/websites")}
+            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl"
+          >
             Kembali ke Beranda
           </button>
         </div>
@@ -224,323 +207,204 @@ export default function InternalWebsitesPage() {
   return (
     <DashboardLayout
       title="Daftar Website"
-      subtitle="Pantau draf, rilis publikasi, dan pengaturan slot section dari seluruh website di platform"
-      showBackButton={true}
-      backUrl="/internal"
+      subtitle="Pantau seluruh website yang dibuat owner dan kelola status aksesnya"
     >
-      <div className="space-y-6" id="internal-websites-root">
-        {/* Alerts */}
+      <div className="space-y-6">
+        {errorMsg && (
+          <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-start space-x-3 text-rose-800 text-sm">
+            <AlertCircle className="h-5 w-5 shrink-0 text-rose-600 mt-0.5" />
+            <span>{errorMsg}</span>
+          </div>
+        )}
         {successMsg && (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-sm flex items-start space-x-3 animate-fadeIn">
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-start space-x-3 text-emerald-800 text-sm">
             <CheckCircle className="h-5 w-5 shrink-0 text-emerald-600 mt-0.5" />
             <span>{successMsg}</span>
           </div>
         )}
 
-        {errorMsg && (
-          <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-sm flex items-start space-x-3 animate-fadeIn">
-            <AlertCircle className="h-5 w-5 shrink-0 text-rose-600 mt-0.5" />
-            <span>{errorMsg}</span>
-          </div>
-        )}
-
-        {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
-          <div className="relative w-full sm:max-w-xs">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-              <Search className="h-4 w-4" />
-            </span>
-            <input
-              type="text"
-              placeholder="Cari website, slug, atau owner..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
-            />
-          </div>
-
-          <button
-            onClick={handleOpenAdd}
-            className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md transition"
-            id="btn-add-website"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Buat Website Baru</span>
-          </button>
+        <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm text-xs text-slate-500 leading-normal">
+          <p>
+            Website di panel ini tidak bisa dihapus permanen. Untuk membatasi akses sebuah website
+            (misalnya karena tunggakan pembayaran atau pelanggaran), gunakan status{" "}
+            <strong>Ditangguhkan</strong> atau <strong>Non-Aktif</strong>. Website berstatus selain{" "}
+            <strong>Aktif</strong> otomatis tidak bisa diakses publik walau statusnya sudah Published.
+          </p>
         </div>
 
-        {/* Website Catalog Cards */}
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Cari nama, slug, atau owner..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+            />
+          </div>
+        </div>
+
         {loading ? (
-          <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center flex flex-col items-center justify-center space-y-3">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-600 border-t-transparent" />
-            <span className="text-xs font-semibold text-slate-500">Memuat katalog website...</span>
-          </div>
-        ) : filteredWebsites.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center max-w-lg mx-auto space-y-4">
-            <div className="h-12 w-12 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mx-auto">
-              <Globe className="h-6 w-6" />
-            </div>
-            <h3 className="text-sm font-bold text-slate-800">Tidak Ada Website</h3>
-            <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-              {searchQuery
-                ? "Tidak ada website yang cocok dengan kata kunci pencarian."
-                : "Belum ada website yang terdaftar dalam sistem."}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="websites-grid-list">
-            {filteredWebsites.map((web) => (
-              <div
-                key={web.id}
-                className="bg-white rounded-3xl border border-slate-200 p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-all gap-5"
-              >
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div className="h-10 w-10 bg-slate-50 text-slate-600 rounded-xl flex items-center justify-center">
-                      <Globe className="h-5 w-5" />
-                    </div>
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                        web.status === "published"
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                          : "bg-slate-100 text-slate-500 border border-slate-200"
-                      }`}
-                    >
-                      {web.status === "published" ? "Published" : "Draft"}
-                    </span>
-                  </div>
-
-                  <div className="space-y-1">
-                    <h4 className="font-bold text-slate-900 text-sm leading-tight">{web.name}</h4>
-                    <p className="text-[10px] text-slate-400 font-mono">
-                      Subdomain: lenterapasar.id/{web.slug}
-                    </p>
-                  </div>
-
-                  <div className="space-y-2 border-t border-slate-100 pt-3 text-xs text-slate-500">
-                    {web.ownerName && (
-                      <div className="flex items-center space-x-1.5">
-                        <User className="h-4 w-4 text-slate-400 shrink-0" />
-                        <span className="font-medium text-slate-700">{web.ownerName}</span>
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between text-[11px] font-medium text-slate-400">
-                      <span>Jumlah Halaman: {web.pagesCount ?? "-"}</span>
-                      <span>Section Terisi: {web.sectionsCount ?? "-"}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                  <button
-                    onClick={() => router.push(`/websites/${web.id}/overview`)}
-                    className="px-3 py-1.5 text-[11px] font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-xl transition flex items-center gap-1"
-                  >
-                    <Settings className="h-3.5 w-3.5" />
-                    <span>Masuk Editor</span>
-                  </button>
-                  <button
-                    onClick={() => setSyncConfirmWeb(web)}
-                    disabled={syncingId === web.id}
-                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition disabled:opacity-50"
-                    title="Sinkronisasi Struktur"
-                  >
-                    <RefreshCw className={`h-4 w-4 ${syncingId === web.id ? "animate-spin text-blue-500" : ""}`} />
-                  </button>
-                  <button
-                    onClick={() => handleOpenEdit(web)}
-                    className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-slate-50 rounded-xl transition"
-                    title="Edit Metadata"
-                  >
-                    <Edit2 className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => setDeletingWeb(web)}
-                    className="p-2 text-slate-400 hover:text-rose-600 hover:bg-slate-50 rounded-xl transition"
-                    title="Hapus Website"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white rounded-2xl border border-slate-200 p-6 h-24 animate-pulse" />
             ))}
           </div>
-        )}
+        ) : filteredWebsites.length === 0 ? (
+          <div className="bg-white rounded-3xl border border-slate-200 p-10 text-center space-y-2">
+            <Globe className="h-10 w-10 text-slate-300 mx-auto" />
+            <p className="text-sm text-slate-500">Belum ada website yang cocok dengan pencarian.</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+            <div className="divide-y divide-slate-100">
+              {filteredWebsites.map((web) => (
+                <div key={web.id} className="p-5 flex flex-col md:flex-row md:items-center gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-sm font-bold text-slate-800 truncate">{web.name}</h4>
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${lifecycleBadgeClass(
+                          web.lifecycleStatus
+                        )}`}
+                      >
+                        {lifecycleIcon(web.lifecycleStatus)}
+                        {web.lifecycleStatusLabel ||
+                          LIFECYCLE_OPTIONS.find((o) => o.value === web.lifecycleStatus)?.label ||
+                          web.lifecycleStatus}
+                      </span>
+                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">
+                        {web.statusLabel || web.status}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1">/{web.slug}</p>
+                    <div className="flex items-center gap-3 mt-2 text-[11px] text-slate-400">
+                      {web.ownerName && (
+                        <span className="flex items-center gap-1">
+                          <User className="h-3 w-3" /> {web.ownerName}
+                        </span>
+                      )}
+                      {typeof web.pagesCount === "number" && <span>{web.pagesCount} halaman</span>}
+                      {typeof web.sectionsCount === "number" && <span>{web.sectionsCount} section</span>}
+                    </div>
+                  </div>
 
-        {/* Form Modal */}
-        {isFormOpen && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl shadow-xl w-full max-w-md border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden animate-slideUp">
-              <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                <h3 className="font-bold text-slate-800 text-base">
-                  {editingWeb ? "Edit Metadata Website" : "Buat Website Baru"}
-                </h3>
-                <button
-                  onClick={() => setIsFormOpen(false)}
-                  className="p-2 hover:bg-slate-50 text-slate-400 hover:text-slate-600 rounded-xl transition"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 flex-1">
-                {/* Name */}
-                <div className="space-y-1">
-                  <label htmlFor="web-name" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
-                    Nama Website / Usaha <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    id="web-name"
-                    type="text"
-                    required
-                    placeholder="Contoh: Toko Roti Mandiri"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
-                  />
+                  <div className="flex flex-wrap items-center gap-2">
+                    {LIFECYCLE_OPTIONS.filter((o) => o.value !== web.lifecycleStatus).map((option) => (
+                      <button
+                        key={option.value}
+                        disabled={statusSavingId === web.id}
+                        onClick={() => setStatusConfirm({ web, status: option.value })}
+                        className="px-3 py-1.5 text-[11px] font-semibold rounded-lg border border-slate-200 text-slate-600 hover:border-slate-400 hover:text-slate-900 disabled:opacity-50"
+                      >
+                        Jadikan {option.label}
+                      </button>
+                    ))}
+                    <button
+                      disabled={syncingId === web.id}
+                      onClick={() => setSyncConfirmWeb(web)}
+                      className="px-3 py-1.5 text-[11px] font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-white disabled:opacity-50 flex items-center gap-1"
+                    >
+                      <RefreshCw className={`h-3 w-3 ${syncingId === web.id ? "animate-spin" : ""}`} />
+                      Sync
+                    </button>
+                  </div>
                 </div>
-
-                {/* Slug */}
-                <div className="space-y-1">
-                  <label htmlFor="web-slug" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
-                    Subdomain Slug Path <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    id="web-slug"
-                    type="text"
-                    required
-                    placeholder="Contoh: roti-mandiri"
-                    value={formData.slug}
-                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors font-mono"
-                  />
-                </div>
-
-                {/* Type Selection */}
-                <div className="space-y-1">
-                  <label htmlFor="web-type" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
-                    Tipe Website
-                  </label>
-                  <select
-                    id="web-type"
-                    value={formData.websiteType}
-                    onChange={(e) => setFormData({ ...formData, websiteType: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
-                  >
-                    <option value="company_profile">Company Profile (Profil Usaha)</option>
-                  </select>
-                </div>
-
-                {/* Status Toggle */}
-                <div className="space-y-1">
-                  <label htmlFor="web-status" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
-                    Status Publikasi
-                  </label>
-                  <select
-                    id="web-status"
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value as "draft" | "published" })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
-                  >
-                    <option value="draft">Draft (Hanya di Dashboard)</option>
-                    <option value="published">Published (Tayang Publik)</option>
-                  </select>
-                </div>
-
-                {/* Actions */}
-                <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsFormOpen(false)}
-                    className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="inline-flex items-center space-x-1 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white text-xs font-bold rounded-xl shadow-md transition"
-                  >
-                    <Save className="h-4 w-4" />
-                    <span>{saving ? "Menyimpan..." : "Simpan Website"}</span>
-                  </button>
-                </div>
-              </form>
+              ))}
             </div>
           </div>
         )}
-
-        {/* Delete Confirmation Simple Dialog */}
-        {deletingWeb && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-6 shadow-xl w-full max-w-sm border border-slate-100 space-y-4 animate-scaleUp">
-              <h3 className="font-bold text-slate-900 text-base">Konfirmasi Hapus</h3>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Apakah Anda yakin ingin menghapus website <strong>{deletingWeb.name}</strong>? Tindakan ini akan menghapus semua konfigurasi halaman dan slot komponen secara permanen.
-              </p>
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  onClick={() => setDeletingWeb(null)}
-                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition"
-                >
-                  Batal
-                </button>
-                <button
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 disabled:bg-rose-400 text-white text-xs font-bold rounded-xl transition shadow-md shadow-rose-600/10"
-                >
-                  {deleting ? "Menghapus..." : "Ya, Hapus"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        {/* Sync Confirmation Modal */}
-        {syncConfirmWeb && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-6 shadow-xl w-full max-w-sm border border-slate-100 space-y-5 animate-scaleUp">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center flex-shrink-0">
-                  <RefreshCw className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-base">Sinkronisasi Struktur</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">Website: <span className="font-semibold text-slate-700">{syncConfirmWeb.name}</span></p>
-                </div>
-              </div>
-              <div className="bg-blue-50 rounded-2xl p-4 space-y-2 text-xs text-blue-800">
-                <p className="font-semibold">Apa yang akan terjadi:</p>
-                <ul className="space-y-1 text-blue-700 leading-relaxed">
-                  <li>✓ Halaman baru yang belum ada akan ditambahkan (misal: halaman Portfolio Detail)</li>
-                  <li>✓ Section slot baru yang belum ada akan ditambahkan ke setiap halaman</li>
-                  <li>✓ Data yang sudah ada <strong>tidak akan dihapus atau diubah</strong></li>
-                  <li>✓ Konten, template, dan konfigurasi section yang sudah diisi owner tetap aman</li>
-                </ul>
-              </div>
-              <p className="text-xs text-slate-500">
-                Proses ini aman dan non-destruktif. Jalankan setiap kali ada pembaruan struktur website (halaman atau section baru) dari tim engineering.
-              </p>
-              <div className="flex justify-end gap-2 pt-1">
-                <button
-                  onClick={() => setSyncConfirmWeb(null)}
-                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition"
-                >
-                  Batal
-                </button>
-                <button
-                  onClick={handleSync}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-md shadow-blue-600/10"
-                >
-                  <RefreshCw className="h-3.5 w-3.5" />
-                  Jalankan Sinkronisasi
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
       </div>
+
+      {/* Modal konfirmasi ubah status */}
+      {statusConfirm && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4">
+            <div className="flex items-start justify-between">
+              <h3 className="text-base font-bold text-slate-800">Ubah Status Website</h3>
+              <button onClick={() => setStatusConfirm(null)} className="text-slate-400 hover:text-slate-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="text-sm text-slate-500">
+              Ubah status website <strong>{statusConfirm.web.name}</strong> menjadi{" "}
+              <strong>{LIFECYCLE_OPTIONS.find((o) => o.value === statusConfirm.status)?.label}</strong>?
+              {statusConfirm.status !== "active" && (
+                <>
+                  {" "}
+                  Website ini akan langsung berhenti bisa diakses publik selama status ini aktif.
+                </>
+              )}
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setStatusConfirm(null)}
+                className="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleConfirmStatusChange}
+                disabled={statusSavingId === statusConfirm.web.id}
+                className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-white disabled:opacity-50"
+              >
+                {statusSavingId === statusConfirm.web.id ? "Menyimpan..." : "Ya, Ubah Status"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal konfirmasi sync */}
+      {syncConfirmWeb && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4">
+            <div className="flex items-start justify-between">
+              <h3 className="text-base font-bold text-slate-800">Sinkronkan Struktur</h3>
+              <button onClick={() => setSyncConfirmWeb(null)} className="text-slate-400 hover:text-slate-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="text-sm text-slate-500">
+              Tambahkan halaman/section default terbaru ke website <strong>{syncConfirmWeb.name}</strong> yang
+              belum ada? Data yang sudah diisi owner tidak akan tertimpa.
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setSyncConfirmWeb(null)}
+                className="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleSync}
+                className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-white"
+              >
+                Ya, Sinkronkan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {syncResult && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 text-center">
+            <CheckCircle className="h-10 w-10 text-emerald-500 mx-auto" />
+            <h3 className="text-base font-bold text-slate-800">Sinkronisasi Selesai</h3>
+            <p className="text-sm text-slate-500">
+              {syncResult.pagesAdded} halaman baru dan {syncResult.sectionsAdded} section baru ditambahkan.
+            </p>
+            <button
+              onClick={() => setSyncResult(null)}
+              className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-white"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
