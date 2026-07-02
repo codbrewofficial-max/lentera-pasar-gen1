@@ -22,6 +22,7 @@ export interface PortfolioItem {
   challenge: string;
   solution: string;
   result: string;
+  slug: string;
 }
 
 export interface TestimonialItem {
