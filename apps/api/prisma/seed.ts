@@ -188,9 +188,9 @@ async function main() {
     prisma.service.create({ data: { websiteId: website.id, title: "Tracking Insight", description: "Insight ketertarikan calon client.", sortOrder: 3 } })
   ]);
   const portfolios = await Promise.all([
-    prisma.portfolio.create({ data: { websiteId: website.id, title: "Profil Konsultan", description: "Website jasa konsultan.", sortOrder: 1 } }),
-    prisma.portfolio.create({ data: { websiteId: website.id, title: "Profil Kontraktor", description: "Website kontraktor lokal.", sortOrder: 2 } }),
-    prisma.portfolio.create({ data: { websiteId: website.id, title: "Profil Klinik", description: "Website layanan kesehatan.", sortOrder: 3 } })
+    prisma.portfolio.create({ data: { websiteId: website.id, title: "Profil Konsultan", slug: "profil-konsultan", description: "Website jasa konsultan.", sortOrder: 1 } }),
+    prisma.portfolio.create({ data: { websiteId: website.id, title: "Profil Kontraktor", slug: "profil-kontraktor", description: "Website kontraktor lokal.", sortOrder: 2 } }),
+    prisma.portfolio.create({ data: { websiteId: website.id, title: "Profil Klinik", slug: "profil-klinik", description: "Website layanan kesehatan.", sortOrder: 3 } })
   ]);
   await prisma.testimonial.createMany({
     data: [

@@ -52,7 +52,14 @@ const envSchema = z.object({
   RATE_LIMIT_AUTH_MAX: z.string().optional(),
   RATE_LIMIT_CONTACT_MAX: z.string().optional(),
   RATE_LIMIT_TRACKING_MAX: z.string().optional(),
-  RATE_LIMIT_TEMPLATE_UPLOAD_MAX: z.string().optional()
+  RATE_LIMIT_TEMPLATE_UPLOAD_MAX: z.string().optional(),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.string().optional(),
+  SMTP_SECURE: z.string().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
+  SMTP_FROM: z.string().optional(),
+  DASHBOARD_APP_URL: z.string().optional()
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
@@ -82,9 +89,22 @@ export const apiConfig = {
   requestBodyLimitBytes: toNumber(rawEnv.REQUEST_BODY_LIMIT_BYTES, 1024 * 1024),
   templateUploadMaxBytes: toNumber(rawEnv.TEMPLATE_UPLOAD_MAX_BYTES, 5 * 1024 * 1024),
   maxParamLength: 500,
+  dashboardAppUrl: (rawEnv.DASHBOARD_APP_URL || "http://localhost:3000").replace(/\/+$/, ""),
+  smtp: {
+    host: rawEnv.SMTP_HOST || "",
+    port: toNumber(rawEnv.SMTP_PORT, 587),
+    secure: toBoolean(rawEnv.SMTP_SECURE, false),
+    user: rawEnv.SMTP_USER || "",
+    password: rawEnv.SMTP_PASSWORD || "",
+    from: rawEnv.SMTP_FROM || "Lentera Pasar <no-reply@lenterapasar.test>"
+  },
   rateLimits: {
     global: { max: toNumber(rawEnv.RATE_LIMIT_GLOBAL_MAX, 180), timeWindow: "1 minute" },
-    auth: { max: toNumber(rawEnv.RATE_LIMIT_AUTH_MAX, 10), timeWindow: "10 minutes" },
+    // Default lebih longgar di development/test supaya alur smoke test (register, verify,
+    // resend, forgot/reset password, beberapa kali login) tidak kena limit sendiri di tengah
+    // jalan. Production/deployment tetap ketat di 10/10 menit kecuali di-override eksplisit
+    // lewat RATE_LIMIT_AUTH_MAX.
+    auth: { max: toNumber(rawEnv.RATE_LIMIT_AUTH_MAX, productionLike ? 10 : 60), timeWindow: "10 minutes" },
     contact: { max: toNumber(rawEnv.RATE_LIMIT_CONTACT_MAX, 8), timeWindow: "10 minutes" },
     tracking: { max: toNumber(rawEnv.RATE_LIMIT_TRACKING_MAX, 120), timeWindow: "1 minute" },
     templateUpload: { max: toNumber(rawEnv.RATE_LIMIT_TEMPLATE_UPLOAD_MAX, 10), timeWindow: "1 hour" }
@@ -114,6 +134,7 @@ export const getDeploymentChecks = (strict = false): DeploymentCheck[] => {
   add("CORS_ORIGIN", Boolean(rawEnv.CORS_ORIGIN) && !corsOrigins.includes("*"), strict ? "error" : "warning", "CORS_ORIGIN production/deployment tidak boleh wildcard.");
   add("INTERNAL_API_KEY", !secretLooksWeak(rawEnv.INTERNAL_API_KEY), "error", "INTERNAL_API_KEY wajib kuat untuk endpoint deployment/internal server-to-server.");
   add("JWT_EXPIRES_IN", Boolean(apiConfig.jwtExpiresIn), "warning", "JWT_EXPIRES_IN sebaiknya di-set eksplisit, contoh 1d atau 7d.");
+  add("SMTP_HOST", Boolean(rawEnv.SMTP_HOST), "warning", "SMTP_HOST belum di-set — email verifikasi dan reset password hanya akan tercatat di log server, tidak benar-benar terkirim.");
 
   if (!productionLike && !strict) {
     return checks.map((check) => (check.key === "INTERNAL_API_KEY" ? { ...check, level: "warning" } : check));

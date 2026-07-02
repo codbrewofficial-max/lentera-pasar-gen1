@@ -33,9 +33,11 @@ import {
 import { prisma } from "./prisma.js";
 import { createCompanyProfileDefaults, ensureCompanyProfileStructure, defaultPageNavLabel, isDynamicDetailPage, pagePurpose } from "./defaults.js";
 import { AppError, created, ok, publicUser, toErrorPayload } from "./http.js";
-import { hashIp, hashPassword, limitJson, prismaJson, randomToken, verifyApiKey, verifyPassword } from "./security.js";
+import { hashIp, hashPassword, hashToken, limitJson, prismaJson, randomToken, verifyApiKey, verifyPassword } from "./security.js";
+import { buildPasswordResetEmail, buildVerificationEmail, sendEmail } from "./email.js";
+import sharp from "sharp";
 
-type AuthUser = { id: string; role: "internal_admin" | "owner_admin"; email: string };
+type AuthUser = { id: string; role: "internal_admin" | "owner_admin" | "user"; email: string };
 type Req = FastifyRequest<{ Params?: Record<string, string>; Querystring?: Record<string, string> }>;
 
 assertRuntimeEnv();
@@ -408,6 +410,36 @@ const publicArticleSummary = (article: any) => ({
   publishedAt: article.publishedAt
 });
 
+const portfolioContract = (portfolio: any) => ({
+  id: portfolio.id,
+  websiteId: portfolio.websiteId,
+  categoryId: portfolio.categoryId,
+  category: portfolio.category ? categoryContract(portfolio.category) : null,
+  title: portfolio.title,
+  slug: portfolio.slug,
+  description: portfolio.description,
+  imageUrl: portfolio.imageUrl,
+  sortOrder: portfolio.sortOrder,
+  isFeatured: portfolio.isFeatured ?? false,
+  featuredOrder: portfolio.featuredOrder ?? 0,
+  isActive: portfolio.isActive,
+  createdAt: portfolio.createdAt,
+  updatedAt: portfolio.updatedAt
+});
+
+const publicPortfolioSummary = (portfolio: any) => ({
+  id: portfolio.id,
+  categoryId: portfolio.categoryId,
+  category: portfolio.category ? categoryContract(portfolio.category) : null,
+  title: portfolio.title,
+  slug: portfolio.slug,
+  description: portfolio.description,
+  imageUrl: portfolio.imageUrl,
+  isFeatured: portfolio.isFeatured ?? false,
+  featuredOrder: portfolio.featuredOrder ?? 0,
+  sortOrder: portfolio.sortOrder ?? 0
+});
+
 const categoryContract = (category: any) => ({
   id: category.id,
   websiteId: category.websiteId,
@@ -461,6 +493,9 @@ const authBody = z.object({
   email: z.string().email(),
   password: z.string().min(8)
 });
+const verifyEmailBody = z.object({ token: z.string().min(10) });
+const forgotPasswordBody = z.object({ email: z.string().email() });
+const resetPasswordBody = z.object({ token: z.string().min(10), password: z.string().min(8) });
 const createOwnerBody = z.object({
   name: z.string().min(2),
   email: z.string().email(),
@@ -825,15 +860,29 @@ const registerAuthRoutes = () => {
   app.post("/api/v1/auth/register", { config: { rateLimit: apiConfig.rateLimits.auth } }, async (request, reply) => {
     const body = authBody.parse(request.body);
     const count = await prisma.user.count();
-    const role = count === 0 ? "internal_admin" : "owner_admin";
+    // Akun pertama tetap jadi internal_admin untuk bootstrap sistem (tidak ada admin lain
+    // yang bisa membuatkannya). Semua registrasi publik setelahnya HANYA boleh dapat role
+    // "user" — akun owner_admin (pemilik website) hanya dibuat internal admin lewat
+    // POST /internal/owners, bukan dari registrasi publik.
+    const role = count === 0 ? "internal_admin" : "user";
+
+    const rawVerificationToken = randomToken("verify");
+    const emailVerificationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
     const user = await prisma.user.create({
       data: {
         name: body.name || body.email.split("@")[0],
         email: body.email.toLowerCase(),
         passwordHash: await hashPassword(body.password),
-        role
+        role,
+        // Akun bootstrap internal_admin langsung dianggap terverifikasi supaya tidak
+        // terkunci dari sistem sebelum SMTP sempat dikonfigurasi.
+        emailVerifiedAt: role === "internal_admin" ? new Date() : null,
+        emailVerificationTokenHash: role === "internal_admin" ? null : hashToken(rawVerificationToken),
+        emailVerificationExpiresAt: role === "internal_admin" ? null : emailVerificationExpiresAt
       }
     });
+
     const authUser = { id: user.id, role: user.role, email: user.email } as AuthUser;
     await createAuditLog(request, {
       category: "security",
@@ -843,7 +892,21 @@ const registerAuthRoutes = () => {
       entityId: user.id,
       summary: `${user.email} registered as ${user.role}`
     });
-    return created(reply, { user: publicUser(user), token: app.jwt.sign({ id: user.id, role: user.role, email: user.email }) }, "Registered");
+
+    if (role !== "internal_admin") {
+      const verifyUrl = `${apiConfig.dashboardAppUrl}/verify-email?token=${rawVerificationToken}`;
+      const email = buildVerificationEmail(user.name, verifyUrl);
+      await sendEmail({ to: user.email, ...email });
+    }
+
+    return created(reply, {
+      user: publicUser(user),
+      token: app.jwt.sign({ id: user.id, role: user.role, email: user.email }),
+      // Token mentah HANYA dikembalikan di mode non-production (development/test), supaya
+      // smoke test bisa memverifikasi alur verifikasi email tanpa perlu akses inbox asli.
+      // Di production/deployment field ini tidak pernah ada di response.
+      ...(apiConfig.isProductionLike || role === "internal_admin" ? {} : { debugVerificationToken: rawVerificationToken })
+    }, "Registered");
   });
   app.post("/api/v1/auth/login", { config: { rateLimit: apiConfig.rateLimits.auth } }, async (request, reply) => {
     const body = authBody.omit({ name: true }).parse(request.body);
@@ -876,6 +939,113 @@ const registerAuthRoutes = () => {
     return ok(reply, publicUser(user), "Current user loaded");
   });
   app.post("/api/v1/auth/logout", async (_request, reply) => ok(reply, true, "Logged out"));
+
+  app.post("/api/v1/auth/verify-email", { config: { rateLimit: apiConfig.rateLimits.auth } }, async (request, reply) => {
+    const body = verifyEmailBody.parse(request.body);
+    const tokenHash = hashToken(body.token);
+    const user = await prisma.user.findFirst({ where: { emailVerificationTokenHash: tokenHash } });
+    if (!user || !user.emailVerificationExpiresAt || user.emailVerificationExpiresAt.getTime() < Date.now()) {
+      throw new AppError(400, "INVALID_OR_EXPIRED_TOKEN", "Link verifikasi tidak valid atau sudah kedaluwarsa");
+    }
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: { emailVerifiedAt: new Date(), emailVerificationTokenHash: null, emailVerificationExpiresAt: null }
+    });
+    await createAuditLog(request, {
+      category: "security",
+      action: "auth.email_verified",
+      actor: { id: updated.id, role: updated.role, email: updated.email } as AuthUser,
+      entityType: "user",
+      entityId: updated.id,
+      summary: `${updated.email} verified their email`
+    });
+    return ok(reply, publicUser(updated), "Email verified");
+  });
+
+  app.post("/api/v1/auth/resend-verification", { config: { rateLimit: apiConfig.rateLimits.auth } }, async (request, reply) => {
+    const auth = await requireAuth(request);
+    const user = await prisma.user.findUnique({ where: { id: auth.id } });
+    if (!user) throw new AppError(404, "USER_NOT_FOUND", "User not found");
+    if (user.emailVerifiedAt) {
+      return ok(reply, true, "Email sudah terverifikasi");
+    }
+    const rawVerificationToken = randomToken("verify");
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerificationTokenHash: hashToken(rawVerificationToken),
+        emailVerificationExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+      }
+    });
+    const verifyUrl = `${apiConfig.dashboardAppUrl}/verify-email?token=${rawVerificationToken}`;
+    const email = buildVerificationEmail(updated.name, verifyUrl);
+    await sendEmail({ to: updated.email, ...email });
+    return ok(
+      reply,
+      apiConfig.isProductionLike ? true : { debugVerificationToken: rawVerificationToken },
+      "Email verifikasi dikirim ulang"
+    );
+  });
+
+  app.post("/api/v1/auth/forgot-password", { config: { rateLimit: apiConfig.rateLimits.auth } }, async (request, reply) => {
+    const body = forgotPasswordBody.parse(request.body);
+    const user = await prisma.user.findUnique({ where: { email: body.email.toLowerCase() } });
+
+    // Selalu balas sukses generik walau email tidak ditemukan, supaya endpoint ini
+    // tidak bisa dipakai untuk menebak-nebak email mana yang terdaftar (user enumeration).
+    if (user) {
+      const rawResetToken = randomToken("reset");
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          passwordResetTokenHash: hashToken(rawResetToken),
+          passwordResetExpiresAt: new Date(Date.now() + 60 * 60 * 1000)
+        }
+      });
+      const resetUrl = `${apiConfig.dashboardAppUrl}/reset-password?token=${rawResetToken}`;
+      const email = buildPasswordResetEmail(user.name, resetUrl);
+      await sendEmail({ to: user.email, ...email });
+      await createAuditLog(request, {
+        category: "security",
+        action: "auth.password_reset_requested",
+        actor: { id: user.id, role: user.role, email: user.email } as AuthUser,
+        entityType: "user",
+        entityId: user.id,
+        summary: `${user.email} requested a password reset`
+      });
+      if (!apiConfig.isProductionLike) {
+        return ok(reply, { debugResetToken: rawResetToken }, "Kalau email terdaftar, instruksi reset password sudah dikirim");
+      }
+    }
+
+    return ok(reply, true, "Kalau email terdaftar, instruksi reset password sudah dikirim");
+  });
+
+  app.post("/api/v1/auth/reset-password", { config: { rateLimit: apiConfig.rateLimits.auth } }, async (request, reply) => {
+    const body = resetPasswordBody.parse(request.body);
+    const tokenHash = hashToken(body.token);
+    const user = await prisma.user.findFirst({ where: { passwordResetTokenHash: tokenHash } });
+    if (!user || !user.passwordResetExpiresAt || user.passwordResetExpiresAt.getTime() < Date.now()) {
+      throw new AppError(400, "INVALID_OR_EXPIRED_TOKEN", "Link reset password tidak valid atau sudah kedaluwarsa");
+    }
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: await hashPassword(body.password),
+        passwordResetTokenHash: null,
+        passwordResetExpiresAt: null
+      }
+    });
+    await createAuditLog(request, {
+      category: "security",
+      action: "auth.password_reset",
+      actor: { id: updated.id, role: updated.role, email: updated.email } as AuthUser,
+      entityType: "user",
+      entityId: updated.id,
+      summary: `${updated.email} reset their password`
+    });
+    return ok(reply, true, "Password berhasil diubah");
+  });
 };
 
 const registerCoreRoutes = () => {
@@ -2196,13 +2366,27 @@ const registerStage9cContentRoutes = () => {
       throw new AppError(400, "MEDIA_FILE_REQUIRED", "Pilih file gambar terlebih dahulu");
     }
 
-    const ext = allowed.get(uploadedFile.mimetype)!;
+    // Semua gambar yang masuk (JPG/PNG/WEBP/GIF) dikonversi jadi WebP dan di-resize
+    // supaya ringan. Lebar dibatasi 1600px (tanpa upscale gambar yang lebih kecil),
+    // tinggi mengikuti rasio aslinya. GIF animasi tetap dipertahankan animasinya.
+    const isAnimatedGif = uploadedFile.mimetype === "image/gif";
+    let processedBuffer: Buffer;
+    try {
+      processedBuffer = await sharp(uploadedFile.buffer, { animated: isAnimatedGif })
+        .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
+        .webp({ quality: 82 })
+        .toBuffer();
+    } catch {
+      throw new AppError(400, "MEDIA_PROCESSING_FAILED", "Gagal memproses gambar. Pastikan file gambar tidak rusak.");
+    }
+
+    const ext = "webp";
     const id = randomToken("media");
     const filename = `${id}.${ext}`;
     const storageDir = path.join(process.cwd(), "storage", "uploads", "sites", website.id);
     const storagePath = path.join(storageDir, filename);
     await mkdir(storageDir, { recursive: true });
-    await writeFile(storagePath, uploadedFile.buffer);
+    await writeFile(storagePath, processedBuffer);
 
     const asset = await prisma.mediaAsset.create({
       data: {
@@ -2210,8 +2394,8 @@ const registerStage9cContentRoutes = () => {
         websiteId: website.id,
         filename,
         originalName: uploadedFile.filename,
-        mimeType: uploadedFile.mimetype,
-        sizeBytes: uploadedFile.buffer.length,
+        mimeType: "image/webp",
+        sizeBytes: processedBuffer.length,
         url: `/api/v1/public/media/${id}`,
         altText,
         storagePath
@@ -2372,6 +2556,53 @@ const registerPublicRoutes = () => {
       trackingKey: website.trackingKey,
       navigation: await buildNavigationContract(website.id)
     }, "Public article loaded");
+  });
+  app.get("/api/v1/public/sites/:slug/portfolios/:portfolioId", async (request: Req, reply) => {
+    const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" }, include: { businessProfile: true } });
+    if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
+
+    const identifier = request.params?.portfolioId;
+    const portfolio =
+      (await prisma.portfolio.findFirst({ where: { websiteId: website.id, slug: identifier, isActive: true }, include: { category: true } })) ||
+      (await prisma.portfolio.findFirst({ where: { websiteId: website.id, id: identifier, isActive: true }, include: { category: true } }));
+    if (!portfolio) throw new AppError(404, "PORTFOLIO_NOT_FOUND", "Published portfolio not found");
+
+    const sameCategoryPortfolios = portfolio.categoryId
+      ? await prisma.portfolio.findMany({
+        where: { websiteId: website.id, isActive: true, id: { not: portfolio.id }, categoryId: portfolio.categoryId },
+        orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }],
+        take: 3,
+        include: { category: true }
+      })
+      : [];
+    const fallbackPortfolios = sameCategoryPortfolios.length < 3
+      ? await prisma.portfolio.findMany({
+        where: {
+          websiteId: website.id,
+          isActive: true,
+          id: { notIn: [portfolio.id, ...sameCategoryPortfolios.map((item: any) => item.id)] }
+        },
+        orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }],
+        take: 3 - sameCategoryPortfolios.length,
+        include: { category: true }
+      })
+      : [];
+    const relatedPortfolios = [...sameCategoryPortfolios, ...fallbackPortfolios].slice(0, 3);
+    const portfolioDetailPage = await buildPublicPage(website.id, { pageKey: "portfolio_detail" }).catch(() => null);
+
+    return ok(reply, {
+      portfolio: portfolioContract(portfolio),
+      relatedPortfolios: relatedPortfolios.map(publicPortfolioSummary),
+      portfolioDetailSections: portfolioDetailPage?.page?.sections || [],
+      website: websiteSummary(website),
+      businessProfile: website.businessProfile,
+      seo: {
+        title: portfolio.title,
+        description: portfolio.description || website.businessProfile?.description || website.name
+      },
+      trackingKey: website.trackingKey,
+      navigation: await buildNavigationContract(website.id)
+    }, "Public portfolio loaded");
   });
   app.get("/api/v1/websites/:websiteId/preview/pages/:pageKey", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
