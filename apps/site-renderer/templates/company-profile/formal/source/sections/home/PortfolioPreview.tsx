@@ -14,6 +14,7 @@ export interface HomePortfolioPreviewProps {
   portfolios?: PortfolioItem[];
   allPortfolioHref?: string;
   allPortfolioLabel?: string;
+  portfolioDetailHref?: (id: string) => string;
 }
 
 export const PortfolioPreview: React.FC<HomePortfolioPreviewProps> = ({
@@ -23,6 +24,7 @@ export const PortfolioPreview: React.FC<HomePortfolioPreviewProps> = ({
   portfolios = portfolioData,
   allPortfolioHref = "/portfolio",
   allPortfolioLabel = "Eksplorasi Semua Kasus Klien",
+  portfolioDetailHref
 }) => {
   // Show only 3 items on Home preview
   const previewPortfolios = portfolios.slice(0, 3);
@@ -68,7 +70,7 @@ export const PortfolioPreview: React.FC<HomePortfolioPreviewProps> = ({
                 </p>
 
                 <Button
-                  href={`/portfolio/${project.id}`}
+                  href={portfolioDetailHref ? portfolioDetailHref(project.id) : `/portfolio/${project.id}`}
                   variant="text"
                   size="sm"
                   iconRight={<ArrowRight className="w-4 h-4 ml-1" />}

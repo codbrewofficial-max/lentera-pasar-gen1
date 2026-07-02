@@ -440,6 +440,7 @@ export function FormalHomePortfolioPreview(props: FormalSectionProps) {
       portfolios={portfolios}
       allPortfolioHref={pageHref(props.siteSlug, "/portfolio")}
       allPortfolioLabel={text(content.ctaLabel, "Lihat Semua Portofolio")}
+      portfolioDetailHref={(id: string) => pageHref(props.siteSlug, `/portfolio/${id}`)}
     />
   );
 }
@@ -592,7 +593,7 @@ export function FormalPortfolioCategory(props: FormalSectionProps) {
 
 export function FormalPortfolioGrid(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiPortfolioGrid portfolios={(props.section.data?.portfolios || []).map(mapPortfolio)} activeCategory="Semua" title={text(content.title)} subtitle={text(content.description)} />;
+  return <AiPortfolioGrid portfolios={(props.section.data?.portfolios || []).map(mapPortfolio)} activeCategory="Semua" title={text(content.title)} subtitle={text(content.description)} portfolioDetailHref={(id: string) => pageHref(props.siteSlug, `/portfolio/${id}`)} />;
 }
 
 export function FormalPortfolioCaseHighlight(props: FormalSectionProps) {
