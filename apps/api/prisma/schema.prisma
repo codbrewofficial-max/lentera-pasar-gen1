@@ -525,3 +525,13 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([requestId])
 }
+
+model PlatformSetting {
+  // id selalu fixed "singleton" — cuma ada 1 baris sepanjang masa,
+  // dipakai sebagai tempat nyimpen flag global platform.
+  id                      String   @id @default("singleton")
+  publicActivationEnabled Boolean  @default(false)
+  updatedByUserId         String?
+  updatedAt               DateTime @updatedAt
+  createdAt               DateTime @default(now())
+}

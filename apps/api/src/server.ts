@@ -69,6 +69,20 @@ const websiteSummary = (website: any) => ({
   updatedAt: website.updatedAt
 });
 
+const getPlatformSetting = async () => {
+  const existing = await prisma.platformSetting.findUnique({ where: { id: "singleton" } });
+  if (existing) return existing;
+  // Belum ada baris sama sekali (fresh install) -> buat default mati (false)
+  return prisma.platformSetting.create({
+    data: { id: "singleton", publicActivationEnabled: false }
+  });
+};
+
+const isPublicActivationEnabled = async () => {
+  const setting = await getPlatformSetting();
+  return setting.publicActivationEnabled;
+};
+
 const normalizeFieldType = (type: unknown) => {
   if (type === "image") return "image_url";
   return SECTION_FIELD_TYPES.includes(type as any) ? type : "text";
@@ -683,6 +697,10 @@ const ownerStatusBody = z.object({
   status: z.enum(["active", "non_active", "suspended", "banned", "blacklisted"])
 });
 
+const publicActivationBody = z.object({
+  enabled: z.boolean()
+});
+
 const WEBSITE_LIFECYCLE_LABELS: Record<string, string> = {
   active: "Aktif",
   suspended: "Ditangguhkan",
@@ -696,6 +714,7 @@ const USER_ACCOUNT_STATUS_LABELS: Record<string, string> = {
   banned: "Diblokir",
   blacklisted: "Daftar Hitam"
 };
+
 
 const registerPlugins = async () => {
   await app.register(cors, {
@@ -887,6 +906,13 @@ const recordTracking = async (request: FastifyRequest, input: z.infer<typeof tra
 
 const registerAuthRoutes = () => {
   app.post("/api/v1/auth/register", { config: { rateLimit: apiConfig.rateLimits.auth } }, async (request, reply) => {
+    if (!(await isPublicActivationEnabled())) {
+      throw new AppError(
+        403,
+        "PUBLIC_REGISTRATION_DISABLED",
+        "Pendaftaran akun publik belum dibuka. Silakan hubungi tim Lentera Pasar untuk info lebih lanjut."
+      );
+    }
     const body = authBody.parse(request.body);
     const count = await prisma.user.count();
     // Akun pertama tetap jadi internal_admin untuk bootstrap sistem (tidak ada admin lain
@@ -1119,6 +1145,10 @@ const registerCoreRoutes = () => {
     }, "Deployment health loaded");
   });
   app.get("/api/v1/website-types", async (_request, reply) => ok(reply, WEBSITE_TYPES, "Website types loaded"));
+  app.get("/api/v1/settings/public-activation", async (_request, reply) => {
+    const enabled = await isPublicActivationEnabled();
+    return ok(reply, { enabled }, "Public activation setting loaded");
+  });
 };
 
 const registerInternalRoutes = () => {
@@ -1440,6 +1470,29 @@ const registerInternalRoutes = () => {
       totalSections: after.sections
     }, "Struktur website berhasil disinkronkan ke versi terbaru.");
 });
+  app.patch("/api/v1/internal/settings/public-activation", async (request: Req, reply) => {
+    const actor = await requireRole(request, ["internal_admin"]);
+    const body = publicActivationBody.parse(request.body);
+
+    const before = await getPlatformSetting();
+    const updated = await prisma.platformSetting.upsert({
+      where: { id: "singleton" },
+      update: { publicActivationEnabled: body.enabled, updatedByUserId: actor.id },
+      create: { id: "singleton", publicActivationEnabled: body.enabled, updatedByUserId: actor.id }
+    });
+
+    await createAuditLog(request, {
+      category: "security",
+      action: "internal.public_activation_toggled",
+      actor,
+      entityType: "platform_setting",
+      entityId: "singleton",
+      summary: `Aktivasi publik diubah dari ${before.publicActivationEnabled} ke ${body.enabled} oleh ${actor.email}`,
+      metadata: { previousValue: before.publicActivationEnabled, newValue: body.enabled }
+    });
+
+    return ok(reply, { enabled: updated.publicActivationEnabled }, "Public activation setting updated");
+  });
 };
 
 const registerWebsiteRoutes = () => {
@@ -1453,6 +1506,14 @@ const registerWebsiteRoutes = () => {
   });
   app.post("/api/v1/websites", async (request, reply) => {
     const user = await requireRole(request, ["owner_admin", "internal_admin"]);
+    const actor = await requireAuth(request);
+    if (actor.role === "owner_admin" && !(await isPublicActivationEnabled())) {
+      throw new AppError(
+        403,
+        "SELF_SERVICE_WEBSITE_DISABLED",
+        "Pembuatan website mandiri belum dibuka. Website Anda saat ini hanya bisa dibuatkan oleh tim internal Lentera Pasar."
+      );
+    }
     const body = websiteBody.parse(request.body);
     const website = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const created = await tx.website.create({
