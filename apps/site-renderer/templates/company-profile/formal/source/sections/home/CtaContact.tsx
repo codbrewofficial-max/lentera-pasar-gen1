@@ -21,8 +21,8 @@ export const CtaContact: React.FC<HomeCtaContactProps> = ({
       className="py-16 md:py-20 bg-slate-900 text-white relative overflow-hidden"
     >
       {/* Subtle patterns */}
-      <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#F56B71_1px,transparent_1px)] [background-size:20px_20px]" />
-      <div className="absolute bottom-0 right-0 w-80 h-80 bg-[#649FF6] rounded-full filter blur-[120px] opacity-10" />
+      <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#8A6D3B_1px,transparent_1px)] [background-size:20px_20px]" />
+      <div className="absolute bottom-0 right-0 w-80 h-80 bg-[#1E3A5F] rounded-none filter blur-[120px] opacity-10" />
 
       <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center">
         <h2 className="text-3xl md:text-4xl font-semibold tracking-tight leading-tight mb-4 text-white max-w-2xl">

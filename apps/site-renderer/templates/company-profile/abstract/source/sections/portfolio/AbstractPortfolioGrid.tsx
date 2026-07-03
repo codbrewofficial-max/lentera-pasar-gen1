@@ -4,6 +4,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { ArrowUpRight, FolderHeart } from 'lucide-react';
 import { defaultPortfolios, PortfolioItem } from '../../lib/dummy-data';
+import { stripHtmlToText } from '@/components/content/RichHtml';
 
 interface AbstractPortfolioGridProps {
   title?: string;
@@ -90,7 +91,7 @@ export function AbstractPortfolioGrid({
                     </h3>
 
                     <p className="text-neutral-400 font-sans text-sm leading-relaxed">
-                      {item.description}
+                      {stripHtmlToText(item.description, 140)}
                     </p>
                   </div>
 

@@ -37,7 +37,7 @@ export const ContactInformation: React.FC<ContactInformationProps> = ({
             <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="primary" align="left" />
           </div>
           {/* Jam Operasional sebagai elemen formal tambahan */}
-          {/* <div className="mt-4 md:mt-0 inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-lg text-slate-600 text-xs font-medium tracking-wide">
+          {/* <div className="mt-4 md:mt-0 inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-none text-slate-600 text-xs font-medium tracking-wide">
             <Clock className="w-3.5 h-3.5 text-slate-500" />
             <span>Senin - Jumat: 08.00 - 17.00 WIB</span>
           </div> */}
@@ -48,9 +48,9 @@ export const ContactInformation: React.FC<ContactInformationProps> = ({
           
           {/* 1. Alamat (Diberi porsi kolom lebih lebar agar mudah dibaca) */}
           {showAddress && (
-            <Card className="md:col-span-1 p-8 bg-white border border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl flex flex-col items-start justify-between group">
+            <Card className="md:col-span-1 p-8 bg-white border border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-300 rounded-none flex flex-col items-start justify-between group">
               <div className="w-full">
-                <div className="bg-slate-900 text-white w-10 h-10 flex items-center justify-center rounded-xl mb-6 shadow-sm group-hover:scale-105 transition-transform duration-300">
+                <div className="bg-slate-900 text-white w-10 h-10 flex items-center justify-center rounded-none mb-6 shadow-sm group-hover:scale-105 transition-transform duration-300">
                   <MapPin className="w-4 h-4" />
                 </div>
                 <h3 className="text-sm font-bold text-slate-900 mb-2 uppercase tracking-wider">Alamat Korespondensi</h3>
@@ -65,9 +65,9 @@ export const ContactInformation: React.FC<ContactInformationProps> = ({
 
           {/* 2. Email */}
           {showEmail && (
-            <Card className="p-8 bg-white border border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl flex flex-col items-start justify-between group">
+            <Card className="p-8 bg-white border border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-300 rounded-none flex flex-col items-start justify-between group">
               <div className="w-full">
-                <div className="bg-slate-900 text-white w-10 h-10 flex items-center justify-center rounded-xl mb-6 shadow-sm group-hover:scale-105 transition-transform duration-300">
+                <div className="bg-slate-900 text-white w-10 h-10 flex items-center justify-center rounded-none mb-6 shadow-sm group-hover:scale-105 transition-transform duration-300">
                   <Mail className="w-4 h-4" />
                 </div>
                 <h3 className="text-sm font-bold text-slate-900 mb-2 uppercase tracking-wider">Surel Resmi</h3>
@@ -84,9 +84,9 @@ export const ContactInformation: React.FC<ContactInformationProps> = ({
           )}
 
           {/* 3. Telepon & WhatsApp */}
-          <Card className="p-8 bg-white border border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl flex flex-col items-start justify-between group">
+          <Card className="p-8 bg-white border border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-300 rounded-none flex flex-col items-start justify-between group">
             <div className="w-full">
-              <div className="bg-slate-900 text-white w-10 h-10 flex items-center justify-center rounded-xl mb-6 shadow-sm group-hover:scale-105 transition-transform duration-300">
+              <div className="bg-slate-900 text-white w-10 h-10 flex items-center justify-center rounded-none mb-6 shadow-sm group-hover:scale-105 transition-transform duration-300">
                 <Phone className="w-4 h-4" />
               </div>
               <h3 className="text-sm font-bold text-slate-900 mb-3 uppercase tracking-wider">Komunikasi Digital</h3>
@@ -109,7 +109,7 @@ export const ContactInformation: React.FC<ContactInformationProps> = ({
                       className="text-sm font-mono text-emerald-600 hover:text-emerald-700 font-bold flex items-center gap-1 transition-colors mt-0.5"
                     >
                       <span>{company.contact.whatsapp}</span>
-                      <span className="text-[10px] font-sans font-medium px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/60 scale-90 origin-left">
+                      <span className="text-[10px] font-sans font-medium px-1.5 py-0.5 rounded-none bg-emerald-50 text-emerald-700 border border-emerald-200/60 scale-90 origin-left">
                         Online
                       </span>
                     </a>

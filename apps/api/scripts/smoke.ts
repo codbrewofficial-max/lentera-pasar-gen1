@@ -4,7 +4,7 @@ import { COMPANY_PROFILE_SECTION_SLOTS, WEBSITE_TYPE_PAGES, getSlotLabel } from 
 
 const baseUrl = process.env.API_BASE_URL || `http://localhost:${process.env.API_PORT || process.env.PORT || 4000}`;
 
-type Json = { data?: any; message?: string; error?: { code: string; message: string; details: unknown } };
+type Json = { data?: any; message?: string; meta?: { pagination?: { page: number; pageSize: number; total: number; totalPages: number } }; error?: { code: string; message: string; details: unknown } };
 
 async function request(path: string, options: RequestInit = {}) {
   const method = options.method || "GET";
@@ -521,9 +521,15 @@ async function main() {
   await request(`/api/v1/public/sites/${slug}/pages/services`);
   const publicArticles = await request(`/api/v1/public/sites/${slug}/articles`);
   assert(publicArticles.data.find((item: any) => item.slug === publishedArticle.data.slug), "Public article list missing published article");
+  assert(publicArticles.meta?.pagination?.pageSize === 12, "Public article list missing pagination meta");
   const publicArticle = await request(`/api/v1/public/sites/${slug}/articles/${publishedArticle.data.slug}`);
   assert(publicArticle.data.article.id === article.data.id, "Public article detail returned wrong article");
   assert(publicArticle.data.seo.title === "Smoke Article SEO", "Public article SEO title mismatch");
+
+  // --- Public portfolio list endpoint (paginated) ---
+  const publicPortfolios = await request(`/api/v1/public/sites/${slug}/portfolios?page=1&pageSize=5`);
+  assert(publicPortfolios.data.find((item: any) => item.id === publicTestPortfolio.data.id), "Public portfolio list missing test portfolio");
+  assert(publicPortfolios.meta?.pagination?.pageSize === 5, "Public portfolio list pagination pageSize mismatch");
 
   // --- Public portfolio detail endpoint (by slug, and fallback by id) ---
   const publicPortfolioBySlug = await request(`/api/v1/public/sites/${slug}/portfolios/${publicTestPortfolio.data.slug}`);

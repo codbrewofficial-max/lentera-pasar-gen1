@@ -24,16 +24,16 @@ export const FaqList: React.FC<FaqListProps> = ({ items, className }) => {
         return (
           <div
             key={index}
-            className="border border-slate-200 rounded bg-white overflow-hidden transition-all duration-200"
+            className="border border-slate-200 border-l-4 border-l-slate-950 rounded-none bg-white overflow-hidden transition-colors duration-150"
           >
             <button
               onClick={() => toggleIndex(index)}
-              className="w-full flex justify-between items-center px-6 py-4 text-left font-medium text-slate-800 hover:text-slate-900 hover:bg-slate-50 transition-colors focus:outline-none min-h-[44px]"
+              className="w-full flex justify-between items-center px-6 py-4 text-left font-semibold text-slate-900 hover:bg-slate-50 transition-colors focus:outline-none min-h-[44px]"
               aria-expanded={isOpen}
             >
               <span className="text-sm md:text-base pr-4">{item.question}</span>
               {isOpen ? (
-                <ChevronUp className="w-5 h-5 text-[#649FF6] flex-shrink-0" />
+                <ChevronUp className="w-5 h-5 text-slate-950 flex-shrink-0" />
               ) : (
                 <ChevronDown className="w-5 h-5 text-slate-400 flex-shrink-0" />
               )}

@@ -2770,12 +2770,39 @@ const registerPublicRoutes = () => {
     if (website.lifecycleStatus !== "active") {
       throw new AppError(403, "WEBSITE_UNAVAILABLE", "Website ini sedang tidak aktif dan tidak dapat diakses publik.");
     }
-    const articles = await prisma.article.findMany({
-      where: { websiteId: website.id, status: "published" },
-      orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }, { publishedAt: "desc" }],
-      include: { category: true }
-    });
-    return ok(reply, articles.map(publicArticleSummary), "Public articles loaded");
+    const { page, pageSize, skip, take } = parsePagination(request.query as Record<string, unknown>);
+    const where = { websiteId: website.id, status: "published" as const };
+    const [articles, total] = await Promise.all([
+      prisma.article.findMany({
+        where,
+        orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }, { publishedAt: "desc" }],
+        include: { category: true },
+        skip,
+        take
+      }),
+      prisma.article.count({ where })
+    ]);
+    return paginated(reply, articles.map(publicArticleSummary), buildPaginationMeta(page, pageSize, total), "Public articles loaded");
+  });
+  app.get("/api/v1/public/sites/:slug/portfolios", async (request: Req, reply) => {
+    const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" }, include: { businessProfile: true } });
+    if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
+    if (website.lifecycleStatus !== "active") {
+      throw new AppError(403, "WEBSITE_UNAVAILABLE", "Website ini sedang tidak aktif dan tidak dapat diakses publik.");
+    }
+    const { page, pageSize, skip, take } = parsePagination(request.query as Record<string, unknown>);
+    const where = { websiteId: website.id, isActive: true };
+    const [portfolios, total] = await Promise.all([
+      prisma.portfolio.findMany({
+        where,
+        orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }],
+        include: { category: true },
+        skip,
+        take
+      }),
+      prisma.portfolio.count({ where })
+    ]);
+    return paginated(reply, portfolios.map(publicPortfolioSummary), buildPaginationMeta(page, pageSize, total), "Public portfolios loaded");
   });
   app.get("/api/v1/public/sites/:slug/articles/:articleSlug", async (request: Req, reply) => {
     const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" }, include: { businessProfile: true } });

@@ -4,6 +4,7 @@ import { Card } from "../../shared/Card";
 import { Badge } from "../../shared/Badge";
 import { Button } from "../../shared/Button";
 import { SectionHeading } from "../../shared/SectionHeading";
+import { stripHtmlToText } from '@/components/content/RichHtml';
 
 interface RelatedPortfoliosProps {
   portfolios: PortfolioItem[];
@@ -62,7 +63,7 @@ export const RelatedPortfolios: React.FC<RelatedPortfoliosProps> = ({
                   {project.title}
                 </h3>
                 <p className="text-sm text-slate-600 font-light leading-relaxed mb-6 flex-grow line-clamp-3">
-                  {project.description}
+                  {stripHtmlToText(project.description, 140)}
                 </p>
                 <Button href={portfolioDetailHref ? portfolioDetailHref(project.id) : `${baseHref}/${project.id}`}>
                   Lihat Detail Proyek

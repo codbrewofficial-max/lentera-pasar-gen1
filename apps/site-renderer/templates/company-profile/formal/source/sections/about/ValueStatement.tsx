@@ -6,10 +6,10 @@ import { SectionHeading } from "../../shared/SectionHeading";
 import { Card } from "../../shared/Card";
 
 const iconMap: Record<string, React.ReactNode> = {
-  Shield: <Shield className="w-6 h-6 text-[#649FF6]" />,
-  Award: <Award className="w-6 h-6 text-[#F56B71]" />,
-  Users: <Users className="w-6 h-6 text-[#B283AF]" />,
-  TrendingUp: <TrendingUp className="w-6 h-6 text-[#649FF6]" />,
+  Shield: <Shield className="w-6 h-6 text-[#1E3A5F]" />,
+  Award: <Award className="w-6 h-6 text-[#8A6D3B]" />,
+  Users: <Users className="w-6 h-6 text-[#475569]" />,
+  TrendingUp: <TrendingUp className="w-6 h-6 text-[#1E3A5F]" />,
 };
 
 interface ValueStatementProps {
@@ -34,7 +34,7 @@ export const ValueStatement: React.FC<ValueStatementProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {values.map((val, idx) => (
             <Card key={`${val.title}-${idx}`} className="p-8 bg-white border border-slate-100 h-full" hoverEffect={true}>
-              <div className="bg-slate-50 w-12 h-12 flex items-center justify-center rounded mb-6 border border-slate-100">
+              <div className="bg-slate-50 w-12 h-12 flex items-center justify-center rounded-none mb-6 border border-slate-100">
                 {idx+1}
               </div>
               <h3 className="text-base font-semibold text-slate-900 mb-3 tracking-tight">{val.title}</h3>

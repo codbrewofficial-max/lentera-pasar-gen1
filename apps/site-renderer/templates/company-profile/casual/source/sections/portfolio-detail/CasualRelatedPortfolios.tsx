@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { portfolioData, PortfolioItem } from '../../lib/dummy-data';
+import { stripHtmlToText } from '@/components/content/RichHtml';
 
 export interface CasualRelatedPortfoliosProps {
   title?: string;
@@ -67,7 +68,7 @@ export function CasualRelatedPortfolios({
                     {portfolio.title}
                   </h3>
                   <p className="font-sans text-sm text-gray-600 leading-relaxed line-clamp-2">
-                    {portfolio.description}
+                    {stripHtmlToText(portfolio.description, 140)}
                   </p>
                 </div>
 

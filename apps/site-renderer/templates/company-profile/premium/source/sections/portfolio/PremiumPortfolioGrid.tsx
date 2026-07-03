@@ -3,6 +3,7 @@
 import React from 'react';
 import { MapPin, Calendar, Layers, ExternalLink } from 'lucide-react';
 import { defaultPortfolios, PortfolioItem } from '../../lib/dummy-data';
+import { stripHtmlToText } from '@/components/content/RichHtml';
 
 interface PremiumPortfolioGridProps {
   title?: string;
@@ -71,7 +72,7 @@ export function PremiumPortfolioGrid({
                     {project.title}
                   </h3>
                   <p className="text-stone-400 text-xs leading-relaxed font-sans font-light">
-                    {project.description}
+                    {stripHtmlToText(project.description, 140)}
                   </p>
                 </div>
 

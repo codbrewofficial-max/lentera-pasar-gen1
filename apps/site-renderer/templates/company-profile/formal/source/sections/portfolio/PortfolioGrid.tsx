@@ -5,6 +5,7 @@ import { PortfolioItem } from "../../lib/types";
 import { Card } from "../../shared/Card";
 import { Badge } from "../../shared/Badge";
 import { SectionHeading } from "../../shared/SectionHeading";
+import { stripHtmlToText } from '@/components/content/RichHtml';
 
 interface PortfolioGridProps {
   portfolios: PortfolioItem[];
@@ -46,12 +47,12 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
           <div
             key={project.id}
             id={project.id}
-            className="scroll-mt-24 border border-slate-100 rounded-lg bg-white p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow grid grid-cols-1 lg:grid-cols-12 gap-8"
+            className="scroll-mt-24 border border-slate-100 rounded-none bg-white p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow grid grid-cols-1 lg:grid-cols-12 gap-8"
           >
             {/* Visual area - left */}
             <div className="lg:col-span-5 flex flex-col justify-between">
               <div>
-                <div className="relative aspect-video rounded overflow-hidden mb-6 bg-slate-50">
+                <div className="relative aspect-video rounded-none overflow-hidden mb-6 bg-slate-50">
                   <img
                     src={project.imageUrl}
                     alt={project.title}
@@ -74,18 +75,18 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
             </div>
 
             {/* Deep technical details (Challenge, Solution, Result) - right */}
-            <div className="lg:col-span-7 bg-slate-50/50 rounded-lg p-6 md:p-8 border border-slate-100 flex flex-col justify-between space-y-6">
+            <div className="lg:col-span-7 bg-slate-50/50 rounded-none p-6 md:p-8 border border-slate-100 flex flex-col justify-between space-y-6">
               <h3 className="text-xl font-semibold text-slate-900 mb-4 tracking-tight leading-snug">
                 {project.title}
               </h3>
               
               <p className="text-sm md:text-base text-slate-600 font-light leading-relaxed mb-6">
-                {project.description}
+                {stripHtmlToText(project.description, 140)}
               </p>
 
               <Link
                 href={portfolioDetailHref ? portfolioDetailHref(project.id) : `/portfolio/${project.id}`}
-                className="inline-flex items-center text-sm font-semibold text-[#649FF6] hover:underline"
+                className="inline-flex items-center text-sm font-semibold text-[#1E3A5F] hover:underline"
               >
                 Lihat Detail →
               </Link>

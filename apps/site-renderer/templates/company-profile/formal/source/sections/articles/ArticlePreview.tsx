@@ -18,7 +18,7 @@ interface ArticlePreviewProps {
 
 const EMPTY_STATE = (
   <div className="py-16 text-center">
-    <div className="w-14 h-14 mx-auto rounded-full bg-slate-100 flex items-center justify-center mb-4">
+    <div className="w-14 h-14 mx-auto rounded-none bg-slate-100 flex items-center justify-center mb-4">
       <span className="text-2xl text-slate-300">✦</span>
     </div>
     <p className="text-sm font-semibold text-slate-500">Belum Ada Artikel</p>
@@ -91,7 +91,7 @@ export const ArticlePreview: React.FC<ArticlePreviewProps> = ({
                   </div>
 
                   {/* Title */}
-                  <h4 className="text-base font-semibold text-slate-900 mb-2 leading-snug tracking-tight hover:text-[#649FF6] transition-colors">
+                  <h4 className="text-base font-semibold text-slate-900 mb-2 leading-snug tracking-tight hover:text-[#1E3A5F] transition-colors">
                     <Link href={`${articlesHref}/${item.slug}`}>{item.title}</Link>
                   </h4>
 
@@ -114,7 +114,7 @@ export const ArticlePreview: React.FC<ArticlePreviewProps> = ({
                       variant="text"
                       size="sm"
                       iconRight={<ArrowRight className="w-4 h-4 ml-1" />}
-                      className="p-0 text-xs font-semibold text-[#649FF6]"
+                      className="p-0 text-xs font-semibold text-[#1E3A5F]"
                     >
                       Selengkapnya
                     </Button>

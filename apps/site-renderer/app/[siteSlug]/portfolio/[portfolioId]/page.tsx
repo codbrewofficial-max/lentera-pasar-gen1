@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { SiteShell } from '@/components/layout/SiteShell';
-import { RenderSections } from '@/components/sections/SectionRegistry';
+import { RenderPortfolioDetail, RenderSections } from '@/components/sections/SectionRegistry';
 import { PortfolioTracking } from '@/components/tracking/PageTracking';
 import { getPublicHomePage, getPublicPortfolioDetail, getPublicPage } from '@/lib/api';
 import { getPortfolioSeoDescription, getPortfolioSeoTitle } from '@/lib/seo';
@@ -36,6 +36,13 @@ export default async function PortfolioDetailPage({ params }: Props) {
   // resolveActiveTheme() di SiteShell tidak akan menemukan templateTheme apa pun dari
   // sections: [] dan jatuh ke header generik. Ambil theme dari home page sebagai referensi
   // supaya header/footer tema (Formal/Casual/Premium/Abstract) tetap konsisten.
+  //
+  // PENTING: section "theme_probe" di bawah ini HANYA dipakai SiteShell untuk mendeteksi
+  // tema header/footer (lihat resolveActiveTheme di SiteShell.tsx). Section ini TIDAK PERNAH
+  // boleh ikut dilempar ke <RenderSections /> sebagai konten halaman, karena slotKey
+  // "portfolio_detail.theme_probe" memang sengaja tidak terdaftar di registry manapun.
+  // Konten halaman yang sebenarnya diambil dari detail.portfolioDetailSections lewat
+  // <RenderPortfolioDetail /> di bawah (persis pola article-detail dengan RenderArticleDetail).
   let fallbackThemeSections: any[] = [];
   if (!hasPortfolioTemplate) {
     const homePage = await getPublicHomePage(siteSlug).catch(() => null);
@@ -76,7 +83,7 @@ export default async function PortfolioDetailPage({ params }: Props) {
         }
       };
 
-  const payload = hasPortfolioTemplate
+  const payloadWithPortfolioSections = hasPortfolioTemplate
     ? {
         ...portfolioTemplate,
         page: {
@@ -92,12 +99,16 @@ export default async function PortfolioDetailPage({ params }: Props) {
           }))
         }
       }
-    : shellPayload;
+    : null;
 
   return (
     <SiteShell siteSlug={siteSlug} payload={shellPayload as any}>
       <PortfolioTracking detail={detail} />
-      <RenderSections siteSlug={siteSlug} payload={payload as any} />
+      {payloadWithPortfolioSections && payloadWithPortfolioSections.page.sections.length > 0 ? (
+        <RenderSections siteSlug={siteSlug} payload={payloadWithPortfolioSections as any} />
+      ) : (
+        <RenderPortfolioDetail siteSlug={siteSlug} detail={detail} />
+      )}
     </SiteShell>
   );
 }

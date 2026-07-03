@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { articlesData } from '../../lib/dummy-data';
 import { Copy, Share2, Twitter, Facebook, CheckCircle2 } from 'lucide-react';
+import { RichHtml } from '@/components/content/RichHtml';
 
 export interface CasualArticleContentProps {
   contentMaxWidth?: string;
@@ -30,60 +31,13 @@ export function CasualArticleContent({
     }
   };
 
-  // Format content text: parse simple double-asterisks for bolding, and replace newlines with nice paragraph layouts
-  const formatParagraphs = (text: string) => {
-    return text.split('\n\n').map((para, pIdx) => {
-      // Simple parse of bullet-like lists
-      if (para.startsWith('1.') || para.startsWith('2.') || para.startsWith('3.') || para.startsWith('4.') || para.startsWith('5.')) {
-        const lines = para.split('\n');
-        return (
-          <div key={pIdx} className="space-y-4 my-6">
-            {lines.map((line, lIdx) => {
-              // Parse title and body
-              const parts = line.split('**');
-              if (parts.length > 2) {
-                return (
-                  <div key={lIdx} className="bg-gray-50 p-5 rounded-2xl border border-gray-100 flex items-start gap-3">
-                    <span className="w-6 h-6 rounded-full bg-[#649FF6] text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
-                      {line.trim().charAt(0)}
-                    </span>
-                    <div>
-                      <strong className="font-sans font-extrabold text-gray-950 block text-base mb-1">
-                        {parts[1]}
-                      </strong>
-                      <span className="font-sans text-sm text-gray-700 leading-relaxed block">
-                        {parts.slice(2).join('')}
-                      </span>
-                    </div>
-                  </div>
-                );
-              }
-              return (
-                <p key={lIdx} className="font-sans text-sm text-gray-700 leading-relaxed pl-6">
-                  {line}
-                </p>
-              );
-            })}
-          </div>
-        );
-      }
-
-      // Default paragraph text rendering
-      return (
-        <p key={pIdx} className="font-sans text-base sm:text-lg text-gray-700 leading-relaxed mb-6">
-          {para}
-        </p>
-      );
-    });
-  };
-
   return (
     <section id="CasualArticleContent" className="py-10 bg-white">
       <div className={`mx-auto px-4 sm:px-6 lg:px-8 ${contentMaxWidth}`}>
         
         {/* Article Body Content */}
         <div className="prose prose-lg prose-gray max-w-none text-left">
-          {formatParagraphs(article.content)}
+          <RichHtml html={article.content} emptyFallback="Konten artikel belum tersedia." />
         </div>
 
         {/* Share Hint Widget (As requested: "showShareHint" string prop to control visibility) */}

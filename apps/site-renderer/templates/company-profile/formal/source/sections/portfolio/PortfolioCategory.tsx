@@ -43,10 +43,10 @@ export const PortfolioCategory: React.FC<PortfolioCategoryProps> = ({
             return (
               <div
                 key={`${category}-${idx}`}
-                className={`inline-flex items-center gap-3 px-4 py-2.5 rounded-xl border bg-white shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200 font-sans text-sm font-semibold tracking-wide select-none ${colorClass}`}
+                className={`inline-flex items-center gap-3 px-4 py-2.5 rounded-none border bg-white shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200 font-sans text-sm font-semibold tracking-wide select-none ${colorClass}`}
               >
                 {/* Badge Inisial: Dibuat tegas, minimalis, dan presisi */}
-                <span className="w-6 h-6 rounded-md flex items-center justify-center font-mono font-bold text-xs bg-slate-100 text-slate-500 border border-slate-200">
+                <span className="w-6 h-6 rounded-none flex items-center justify-center font-mono font-bold text-xs bg-slate-100 text-slate-500 border border-slate-200">
                   {initial}
                 </span>
                 <span className="text-slate-800 font-medium">{category}</span>

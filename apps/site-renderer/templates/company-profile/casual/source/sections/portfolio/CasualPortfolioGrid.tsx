@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { portfolioData, PortfolioItem } from '../../lib/dummy-data';
 import { Filter, ArrowRight, Sparkles } from 'lucide-react';
+import { stripHtmlToText } from '@/components/content/RichHtml';
 
 export interface CasualPortfolioGridProps {
   title?: string;
@@ -98,7 +99,7 @@ export function CasualPortfolioGrid({
                     </h3>
 
                     <p className="font-sans text-sm text-gray-600 leading-relaxed">
-                      {item.description}
+                      {stripHtmlToText(item.description, 140)}
                     </p>
                   </div>
 

@@ -3,6 +3,7 @@
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
 import { defaultPortfolios, PortfolioItem } from '../../lib/dummy-data';
+import { stripHtmlToText } from '@/components/content/RichHtml';
 
 export interface PremiumRelatedPortfoliosProps {
   title?: string;
@@ -55,7 +56,7 @@ export function PremiumRelatedPortfolios({
                     <a href={`/portfolio?id=${project.id}`}>{project.title}</a>
                   </h3>
                   <p className="text-stone-400 text-[11px] leading-relaxed font-sans font-light line-clamp-2">
-                    {project.description}
+                    {stripHtmlToText(project.description, 140)}
                   </p>
                 </div>
 

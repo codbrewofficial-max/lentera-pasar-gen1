@@ -42,7 +42,7 @@ export const TrustProof: React.FC<HomeTrustProofProps> = ({
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10">
             {metrics.map((metric, idx) => (
               <Card key={idx} className="p-5 md:p-6 bg-white border border-slate-100 text-center" hoverEffect={false}>
-                <div className="text-xl md:text-2xl font-semibold text-[#649FF6] font-mono">{metric.value}</div>
+                <div className="text-xl md:text-2xl font-semibold text-[#1E3A5F] font-mono">{metric.value}</div>
                 <div className="mt-1 text-xs md:text-sm text-slate-500 font-light">{metric.label}</div>
               </Card>
             ))}
@@ -58,7 +58,7 @@ export const TrustProof: React.FC<HomeTrustProofProps> = ({
               hoverEffect={true}
             >
               {/* Quote icon watermark */}
-              <div className="absolute top-6 right-6 text-[#649FF6]/10">
+              <div className="absolute top-6 right-6 text-[#1E3A5F]/10">
                 <Quote className="w-10 h-10 transform scale-x-[-1]" />
               </div>
 
@@ -84,7 +84,7 @@ export const TrustProof: React.FC<HomeTrustProofProps> = ({
               {/* Author Info */}
               <div className="mt-6 pt-4 border-t border-slate-50 flex items-center space-x-3.5">
                 {/* Standard formal initials as placeholder avatar */}
-                <div className="w-10 h-10 rounded bg-[#649FF6]/10 text-[#649FF6] font-mono text-xs font-bold flex items-center justify-center border border-[#649FF6]/20">
+                <div className="w-10 h-10 rounded-none bg-[#1E3A5F]/10 text-[#1E3A5F] font-mono text-xs font-bold flex items-center justify-center border border-[#1E3A5F]/20">
                   {test.name.split(" ").slice(0, 2).map(n => n[0]).join("") || "IC"}
                 </div>
 
@@ -93,7 +93,7 @@ export const TrustProof: React.FC<HomeTrustProofProps> = ({
                     {test.name}
                   </span>
                   <span className="text-xs text-slate-500 truncate font-mono">
-                    {test.role}, <span className="text-[#649FF6] font-medium">{test.company}</span>
+                    {test.role}, <span className="text-[#1E3A5F] font-medium">{test.company}</span>
                   </span>
                 </div>
               </div>

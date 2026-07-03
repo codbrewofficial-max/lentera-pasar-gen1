@@ -50,7 +50,7 @@ export const ServicePreview: React.FC<HomeServicePreviewProps> = ({
 
               {/* <a
                 href={`${allServicesHref}#${service.id}`}
-                className="inline-flex text-xs text-[#649FF6] font-semibold pt-4 border-t border-slate-50 hover:underline"
+                className="inline-flex text-xs text-[#1E3A5F] font-semibold pt-4 border-t border-slate-50 hover:underline"
               >
                 Selengkapnya →
               </a> */}

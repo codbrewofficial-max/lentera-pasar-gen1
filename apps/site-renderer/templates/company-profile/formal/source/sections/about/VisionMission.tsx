@@ -28,9 +28,9 @@ export const VisionMission: React.FC<VisionMissionProps> = ({
         <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="primary" />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
-          <div className="border border-slate-100 rounded-lg bg-slate-50/50 p-8 md:p-10 shadow-sm">
+          <div className="border border-slate-100 rounded-none bg-slate-50/50 p-8 md:p-10 shadow-sm">
             <div className="flex items-center space-x-3 mb-6">
-              <div className="w-12 h-12 rounded bg-[#649FF6]/10 text-[#649FF6] flex items-center justify-center border border-[#649FF6]/20">
+              <div className="w-12 h-12 rounded-none bg-[#1E3A5F]/10 text-[#1E3A5F] flex items-center justify-center border border-[#1E3A5F]/20">
                 <Eye className="w-6 h-6" />
               </div>
               <h3 className="text-xl font-semibold text-slate-900 tracking-tight">{visionTitle}</h3>
@@ -38,9 +38,9 @@ export const VisionMission: React.FC<VisionMissionProps> = ({
             <p className="text-slate-600 font-light leading-relaxed text-sm md:text-base">{vision}</p>
           </div>
 
-          <div className="border border-slate-100 rounded-lg bg-white p-8 md:p-10 shadow-sm">
+          <div className="border border-slate-100 rounded-none bg-white p-8 md:p-10 shadow-sm">
             <div className="flex items-center space-x-3 mb-6">
-              <div className="w-12 h-12 rounded bg-[#F56B71]/10 text-[#F56B71] flex items-center justify-center border border-[#F56B71]/20">
+              <div className="w-12 h-12 rounded-none bg-[#8A6D3B]/10 text-[#8A6D3B] flex items-center justify-center border border-[#8A6D3B]/20">
                 <Target className="w-6 h-6" />
               </div>
               <h3 className="text-xl font-semibold text-slate-900 tracking-tight">{missionTitle}</h3>
@@ -48,7 +48,7 @@ export const VisionMission: React.FC<VisionMissionProps> = ({
             <ul className="space-y-4">
               {mission.map((item, idx) => (
                 <li key={idx} className="flex items-start space-x-3 text-sm md:text-base text-slate-600 font-light leading-relaxed">
-                  <CheckCircle2 className="w-5 h-5 text-[#649FF6] mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 text-[#1E3A5F] mt-0.5 flex-shrink-0" />
                   <span>{item}</span>
                 </li>
               ))}

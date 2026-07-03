@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { portfolioData, PortfolioItem } from '../../lib/dummy-data';
+import { stripHtmlToText } from '@/components/content/RichHtml';
 
 export interface CasualPortfolioDetailHeroProps {
   showCoverImage?: string;
@@ -52,7 +53,7 @@ export function CasualPortfolioDetailHero({
 
           {project.description && (
             <p className="font-sans text-sm sm:text-base text-gray-600 leading-relaxed max-w-2xl mx-auto md:mx-0">
-              {project.description}
+              {stripHtmlToText(project.description, 220)}
             </p>
           )}
 

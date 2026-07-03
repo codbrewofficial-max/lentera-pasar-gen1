@@ -4,6 +4,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { Share2, Facebook, Twitter, Link2, Copy } from 'lucide-react';
 import { defaultArticles, ArticleItem } from '../../lib/dummy-data';
+import { RichHtml } from '@/components/content/RichHtml';
 
 interface AbstractArticleContentProps {
   contentMaxWidth?: string;
@@ -56,25 +57,18 @@ export function AbstractArticleContent({
               {article.description}
             </p>
 
-            {/* Split paragraphs manually for beautiful layout */}
-            {article.content.split('\n\n').map((para, idx) => {
-              if (idx === 1) {
-                return (
-                  <div key={idx} className="my-10 relative">
-                    {/* Shadow offset block */}
-                    <div className="absolute inset-0 bg-[#B283AF] transform -skew-x-3 translate-x-1.5 translate-y-1.5 border border-white" />
-                    <blockquote className="relative bg-black border-2 border-white p-6 font-mono text-sm tracking-wide text-[#649FF6] uppercase leading-relaxed">
-                      &ldquo;DESAIN YANG REVOLUSI TIDAK MENCARI KESEIMBANGAN YANG NYAMAN. IA MELEPASKAN ENERGI EKSPRESIF DAN ASIMETRI UNTUK MEMIKAT INDERA.&rdquo;
-                    </blockquote>
-                  </div>
-                );
-              }
-              return (
-                <p key={idx} className="whitespace-pre-line">
-                  {para}
-                </p>
-              );
-            })}
+            {/* Konten artikel (HTML dari rich text editor dashboard) */}
+            <div className="[&_p]:whitespace-pre-line [&_a]:text-[#649FF6] [&_a]:underline [&_strong]:text-white [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6">
+              <RichHtml html={article.content} emptyFallback="Konten artikel belum tersedia." />
+            </div>
+
+            <div className="my-10 relative">
+              {/* Shadow offset block */}
+              <div className="absolute inset-0 bg-[#B283AF] transform -skew-x-3 translate-x-1.5 translate-y-1.5 border border-white" />
+              <blockquote className="relative bg-black border-2 border-white p-6 font-mono text-sm tracking-wide text-[#649FF6] uppercase leading-relaxed">
+                &ldquo;DESAIN YANG REVOLUSI TIDAK MENCARI KESEIMBANGAN YANG NYAMAN. IA MELEPASKAN ENERGI EKSPRESIF DAN ASIMETRI UNTUK MEMIKAT INDERA.&rdquo;
+              </blockquote>
+            </div>
 
             {/* Tags footer */}
             <div className="pt-8 border-t border-dashed border-neutral-800 flex flex-wrap gap-2">

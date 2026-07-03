@@ -22,20 +22,22 @@ export const Button: React.FC<ButtonProps> = ({
   className,
   ...props
 }) => {
-  const baseStyles = "inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 rounded border cursor-pointer select-none active:scale-98 min-h-[44px]";
-  
+  // Tema Formal: sudut tegas (rounded-none), border 2px, huruf kapital berjarak lebar,
+  // dan tanpa efek "scale" saat ditekan supaya kesan tetap serius/institusional.
+  const baseStyles = "inline-flex items-center justify-center font-bold uppercase tracking-wider transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 rounded-none border-2 cursor-pointer select-none min-h-[44px]";
+
   const variants = {
-    primary: "bg-[#649FF6] hover:bg-[#4d8be4] text-white border-transparent focus:ring-[#649FF6]",
-    secondary: "bg-[#F56B71] hover:bg-[#e0545b] text-white border-transparent focus:ring-[#F56B71]",
-    outline: "bg-transparent border-[#649FF6] text-[#649FF6] hover:bg-slate-50 focus:ring-[#649FF6]",
-    danger: "bg-red-600 hover:bg-red-700 text-white border-transparent focus:ring-red-500",
-    text: "bg-transparent border-transparent text-[#649FF6] hover:underline p-0 min-h-0 focus:ring-transparent focus:ring-offset-0"
+    primary: "bg-slate-950 hover:bg-[#1E3A5F] text-white border-slate-950 focus:ring-slate-950",
+    secondary: "bg-[#1E3A5F] hover:bg-slate-950 text-white border-[#1E3A5F] focus:ring-[#1E3A5F]",
+    outline: "bg-transparent border-slate-950 text-slate-950 hover:bg-slate-950 hover:text-white focus:ring-slate-950",
+    danger: "bg-red-700 hover:bg-red-800 text-white border-red-700 focus:ring-red-600",
+    text: "bg-transparent border-transparent text-slate-950 hover:underline underline-offset-4 p-0 min-h-0 focus:ring-transparent focus:ring-offset-0"
   };
 
   const sizes = {
-    sm: "px-4 py-1.5 text-xs",
-    md: "px-6 py-2.5 text-sm",
-    lg: "px-8 py-3 text-base"
+    sm: "px-4 py-1.5 text-[11px]",
+    md: "px-6 py-2.5 text-xs",
+    lg: "px-8 py-3 text-sm"
   };
 
   const combinedClasses = cn(

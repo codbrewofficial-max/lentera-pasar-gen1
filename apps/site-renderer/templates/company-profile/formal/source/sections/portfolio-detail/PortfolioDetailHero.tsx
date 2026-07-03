@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { PortfolioItem } from "../../lib/types";
 import { Badge } from "../../shared/Badge";
+import { stripHtmlToText } from '@/components/content/RichHtml';
 
 interface PortfolioDetailHeroProps {
   project?: PortfolioItem;
@@ -18,10 +19,10 @@ export const PortfolioDetailHero: React.FC<PortfolioDetailHeroProps> = ({
   if (!project) return null;
   return (
     <section id="portfolio-detail-hero" className="bg-slate-900 text-white py-12 md:py-20 relative overflow-hidden">
-      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#649FF6_1px,transparent_1px)] [background-size:24px_24px]" />
+      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#1E3A5F_1px,transparent_1px)] [background-size:24px_24px]" />
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-6">
-          <Link href={backHref} className="inline-flex items-center gap-2 text-xs font-mono font-semibold text-[#649FF6] hover:underline uppercase tracking-wider">
+          <Link href={backHref} className="inline-flex items-center gap-2 text-xs font-mono font-semibold text-[#1E3A5F] hover:underline uppercase tracking-wider">
             <ArrowLeft className="w-4 h-4" />
             Kembali ke Portofolio
           </Link>
@@ -35,7 +36,7 @@ export const PortfolioDetailHero: React.FC<PortfolioDetailHeroProps> = ({
         </h1>
         {project.description && (
           <p className="text-slate-300 font-light leading-relaxed max-w-2xl text-sm md:text-base">
-            {project.description}
+            {stripHtmlToText(project.description, 220)}
           </p>
         )}
       </div>

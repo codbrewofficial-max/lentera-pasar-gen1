@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { defaultPortfolios, PortfolioItem } from '../../lib/dummy-data';
+import { stripHtmlToText } from '@/components/content/RichHtml';
 
 interface AbstractPortfolioDetailHeroProps {
   showCoverImage?: string;
@@ -47,7 +48,7 @@ export function AbstractPortfolioDetailHero({
 
           {project.description && (
             <p className="text-neutral-300 font-sans text-sm sm:text-base leading-relaxed max-w-2xl border-l-4 border-[#649FF6] pl-4">
-              {project.description}
+              {stripHtmlToText(project.description, 220)}
             </p>
           )}
 

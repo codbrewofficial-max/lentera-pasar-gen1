@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { defaultPortfolios, PortfolioItem } from '../../lib/dummy-data';
+import { RichHtml } from '@/components/content/RichHtml';
 
 export interface PremiumPortfolioDetailContentProps {
   contentMaxWidth?: string;
@@ -40,8 +41,8 @@ export function PremiumPortfolioDetailContent({
           </div>
         )}
 
-        <div className="prose prose-stone max-w-none font-sans font-light text-stone-700 leading-relaxed whitespace-pre-line text-sm md:text-base">
-          {project.description || 'Cerita lengkap proyek ini akan segera hadir.'}
+        <div className="prose prose-stone max-w-none font-sans font-light text-stone-700 leading-relaxed text-sm md:text-base">
+          <RichHtml html={project.description} emptyFallback="Cerita lengkap proyek ini akan segera hadir." />
         </div>
 
         {isShowShareHint && (

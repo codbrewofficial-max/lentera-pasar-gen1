@@ -12,17 +12,19 @@ export const Badge: React.FC<BadgeProps> = ({
   variant = "primary",
   className,
 }) => {
+  // Tema Formal: badge berbentuk kotak tegas dengan garis aksen di kiri (seperti label
+  // dokumen resmi/stempel), bukan pil membulat, supaya konsisten dengan Card & Button.
   const styles = {
-    primary: "bg-[#649FF6]/10 text-[#649FF6] border-[#649FF6]/20",
-    secondary: "bg-[#F56B71]/10 text-[#F56B71] border-[#F56B71]/20",
-    accent: "bg-[#B283AF]/10 text-[#B283AF] border-[#B283AF]/20",
-    gray: "bg-slate-100 text-slate-700 border-slate-200"
+    primary: "bg-slate-50 text-slate-950 border-slate-950",
+    secondary: "bg-slate-50 text-[#1E3A5F] border-[#1E3A5F]",
+    accent: "bg-slate-50 text-slate-700 border-slate-500",
+    gray: "bg-slate-100 text-slate-700 border-slate-300"
   };
 
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide border uppercase",
+        "inline-flex items-center rounded-none border-l-4 bg-slate-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.15em]",
         styles[variant],
         className
       )}

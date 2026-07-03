@@ -84,19 +84,19 @@ export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
       )}
     >
       {/* Container Konten Utama Navbar */}
-      <div className="relative z-50 bg-white max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="relative z-50 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
           {/* Logo */}
           <Link href={homeHref} className="flex items-center space-x-2.5 group">
             {logoUrl ? (
-              <img src={logoUrl} alt={businessName} className="w-10 h-10 rounded object-cover" referrerPolicy="no-referrer" />
+              <img src={logoUrl} alt={businessName} className="w-10 h-10 rounded-none object-cover" referrerPolicy="no-referrer" />
             ) : (
-              <div className="bg-[#649FF6] text-white p-2 rounded">
+              <div className="bg-slate-950 text-white p-2 rounded-none">
                 <Shield className="w-6 h-6" />
               </div>
             )}
             <div className="flex flex-col md:hidden">
-              <span className="font-semibold text-lg md:text-xl text-slate-900 leading-tight group-hover:text-[#649FF6] transition-colors">
+              <span className="font-semibold text-lg md:text-xl text-slate-900 leading-tight group-hover:text-[#1E3A5F] transition-colors">
                 {businessName}
               </span>
               <span className="text-[10px] text-slate-500 font-mono tracking-wider uppercase leading-none">
@@ -115,11 +115,11 @@ export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
                   href={link.href}
                   className={cn(
                     "text-sm font-medium tracking-wide transition-colors py-1 relative",
-                    active ? "text-[#649FF6]" : "text-slate-600 hover:text-[#649FF6]"
+                    active ? "text-[#1E3A5F]" : "text-slate-600 hover:text-[#1E3A5F]"
                   )}
                 >
                   {link.label}
-                  {active && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-[#649FF6] rounded-full" />}
+                  {active && <span className="absolute bottom-0 left-0 w-full h-[3px] bg-slate-950 rounded-none" />}
                 </Link>
               );
             })}
@@ -135,7 +135,7 @@ export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 rounded text-slate-600 hover:text-[#649FF6] hover:bg-slate-50 transition-all focus:outline-none min-h-[44px] min-w-[44px]"
+            className="md:hidden p-2 rounded-none text-slate-600 hover:text-[#1E3A5F] hover:bg-slate-50 transition-all focus:outline-none min-h-[44px] min-w-[44px]"
             aria-label="Toggle Menu"
           >
             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -161,8 +161,8 @@ export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
                 key={link.path}
                 href={link.href}
                 className={cn(
-                  "block px-4 py-2.5 rounded text-base font-medium transition-colors",
-                  active ? "bg-[#649FF6]/10 text-[#649FF6]" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  "block px-4 py-2.5 rounded-none text-base font-medium transition-colors",
+                  active ? "bg-[#1E3A5F]/10 text-[#1E3A5F]" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                 )}
               >
                 {link.label}
