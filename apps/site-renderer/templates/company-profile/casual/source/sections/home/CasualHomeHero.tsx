@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ArrowRight, Sparkles, Star } from 'lucide-react';
+import { ArrowRight, Sparkles } from 'lucide-react';
 
 export interface CasualHomeHeroProps {
   eyebrow?: string;
@@ -66,26 +66,6 @@ export function CasualHomeHero({
               >
                 <span>{secondaryCtaLabel}</span>
               </Link>
-            </div>
-
-            {/* Social Trust Proofs inside Hero */}
-            <div className="pt-6 flex flex-wrap items-center justify-center lg:justify-start gap-4 text-sm text-gray-500">
-              <div className="flex items-center -space-x-2">
-                <img className="w-8 h-8 rounded-full border-2 border-white" src="https://picsum.photos/seed/u1/100/100" alt="Client Avatar" />
-                <img className="w-8 h-8 rounded-full border-2 border-white" src="https://picsum.photos/seed/u2/100/100" alt="Client Avatar" />
-                <img className="w-8 h-8 rounded-full border-2 border-white" src="https://picsum.photos/seed/u3/100/100" alt="Client Avatar" />
-              </div>
-              <div className="flex flex-col items-center lg:items-start leading-none">
-                <div className="flex items-center text-amber-400 gap-0.5">
-                  <Star className="w-4 h-4 fill-amber-400" />
-                  <Star className="w-4 h-4 fill-amber-400" />
-                  <Star className="w-4 h-4 fill-amber-400" />
-                  <Star className="w-4 h-4 fill-amber-400" />
-                  <Star className="w-4 h-4 fill-amber-400" />
-                  <span className="text-gray-900 font-bold ml-1">4.9/5</span>
-                </div>
-                <span className="text-xs text-gray-500 mt-1">Dipercaya 200+ Pemilik Usaha Lokal</span>
-              </div>
             </div>
           </div>
 

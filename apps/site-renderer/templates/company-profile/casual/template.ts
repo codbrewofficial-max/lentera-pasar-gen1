@@ -35,12 +35,10 @@ export const casualCompanyProfileTemplate = {
     "articles.featured_article": "CasualFeaturedArticle",
     "articles.article_preview": "CasualArticlePreview",
 
-    "article_detail.article_detail_hero": "CasualArticleDetailHero",
     "article_detail.article_content": "CasualArticleContent",
     "article_detail.related_articles": "CasualRelatedArticles",
     "article_detail.article_cta": "CasualArticleCta",
 
-    "portfolio_detail.portfolio_detail_hero": "CasualPortfolioDetailHero",
     "portfolio_detail.portfolio_detail_content": "CasualPortfolioDetailContent",
     "portfolio_detail.related_portfolios": "CasualRelatedPortfolios",
     "portfolio_detail.portfolio_detail_cta": "CasualPortfolioDetailCta",
