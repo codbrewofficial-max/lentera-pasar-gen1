@@ -615,6 +615,7 @@ export function PremiumContactInformationSection(props: PremiumSectionProps) {
       siteSlug={props.siteSlug}
       pageKey={props.payload.page.pageKey}
       slotKey={props.section.slotKey}
+      whatsappHref={whatsappHref(props.payload)}
       whatsappLabel={text(business.whatsapp, text(business.phone)) || undefined}
       email={text(business.email) || undefined}
       address={text(business.address) || undefined}
