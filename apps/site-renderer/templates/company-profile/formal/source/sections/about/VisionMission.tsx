@@ -2,6 +2,7 @@ import React from "react";
 import { CheckCircle2, Eye, Target } from "lucide-react";
 import { companyData as defaultCompanyData } from "../../data/companyProfileData";
 import { SectionHeading } from "../../shared/SectionHeading";
+import { stripHtmlToText } from '@/components/content/RichHtml';
 
 interface VisionMissionProps {
   title?: string;
@@ -35,7 +36,7 @@ export const VisionMission: React.FC<VisionMissionProps> = ({
               </div>
               <h3 className="text-xl font-semibold text-slate-900 tracking-tight">{visionTitle}</h3>
             </div>
-            <p className="text-slate-600 font-light leading-relaxed text-sm md:text-base">{vision}</p>
+            {stripHtmlToText(vision)}
           </div>
 
           <div className="border border-slate-100 rounded-none bg-white p-8 md:p-10 shadow-sm">
@@ -45,14 +46,14 @@ export const VisionMission: React.FC<VisionMissionProps> = ({
               </div>
               <h3 className="text-xl font-semibold text-slate-900 tracking-tight">{missionTitle}</h3>
             </div>
-            <ul className="space-y-4">
-              {mission.map((item, idx) => (
-                <li key={idx} className="flex items-start space-x-3 text-sm md:text-base text-slate-600 font-light leading-relaxed">
-                  <CheckCircle2 className="w-5 h-5 text-[#1E3A5F] mt-0.5 flex-shrink-0" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
+            {mission.map((item, idx) => (
+              <div 
+                key={idx}
+                className="flex items-start space-x-3 text-sm md:text-base text-slate-600 font-light leading-relaxed"
+              >
+                {stripHtmlToText(item)}
+              </div>
+            ))}
           </div>
         </div>
       </div>
