@@ -90,6 +90,20 @@ function imageOf(item: CrudItem, fallback: string) {
   return text(item.imageUrl, text(item.coverImageUrl, fallback));
 }
 
+function mapBrand(item: CrudItem, index: number): { id: string; name: string; logoUrl?: string } {
+  return {
+    id: String(item.id || `brand-${index + 1}`),
+    name: text(item.name, `Mitra ${index + 1}`),
+    logoUrl: text(item.logoUrl, text(item.imageUrl)) || undefined,
+  };
+}
+
+function brandsFor(props: CasualSectionProps) {
+  // home.trust_proof: brand/client logo murni dari data CRUD Brand Partners,
+  // hanya tampil kalau owner sudah isi datanya (sama seperti Formal).
+  return (props.section.data?.brands || []).map(mapBrand);
+}
+
 function contentImage(content: Record<string, any>, fallback = "") {
   return (
     text(content.imageUrl) ||
@@ -311,6 +325,7 @@ export function CasualHomeTrustProofSection(props: CasualSectionProps) {
       metricThreeLabel={text(content.metricThreeLabel)}
       metricThreeValue={text(content.metricThreeValue)}
       testimonials={testimonials}
+      brands={brandsFor(props)}
     />
   );
 }

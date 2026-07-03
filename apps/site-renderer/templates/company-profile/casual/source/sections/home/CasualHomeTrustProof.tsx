@@ -10,6 +10,12 @@ export interface CasualTestimonialItem {
   avatar: string;
 }
 
+export interface CasualBrandItem {
+  id: string;
+  name: string;
+  logoUrl?: string;
+}
+
 export interface CasualHomeTrustProofProps {
   title?: string;
   description?: string;
@@ -20,6 +26,7 @@ export interface CasualHomeTrustProofProps {
   metricThreeLabel?: string;
   metricThreeValue?: string;
   testimonials?: CasualTestimonialItem[];
+  brands?: CasualBrandItem[];
 }
 
 export function CasualHomeTrustProof({
@@ -32,6 +39,7 @@ export function CasualHomeTrustProof({
   metricThreeLabel = 'Rata-rata Kenaikan Omset',
   metricThreeValue = '35%+',
   testimonials: testimonialsProp,
+  brands = [],
 }: CasualHomeTrustProofProps) {
   
   const badgeColors = ['bg-[#F56B71]/10 text-[#F56B71]', 'bg-[#649FF6]/10 text-[#649FF6]', 'bg-[#B283AF]/10 text-[#B283AF]'];
@@ -160,6 +168,21 @@ export function CasualHomeTrustProof({
             </div>
           ))}
         </div>
+
+        {/* Brand / Client logos dari data CRUD, hanya tampil kalau ada datanya */}
+        {brands.length > 0 && (
+          <div className="mt-16 pt-8 border-t border-gray-100 flex flex-wrap justify-center items-center gap-x-12 gap-y-6">
+            {brands.map((brand) => (
+              <div key={brand.id} className="flex items-center justify-center grayscale opacity-60 hover:opacity-100 hover:grayscale-0 transition-all">
+                {brand.logoUrl ? (
+                  <img src={brand.logoUrl} alt={brand.name} className="h-8 md:h-10 w-auto object-contain" referrerPolicy="no-referrer" />
+                ) : (
+                  <span className="text-sm font-bold font-sans text-gray-500">{brand.name}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
 
       </div>
     </section>

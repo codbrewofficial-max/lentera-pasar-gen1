@@ -5,6 +5,12 @@ import { motion } from 'motion/react';
 import { Trophy, Users, ShieldAlert, Quote } from 'lucide-react';
 import type { TestimonialItem } from '../../lib/dummy-data';
 
+interface AbstractBrandItem {
+  id: string;
+  name: string;
+  logoUrl?: string;
+}
+
 interface AbstractHomeTrustProofProps {
   title?: string;
   description?: string;
@@ -15,6 +21,7 @@ interface AbstractHomeTrustProofProps {
   metricThreeLabel?: string;
   metricThreeValue?: string;
   testimonials?: TestimonialItem[];
+  brands?: AbstractBrandItem[];
 }
 
 export function AbstractHomeTrustProof({
@@ -26,7 +33,8 @@ export function AbstractHomeTrustProof({
   metricTwoValue = "450+",
   metricThreeLabel = "Penghargaan Eksperimen Desain",
   metricThreeValue = "12",
-  testimonials
+  testimonials,
+  brands = []
 }: AbstractHomeTrustProofProps) {
   const testimonialColors = ["#649FF6", "#F56B71", "#B283AF"];
   return (
@@ -195,6 +203,21 @@ export function AbstractHomeTrustProof({
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* Brand / Client logos dari data CRUD, hanya tampil kalau ada datanya */}
+        {brands.length > 0 && (
+          <div className="mt-16 pt-10 border-t-2 border-white/10 flex flex-wrap justify-center items-center gap-x-14 gap-y-8">
+            {brands.map((brand) => (
+              <div key={brand.id} className="flex items-center justify-center grayscale opacity-50 hover:opacity-100 hover:grayscale-0 transition-all">
+                {brand.logoUrl ? (
+                  <img src={brand.logoUrl} alt={brand.name} className="h-8 md:h-9 w-auto object-contain" referrerPolicy="no-referrer" />
+                ) : (
+                  <span className="text-xs font-mono font-bold uppercase tracking-widest text-neutral-400">{brand.name}</span>
+                )}
+              </div>
+            ))}
           </div>
         )}
 

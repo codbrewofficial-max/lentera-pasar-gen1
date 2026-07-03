@@ -4,6 +4,12 @@ import React from 'react';
 import { Quote, Sparkles } from 'lucide-react';
 import { defaultTestimonials, TestimonialItem } from '../../lib/dummy-data';
 
+interface BrandItem {
+  id: string;
+  name: string;
+  logoUrl?: string;
+}
+
 interface PremiumHomeTrustProofProps {
   title?: string;
   description?: string;
@@ -14,6 +20,7 @@ interface PremiumHomeTrustProofProps {
   metricThreeLabel?: string;
   metricThreeValue?: string;
   testimonials?: TestimonialItem[];
+  brands?: BrandItem[];
 }
 
 export function PremiumHomeTrustProof({
@@ -25,7 +32,8 @@ export function PremiumHomeTrustProof({
   metricTwoValue = "12",
   metricThreeLabel = "Tingkat Retensi Klien",
   metricThreeValue = "98%",
-  testimonials = defaultTestimonials
+  testimonials = defaultTestimonials,
+  brands = []
 }: PremiumHomeTrustProofProps) {
   return (
     <section id="premium-home-trust-proof" className="py-24 md:py-32 bg-[#0E0E0F] text-white relative">
@@ -102,6 +110,21 @@ export function PremiumHomeTrustProof({
             ))}
           </div>
         </div>
+
+        {/* Brand / Client logos dari data CRUD, hanya tampil kalau ada datanya */}
+        {brands.length > 0 && (
+          <div className="mt-20 pt-10 border-t border-white/5 flex flex-wrap justify-center items-center gap-x-14 gap-y-8">
+            {brands.map((brand) => (
+              <div key={brand.id} className="flex items-center justify-center grayscale opacity-50 hover:opacity-90 hover:grayscale-0 transition-all duration-300">
+                {brand.logoUrl ? (
+                  <img src={brand.logoUrl} alt={brand.name} className="h-7 md:h-9 w-auto object-contain" referrerPolicy="no-referrer" />
+                ) : (
+                  <span className="text-xs font-serif font-light tracking-wide text-stone-400">{brand.name}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

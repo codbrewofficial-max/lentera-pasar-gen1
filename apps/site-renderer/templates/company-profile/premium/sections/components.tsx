@@ -250,6 +250,20 @@ function testimonialsFor(props: PremiumSectionProps): TestimonialItem[] | undefi
   return rows.length ? rows.slice(0, 5).map(mapTestimonial) : undefined;
 }
 
+function mapBrand(item: CrudItem, index: number): { id: string; name: string; logoUrl?: string } {
+  return {
+    id: String(item.id || `brand-${index + 1}`),
+    name: text(item.name, `Mitra ${index + 1}`),
+    logoUrl: text(item.logoUrl, text(item.imageUrl)) || undefined,
+  };
+}
+
+function brandsFor(props: PremiumSectionProps) {
+  // home.trust_proof: brand/client logo murni dari data CRUD Brand Partners,
+  // hanya tampil kalau owner sudah isi datanya (sama seperti Formal).
+  return (props.section.data?.brands || []).map(mapBrand);
+}
+
 // ---- Home ----
 
 export function PremiumHomeHeroSection(props: PremiumSectionProps) {
@@ -320,6 +334,7 @@ export function PremiumHomeTrustProofSection(props: PremiumSectionProps) {
       metricThreeLabel={text(content.metricThreeLabel)}
       metricThreeValue={text(content.metricThreeValue)}
       testimonials={testimonialsFor(props)}
+      brands={brandsFor(props)}
     />
   );
 }
