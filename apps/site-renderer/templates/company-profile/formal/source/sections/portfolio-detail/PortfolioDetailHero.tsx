@@ -24,7 +24,7 @@ export const PortfolioDetailHero: React.FC<PortfolioDetailHeroProps> = ({
         <div className="mb-6">
           <Link href={backHref} className="inline-flex items-center gap-2 text-xs font-mono font-semibold text-[#1E3A5F] hover:underline uppercase tracking-wider">
             <ArrowLeft className="w-4 h-4" />
-            Kembali ke Portofolio
+            Kembali
           </Link>
         </div>
         <div className="flex flex-wrap items-center gap-3 mb-4">

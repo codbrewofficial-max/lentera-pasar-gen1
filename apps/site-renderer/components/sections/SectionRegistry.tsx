@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { ArticleDetailPayload, CrudItem, PortfolioDetailPayload, PortfolioSummary, PublicPagePayload, PublicSection } from '@/lib/types';
-import { resolveTargetHref, getSiteHref } from '@/lib/links';
+import { resolveTargetHref, getSiteHref, getArticleDetailHref, getPortfolioDetailHref } from "@/lib/links";
 import { RichHtml, stripHtmlToText } from '@/components/content/RichHtml';
 import { CtaLink } from '@/components/tracking/CtaLink';
 import { PublicEmptyState } from '@/components/layout/PublicState';
@@ -214,9 +214,9 @@ function PreviewCards({
       {limited.map((item, index) => {
         const img = imageOf(item);
         const href = type === 'articles'
-          ? getArticleDetailHref(siteSlug, payload, item.slug)
+          ? getArticleDetailHref(siteSlug, payload?.navigation, item.slug)
           : type === 'portfolios'
-            ? getPortfolioDetailHref(siteSlug, item.id)
+            ? getPortfolioDetailHref(siteSlug, payload?.navigation, item.id)
             : '#';
 
         const body = (
@@ -259,18 +259,9 @@ function PreviewCards({
   );
 }
 
-function getArticleDetailHref(siteSlug: string, payload: PublicPagePayload | undefined, articleSlug?: string | null) {
-  const articlesTarget = payload?.navigation?.availableTargets?.find(
-    (item) => item.type === 'page' && item.pageKey === 'articles'
-  );
-  const basePath = articlesTarget?.path || '/articles';
-  const cleanBase = basePath.replace(/\/$/, '') || '/articles';
-  return getSiteHref(siteSlug, `${cleanBase}/${articleSlug || ''}`);
-}
-
-function getPortfolioDetailHref(siteSlug: string, portfolioId?: string | null) {
-  return getSiteHref(siteSlug, `/portfolio/${portfolioId || ''}`);
-}
+// getArticleDetailHref & getPortfolioDetailHref sekarang dari '@/lib/links' (dipakai
+// bersama oleh semua tema, bukan cuma fallback Clean, supaya link detail selalu ikut slug
+// halaman "list" yang sebenarnya — bisa diubah owner lewat Halaman & Sections).
 
 function HeroSection(props: SectionProps) {
   const c = props.section.content || {};
@@ -356,6 +347,7 @@ function PortfolioPreviewSection(props: SectionProps) {
           items={props.section.data?.portfolios || []}
           type="portfolios"
           siteSlug={props.siteSlug}
+          payload={props.payload}
           featuredOnly
           limit={3}
           emptyTitle="Belum ada portofolio unggulan"
@@ -570,6 +562,7 @@ function PortfolioGridSection(props: SectionProps) {
           items={props.section.data?.portfolios || []}
           type="portfolios"
           siteSlug={props.siteSlug}
+          payload={props.payload}
           limit={100}
           emptyTitle="Belum ada portofolio"
           emptyDescription="Daftar portofolio akan tampil setelah owner menambahkannya di dashboard."
@@ -609,7 +602,7 @@ function FeaturedArticleSection(props: SectionProps) {
       <div className="lp-container">
         <Heading title={text(c.title, 'Artikel Pilihan')} description={text(c.description, '')} />
         {article ? (
-          <a href={getArticleDetailHref(props.siteSlug, props.payload, article.slug)} className="mt-10 block">
+          <a href={getArticleDetailHref(props.siteSlug, props.payload?.navigation, article.slug)} className="mt-10 block">
             <article className="lp-card grid overflow-hidden md:grid-cols-[.9fr_1.1fr]">
               <div className="bg-slate-100">
                 {imageOf(article) ? (

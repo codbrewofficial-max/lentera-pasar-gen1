@@ -47,7 +47,7 @@ import { AbstractContactCta } from "../source/sections/contact/AbstractContactCt
 
 import type { ServiceItem, PortfolioItem, ArticleItem, TeamMember, TimelineItem, FaqItem, TestimonialItem } from "../source/lib/dummy-data";
 import type { CrudItem, PublicPagePayload, PublicSection } from "@/lib/types";
-import { getSiteHref, resolveTargetHref } from "@/lib/links";
+import { getSiteHref, resolveTargetHref, getPageHrefByKey, getPortfolioDetailHref } from "@/lib/links";
 
 type AbstractSectionProps = { siteSlug: string; payload: PublicPagePayload; section: PublicSection };
 type AbstractSectionComponent = (props: AbstractSectionProps) => ReactNode;
@@ -100,9 +100,9 @@ function contentImage(content: Record<string, any>, fallback = "") {
   );
 }
 
-function pageHref(siteSlug: string, path: string) {
-  return getSiteHref(siteSlug, path);
-}
+// pageHref() literal sudah tidak dipakai di file ini — semua link ke halaman List dan
+// detail sekarang resolve dinamis lewat getPageHrefByKey / getPortfolioDetailHref /
+// getArticleDetailHref dari '@/lib/links'.
 
 function sectionHref(props: AbstractSectionProps, prefix: "cta" | "secondaryCta" | string, fallback: string) {
   return resolveTargetHref({
@@ -299,7 +299,7 @@ export function AbstractHomeServicePreviewSection(props: AbstractSectionProps) {
       title={text(content.title)}
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
-      ctaUrl={pageHref(props.siteSlug, "/services")}
+      ctaUrl={sectionHref(props, "cta", getPageHrefByKey(props.siteSlug, props.payload.navigation, "services", "/services"))}
       services={servicesFor(props)}
     />
   );
@@ -312,8 +312,9 @@ export function AbstractHomePortfolioPreviewSection(props: AbstractSectionProps)
       title={text(content.title)}
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
-      ctaUrl={pageHref(props.siteSlug, "/portfolio")}
+      ctaUrl={sectionHref(props, "cta", getPageHrefByKey(props.siteSlug, props.payload.navigation, "portfolio", "/portfolio"))}
       portfolios={portfoliosFor(props)}
+      portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)}
     />
   );
 }
@@ -465,7 +466,7 @@ export function AbstractPortfolioCategorySection(props: AbstractSectionProps) {
 
 export function AbstractPortfolioGridSection(props: AbstractSectionProps) {
   const content = contentOf(props.section);
-  return <AbstractPortfolioGrid title={text(content.title)} description={text(content.description)} portfolios={portfoliosFor(props)} />;
+  return <AbstractPortfolioGrid title={text(content.title)} description={text(content.description)} portfolios={portfoliosFor(props)} portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)} />;
 }
 
 export function AbstractPortfolioCaseHighlightSection(props: AbstractSectionProps) {
@@ -502,12 +503,12 @@ export function AbstractFeaturedArticleSection(props: AbstractSectionProps) {
   const content = contentOf(props.section);
   const articles = articlesFor(props);
   const article = articles.find((item, index) => props.section.data?.articles?.[index]?.isFeatured) || articles[0];
-  return <AbstractFeaturedArticle title={text(content.title)} description={text(content.description)} article={article} />;
+  return <AbstractFeaturedArticle title={text(content.title)} description={text(content.description)} article={article} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} />;
 }
 
 export function AbstractArticlePreviewSection(props: AbstractSectionProps) {
   const content = contentOf(props.section);
-  return <AbstractArticlePreview title={text(content.title)} description={text(content.description)} articles={articlesFor(props)} />;
+  return <AbstractArticlePreview title={text(content.title)} description={text(content.description)} articles={articlesFor(props)} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} />;
 }
 
 // ---- Article Detail ----
@@ -542,6 +543,7 @@ export function AbstractRelatedArticlesSection(props: AbstractSectionProps) {
       title={text(content.title)}
       description={text(content.description)}
       articles={related.length ? related : undefined}
+      articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")}
     />
   );
 }
@@ -594,6 +596,7 @@ export function AbstractRelatedPortfoliosSection(props: AbstractSectionProps) {
       description={text(content.description, "Eksplorasi proyek lain yang membawa pendekatan visual berani serupa.")}
       currentId={current?.id}
       portfolios={related.length ? related : undefined}
+      portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)}
     />
   );
 }

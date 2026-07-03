@@ -13,6 +13,7 @@ interface AbstractHomePortfolioPreviewProps {
   ctaLabel?: string;
   ctaUrl?: string;
   portfolios?: PortfolioItem[];
+  portfolioDetailHref?: (id: string) => string;
 }
 
 const ACCENTS = ['#649FF6', '#F56B71', '#B283AF'];
@@ -22,7 +23,8 @@ export function AbstractHomePortfolioPreview({
   description = "Intip deretan proyek terpilih kami. Tiap karya adalah perpaduan komposisi warna berani dan identitas modern yang dirancang buat brand yang ingin tampil beda.",
   ctaLabel = "Lihat semua portfolio",
   ctaUrl = "/portfolio",
-  portfolios = defaultPortfolios.slice(0, 3)
+  portfolios = defaultPortfolios.slice(0, 3),
+  portfolioDetailHref
 }: AbstractHomePortfolioPreviewProps) {
   return (
     <section className="relative bg-white text-neutral-900 py-24 px-6 overflow-hidden">
@@ -88,9 +90,12 @@ export function AbstractHomePortfolioPreview({
                   <span className="font-sans text-xs text-neutral-400">
                     Klien: {item.client}
                   </span>
-                  <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-neutral-900 group-hover:bg-[#649FF6] group-hover:text-white transition-colors">
+                  <a
+                    href={portfolioDetailHref ? portfolioDetailHref(item.id) : `/portfolio/${item.id}`}
+                    className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-neutral-900 group-hover:bg-[#649FF6] group-hover:text-white transition-colors"
+                  >
                     <ArrowUpRight className="w-4 h-4" />
-                  </div>
+                  </a>
                 </div>
               </motion.div>
             );

@@ -9,12 +9,14 @@ interface PremiumPortfolioGridProps {
   title?: string;
   description?: string;
   portfolios?: PortfolioItem[];
+  portfolioDetailHref?: (id: string) => string;
 }
 
 export function PremiumPortfolioGrid({
   title = "Portofolio Masterpiece",
   description = "Tinjau kelengkapan visual, detail fungsional, serta orisinalitas material dari koleksi karya terpilih kami.",
-  portfolios = defaultPortfolios
+  portfolios = defaultPortfolios,
+  portfolioDetailHref
 }: PremiumPortfolioGridProps) {
   return (
     <section id="premium-portfolio-grid" className="py-24 md:py-32 bg-[#0E0E0F] text-white">
@@ -89,10 +91,13 @@ export function PremiumPortfolioGrid({
                     ))}
                   </div>
 
-                  <span className="text-xs font-semibold text-[#649FF6] group-hover:text-white transition-colors tracking-widest flex items-center space-x-1">
+                  <a
+                    href={portfolioDetailHref ? portfolioDetailHref(project.id) : `/portfolio/${project.id}`}
+                    className="text-xs font-semibold text-[#649FF6] group-hover:text-white transition-colors tracking-widest flex items-center space-x-1"
+                  >
                     <span>DETAIL KARYA</span>
                     <ExternalLink className="w-3.5 h-3.5" />
-                  </span>
+                  </a>
                 </div>
               </div>
             </div>

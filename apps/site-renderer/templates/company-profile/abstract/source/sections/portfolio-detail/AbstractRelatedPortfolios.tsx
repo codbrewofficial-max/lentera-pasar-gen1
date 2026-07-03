@@ -11,6 +11,7 @@ interface AbstractRelatedPortfoliosProps {
   description?: string;
   currentId?: string;
   portfolios?: PortfolioItem[];
+  portfolioDetailHref?: (id: string) => string;
 }
 
 const ACCENTS = ['#649FF6', '#F56B71', '#B283AF'];
@@ -20,6 +21,7 @@ export function AbstractRelatedPortfolios({
   description = 'Eksplorasi proyek lain yang membawa pendekatan visual serupa.',
   currentId,
   portfolios = defaultPortfolios,
+  portfolioDetailHref,
 }: AbstractRelatedPortfoliosProps) {
   const filtered = portfolios.filter((item) => item.id !== currentId).slice(0, 3);
 
@@ -80,7 +82,7 @@ export function AbstractRelatedPortfolios({
                     </div>
 
                     <a
-                      href={`/portfolio?id=${project.id}`}
+                      href={portfolioDetailHref ? portfolioDetailHref(project.id) : `/portfolio/${project.id}`}
                       className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white group-hover:bg-white group-hover:text-neutral-900 transition-colors"
                       aria-label={`Lihat ${project.title}`}
                     >

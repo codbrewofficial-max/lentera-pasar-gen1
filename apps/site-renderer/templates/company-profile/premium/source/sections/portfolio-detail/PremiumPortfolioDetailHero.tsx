@@ -9,12 +9,14 @@ export interface PremiumPortfolioDetailHeroProps {
   showCoverImage?: string;
   badge?: string;
   project?: PortfolioItem;
+  backHref?: string;
 }
 
 export function PremiumPortfolioDetailHero({
   showCoverImage = 'true',
   badge = 'Studi Kasus',
   project = defaultPortfolios[0],
+  backHref = '/portfolio',
 }: PremiumPortfolioDetailHeroProps) {
   const isShowCoverImage = showCoverImage === 'true' || showCoverImage === 'Boolean(true)' || showCoverImage === 'TRUE';
 
@@ -27,7 +29,7 @@ export function PremiumPortfolioDetailHero({
       <div className="relative z-10 max-w-5xl mx-auto px-6">
         <a
           id="back-to-portfolio-link"
-          href="/portfolio"
+          href={backHref}
           className="inline-flex items-center space-x-2 text-[10px] font-bold tracking-[0.25em] uppercase text-stone-400 hover:text-[#649FF6] transition-colors mb-10 group"
         >
           <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />

@@ -10,12 +10,14 @@ interface AbstractFeaturedArticleProps {
   title?: string;
   description?: string;
   article?: ArticleItem;
+  articlesHref?: string;
 }
 
 export function AbstractFeaturedArticle({
   title = "Sorotan editor bulan ini",
   description = "Bedah mendalam eksperimen visual yang menantang keseragaman digital.",
-  article = defaultArticles[0]
+  article = defaultArticles[0],
+  articlesHref = '/articles'
 }: AbstractFeaturedArticleProps) {
   return (
     <section className="relative bg-white text-neutral-900 py-24 px-6 overflow-hidden">
@@ -86,7 +88,7 @@ export function AbstractFeaturedArticle({
               </div>
 
               <Link
-                href={`/articles/${article.id}`}
+                href={`${articlesHref}/${article.id}`}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-neutral-900 hover:bg-[#649FF6] text-white font-sans font-semibold text-sm transition-colors"
               >
                 <span>Baca ulasan</span>

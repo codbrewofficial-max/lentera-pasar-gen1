@@ -10,12 +10,14 @@ export interface CasualPortfolioDetailHeroProps {
   showCoverImage?: string;
   badge?: string;
   project?: PortfolioItem;
+  backHref?: string;
 }
 
 export function CasualPortfolioDetailHero({
   showCoverImage = 'true',
   badge = 'Studi Kasus',
   project = portfolioData[0],
+  backHref = '/portfolio',
 }: CasualPortfolioDetailHeroProps) {
   const isShowCoverImage = showCoverImage === 'true' || showCoverImage === 'Boolean(true)' || showCoverImage === 'TRUE';
 
@@ -26,7 +28,7 @@ export function CasualPortfolioDetailHero({
         <div className="mb-6">
           <Link
             id="back-to-portfolio-link"
-            href="/portfolio"
+            href={backHref}
             className="inline-flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-[#649FF6] transition-colors group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />

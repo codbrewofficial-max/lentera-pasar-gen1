@@ -12,6 +12,7 @@ export interface CasualHomePortfolioPreviewProps {
   ctaLabel?: string;
   ctaUrl?: string;
   portfolios?: PortfolioItem[];
+  portfolioDetailHref?: (id: string) => string;
 }
 
 export function CasualHomePortfolioPreview({
@@ -20,6 +21,7 @@ export function CasualHomePortfolioPreview({
   ctaLabel = 'Lihat Semua Portofolio',
   ctaUrl = '/portfolio',
   portfolios = portfolioData,
+  portfolioDetailHref,
 }: CasualHomePortfolioPreviewProps) {
   
   // Only preview first 3 portfolios on Home
@@ -94,7 +96,7 @@ export function CasualHomePortfolioPreview({
                   <span className="font-mono text-gray-400">Project Selesai</span>
                   <Link
                     id={`portfolio-view-${portfolio.id}`}
-                    href={`/portfolio?id=${portfolio.id}`}
+                    href={portfolioDetailHref ? portfolioDetailHref(portfolio.id) : `/portfolio/${portfolio.id}`}
                     className="text-[#649FF6] hover:text-[#649FF6]/80 font-bold inline-flex items-center gap-1 group/link"
                   >
                     <span>Detail Kasus</span>

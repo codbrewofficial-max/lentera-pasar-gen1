@@ -77,7 +77,7 @@ export const PortfolioPreview: React.FC<HomePortfolioPreviewProps> = ({
                   iconRight={<ArrowRight className="w-4 h-4 ml-1" />}
                   className="justify-start inline-flex text-xs font-semibold text-[#1E3A5F] mt-auto"
                 >
-                  Lihat Studi Kasus
+                  Selengkapnya
                 </Button>
               </div>
             </Card>

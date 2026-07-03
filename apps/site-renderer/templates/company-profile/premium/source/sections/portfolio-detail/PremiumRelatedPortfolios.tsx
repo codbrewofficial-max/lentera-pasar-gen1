@@ -10,6 +10,7 @@ export interface PremiumRelatedPortfoliosProps {
   description?: string;
   currentId?: string;
   portfolios?: PortfolioItem[];
+  portfolioDetailHref?: (id: string) => string;
 }
 
 export function PremiumRelatedPortfolios({
@@ -17,6 +18,7 @@ export function PremiumRelatedPortfolios({
   description = 'Jelajahi rangkaian karya lain dari portofolio kami yang menonjolkan standar kualitas dan detail yang sama.',
   currentId,
   portfolios = defaultPortfolios,
+  portfolioDetailHref,
 }: PremiumRelatedPortfoliosProps) {
   const filtered = portfolios.filter((item) => item.id !== currentId).slice(0, 2);
 
@@ -53,7 +55,7 @@ export function PremiumRelatedPortfolios({
                     {project.category}
                   </span>
                   <h3 className="text-base font-serif font-light text-white group-hover:text-[#649FF6] transition-colors leading-snug line-clamp-2">
-                    <a href={`/portfolio?id=${project.id}`}>{project.title}</a>
+                    <a href={portfolioDetailHref ? portfolioDetailHref(project.id) : `/portfolio/${project.id}`}>{project.title}</a>
                   </h3>
                   <p className="text-stone-400 text-[11px] leading-relaxed font-sans font-light line-clamp-2">
                     {stripHtmlToText(project.description, 140)}
@@ -61,7 +63,7 @@ export function PremiumRelatedPortfolios({
                 </div>
 
                 <a
-                  href={`/portfolio?id=${project.id}`}
+                  href={portfolioDetailHref ? portfolioDetailHref(project.id) : `/portfolio/${project.id}`}
                   className="inline-flex items-center space-x-1.5 text-[10px] font-bold tracking-wider uppercase text-stone-300 hover:text-[#649FF6] transition-colors"
                 >
                   <span>Lihat Detail</span>

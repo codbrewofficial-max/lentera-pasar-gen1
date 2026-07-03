@@ -8,12 +8,14 @@ interface PremiumArticlePreviewProps {
   title?: string;
   description?: string;
   articles?: ArticleItem[];
+  articlesHref?: string;
 }
 
 export function PremiumArticlePreview({
   title = "Arsip & Rangkuman Artikel",
   description = "Tinjau kelengkapan arsip publikasi kami untuk memperkaya wawasan Anda sebelum memulai proyek konstruksi mewah.",
-  articles = defaultArticles
+  articles = defaultArticles,
+  articlesHref = '/articles'
 }: PremiumArticlePreviewProps) {
   return (
     <section id="premium-article-preview" className="py-24 md:py-32 bg-[#0E0E0F] text-white">
@@ -53,7 +55,7 @@ export function PremiumArticlePreview({
                     {item.publishedDate} • {item.readTime}
                   </div>
                   <h3 className="text-lg font-serif font-light text-white group-hover:text-[#649FF6] transition-colors leading-snug">
-                    <a href={`/articles/${item.id}`}>
+                    <a href={`${articlesHref}/${item.id}`}>
                       {item.title}
                     </a>
                   </h3>
@@ -71,7 +73,7 @@ export function PremiumArticlePreview({
                 </div>
 
                 <a
-                  href={`/articles/${item.id}`}
+                  href={`${articlesHref}/${item.id}`}
                   className="p-2 border border-white/5 text-stone-400 hover:text-[#649FF6] hover:border-[#649FF6]/40 transition-colors"
                   aria-label={`Read ${item.title}`}
                 >

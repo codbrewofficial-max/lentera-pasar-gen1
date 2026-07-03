@@ -11,6 +11,7 @@ export interface CasualRelatedPortfoliosProps {
   description?: string;
   currentId?: string;
   portfolios?: PortfolioItem[];
+  portfolioDetailHref?: (id: string) => string;
 }
 
 export function CasualRelatedPortfolios({
@@ -18,6 +19,7 @@ export function CasualRelatedPortfolios({
   description = 'Intip beberapa kolaborasi seru kami lainnya bareng pemilik UMKM keren.',
   currentId,
   portfolios = portfolioData,
+  portfolioDetailHref,
 }: CasualRelatedPortfoliosProps) {
   const filtered = portfolios.filter((item) => item.id !== currentId).slice(0, 3);
 
@@ -76,7 +78,7 @@ export function CasualRelatedPortfolios({
                   <span className="font-mono text-gray-400">Project Selesai</span>
                   <Link
                     id={`related-portfolio-view-${portfolio.id}`}
-                    href={`/portfolio?id=${portfolio.id}`}
+                    href={portfolioDetailHref ? portfolioDetailHref(portfolio.id) : `/portfolio/${portfolio.id}`}
                     className="text-[#649FF6] hover:text-[#649FF6]/80 font-bold inline-flex items-center gap-1 group/link"
                   >
                     <span>Detail Kasus</span>

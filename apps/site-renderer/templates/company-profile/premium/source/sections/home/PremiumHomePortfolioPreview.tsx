@@ -11,6 +11,7 @@ interface PremiumHomePortfolioPreviewProps {
   ctaLabel?: string;
   ctaUrl?: string;
   portfolios?: PortfolioItem[];
+  portfolioDetailHref?: (id: string) => string;
 }
 
 export function PremiumHomePortfolioPreview({
@@ -18,7 +19,8 @@ export function PremiumHomePortfolioPreview({
   description = "Tinjau beberapa mahakarya spatial yang menggambarkan komitmen kami terhadap presisi struktural, kecanggihan sirkulasi udara, serta penataan estetika taktil.",
   ctaLabel = "LIHAT SEMUA PORTOFOLIO",
   ctaUrl = "/portfolio",
-  portfolios = defaultPortfolios.slice(0, 3) // Show first 3 for preview
+  portfolios = defaultPortfolios.slice(0, 3), // Show first 3 for preview
+  portfolioDetailHref
 }: PremiumHomePortfolioPreviewProps) {
   return (
     <section id="premium-home-portfolio-preview" className="py-24 md:py-32 bg-[#FAF9F6] text-[#121212]">
@@ -81,7 +83,7 @@ export function PremiumHomePortfolioPreview({
                     ))}
                   </div>
                   <a
-                    href={`/portfolio?id=${project.id}`}
+                    href={portfolioDetailHref ? portfolioDetailHref(project.id) : `/portfolio/${project.id}`}
                     className="text-xs font-semibold text-stone-800 group-hover:text-[#649FF6] transition-colors tracking-widest"
                   >
                     DETAIL →

@@ -8,12 +8,14 @@ interface PremiumFeaturedArticleProps {
   title?: string;
   description?: string;
   article?: ArticleItem;
+  articlesHref?: string;
 }
 
 export function PremiumFeaturedArticle({
   title = "Sorotan Redaksi Jurnal",
   description = "Artikel terpilih bulan ini mengupas pergeseran arti kemewahan spasial dalam arsitektur tropis kontemporer.",
-  article = defaultArticles[0]
+  article = defaultArticles[0],
+  articlesHref = '/articles'
 }: PremiumFeaturedArticleProps) {
   if (!article) return null;
 
@@ -35,7 +37,7 @@ export function PremiumFeaturedArticle({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           {/* Cover image (7 cols) */}
           <div className="lg:col-span-7 relative group overflow-hidden bg-stone-100 aspect-[16/10]">
-            <a href={`/articles/${article.id}`}>
+            <a href={`${articlesHref}/${article.id}`}>
               <img
                 src={article.imageUrl}
                 alt={article.title}
@@ -56,7 +58,7 @@ export function PremiumFeaturedArticle({
             </div>
 
             <h3 className="text-2xl md:text-4xl font-serif font-light text-stone-900 group-hover:text-[#649FF6] transition-colors leading-snug">
-              <a href={`/articles/${article.id}`}>
+              <a href={`${articlesHref}/${article.id}`}>
                 {article.title}
               </a>
             </h3>
@@ -75,7 +77,7 @@ export function PremiumFeaturedArticle({
               </div>
 
               <a
-                href={`/articles/${article.id}`}
+                href={`${articlesHref}/${article.id}`}
                 className="group inline-flex items-center space-x-2 text-xs font-semibold tracking-widest uppercase text-stone-900 hover:text-[#649FF6] transition-colors"
               >
                 <span>BACA SELENGKAPNYA</span>

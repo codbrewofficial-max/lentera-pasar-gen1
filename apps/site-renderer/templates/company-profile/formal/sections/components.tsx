@@ -56,7 +56,7 @@ import type {
   ValueItem,
 } from "../source/lib/types";
 import type { CrudItem, PublicPagePayload, PublicSection } from "@/lib/types";
-import { getSiteHref, resolveTargetHref } from "@/lib/links";
+import { getSiteHref, resolveTargetHref, getPageHrefByKey, getPortfolioDetailHref } from "@/lib/links";
 
 type FormalSectionProps = { siteSlug: string; payload: PublicPagePayload; section: PublicSection };
 type FormalSectionComponent = (props: FormalSectionProps) => ReactNode;
@@ -119,9 +119,11 @@ function whatsappHref(payload: PublicPagePayload) {
   return numbers ? `https://wa.me/${numbers}` : getSiteHref(payload.website.slug, "/contact");
 }
 
-function pageHref(siteSlug: string, path: string) {
-  return getSiteHref(siteSlug, path);
-}
+// Catatan: pageHref() literal (getSiteHref(siteSlug, path) apa adanya) sudah tidak dipakai
+// lagi di file ini — semua link ke halaman List (services/portfolio/articles) dan link
+// detail (portfolio/:id, articles/:slug) sekarang resolve dinamis lewat getPageHrefByKey /
+// getPortfolioDetailHref / getArticleDetailHref dari '@/lib/links', supaya tetap sinkron
+// kalau owner mengubah slug halaman lewat menu Halaman & Sections di dashboard.
 
 function sectionHref(props: FormalSectionProps, prefix: "cta" | "secondaryCta" | string, fallback: string) {
   return resolveTargetHref({
@@ -423,7 +425,7 @@ export function FormalHomeServicePreview(props: FormalSectionProps) {
       subtitle={text(content.description, "Pilih layanan unggulan yang paling ingin ditampilkan di halaman utama.")}
       badge={text(content.badge, "Fokus Solusi")}
       services={services}
-      allServicesHref={pageHref(props.siteSlug, "/services")}
+      allServicesHref={sectionHref(props, "cta", getPageHrefByKey(props.siteSlug, props.payload.navigation, "services", "/services"))}
       allServicesLabel={text(content.ctaLabel, "Lihat Semua Layanan")}
     />
   );
@@ -439,9 +441,9 @@ export function FormalHomePortfolioPreview(props: FormalSectionProps) {
       subtitle={text(content.description, "Tampilkan portofolio unggulan agar calon pelanggan melihat bukti pekerjaan Anda.")}
       badge={text(content.badge, "Rekam Jejak")}
       portfolios={portfolios}
-      allPortfolioHref={pageHref(props.siteSlug, "/portfolio")}
+      allPortfolioHref={sectionHref(props, "cta", getPageHrefByKey(props.siteSlug, props.payload.navigation, "portfolio", "/portfolio"))}
       allPortfolioLabel={text(content.ctaLabel, "Lihat Semua Portofolio")}
-      portfolioDetailHref={(id: string) => pageHref(props.siteSlug, `/portfolio/${id}`)}
+      portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)}
     />
   );
 }
@@ -596,7 +598,7 @@ export function FormalPortfolioCategory(props: FormalSectionProps) {
 
 export function FormalPortfolioGrid(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiPortfolioGrid portfolios={(props.section.data?.portfolios || []).map(mapPortfolio)} activeCategory="Semua" title={text(content.title)} subtitle={text(content.description)} portfolioDetailHref={(id: string) => pageHref(props.siteSlug, `/portfolio/${id}`)} />;
+  return <AiPortfolioGrid portfolios={(props.section.data?.portfolios || []).map(mapPortfolio)} activeCategory="Semua" title={text(content.title)} subtitle={text(content.description)} portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)} />;
 }
 
 export function FormalPortfolioCaseHighlight(props: FormalSectionProps) {
@@ -621,17 +623,17 @@ export function FormalFeaturedArticle(props: FormalSectionProps) {
   const articles = articlesFor(props);
   const article = articles.find((item, index) => props.section.data?.articles?.[index]?.isFeatured) || articles[0];
   const business = businessOf(props.payload);
-  return article ? <AiFeaturedArticle article={article} articlesHref={pageHref(props.siteSlug, "/articles")} title={text(content.title)} subtitle={text(content.description)} businessLogoUrl={text(business.logoUrl)} /> : null;
+  return article ? <AiFeaturedArticle article={article} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} title={text(content.title)} subtitle={text(content.description)} businessLogoUrl={text(business.logoUrl)} /> : null;
 }
 
 export function FormalArticlePreview(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiArticlePreview articles={articlesFor(props)} articlesHref={pageHref(props.siteSlug, "/articles")} title={text(content.title, "Semua Publikasi Kami")} subtitle={text(content.description)} />;
+  return <AiArticlePreview articles={articlesFor(props)} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} title={text(content.title, "Semua Publikasi Kami")} subtitle={text(content.description)} />;
 }
 
 export function FormalArticleDetailHero(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiArticleDetailHero article={currentArticleFor(props)} backHref={pageHref(props.siteSlug, "/articles")} showPublishedDate={boolValue(content.showPublishedDate, true)} showCoverImage={boolValue(content.showCoverImage, false)} />;
+  return <AiArticleDetailHero article={currentArticleFor(props)} backHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} showPublishedDate={boolValue(content.showPublishedDate, true)} showCoverImage={boolValue(content.showCoverImage, false)} />;
 }
 
 export function FormalArticleContent(props: FormalSectionProps) {
@@ -643,7 +645,7 @@ export function FormalRelatedArticles(props: FormalSectionProps) {
   const content = contentOf(props.section);
   const article = currentArticleFor(props);
   const related = (props.section.data?.relatedArticles || []).map((item, index) => mapArticle(item, props.payload, index));
-  return <AiRelatedArticles articles={related} currentSlug={article.slug} baseHref={pageHref(props.siteSlug, "/articles")} title={text(content.title, "Analisis & Pemikiran Terkait")} subtitle={text(content.description, "Baca ulasan lain yang masih relevan dengan topik ini.")} />;
+  return <AiRelatedArticles articles={related} currentSlug={article.slug} baseHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} title={text(content.title, "Analisis & Pemikiran Terkait")} subtitle={text(content.description, "Baca ulasan lain yang masih relevan dengan topik ini.")} />;
 }
 
 export function FormalArticleCta(props: FormalSectionProps) {
@@ -707,7 +709,7 @@ export function FormalPortfolioDetailHero(props: FormalSectionProps) {
   const project = sectionData.portfolio
   ? mapPortfolio(sectionData.portfolio, 0)
   : (props.section.data?.portfolios?.[0] ? mapPortfolio(props.section.data.portfolios[0], 0) : undefined);
-  return <AiPortfolioDetailHero project={project} backHref={pageHref(props.siteSlug, "/portfolio")} badge={text(content.badge)} />;
+  return <AiPortfolioDetailHero project={project} backHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "portfolio", "/portfolio")} badge={text(content.badge)} />;
 }
 
 export function FormalPortfolioDetailContent(props: FormalSectionProps) {
@@ -735,7 +737,7 @@ export function FormalRelatedPortfolios(props: FormalSectionProps) {
       currentSlug={currentProject?.slug}
       title={text(content.title, "Portofolio Terkait")}
       subtitle={text(content.description, "Lihat proyek lain yang mungkin menarik untuk Anda.")}
-      portfolioDetailHref={(id: string) => pageHref(props.siteSlug, `/portfolio/${id}`)}
+      portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)}
     />
   );
 }
