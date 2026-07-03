@@ -14,7 +14,6 @@ interface AbstractHomeServicePreviewProps {
   services?: ServiceItem[];
 }
 
-// Map icon string names to Lucide icons dynamically
 const iconMap: { [key: string]: React.ElementType } = {
   Sparkles: Sparkles,
   Monitor: Monitor,
@@ -23,49 +22,42 @@ const iconMap: { [key: string]: React.ElementType } = {
   Layers: Layers
 };
 
+const ACCENTS = ['#649FF6', '#F56B71', '#B283AF'];
+
 export function AbstractHomeServicePreview({
-  title = "Layanan Kreatif untuk Brand yang Bosan Seragam",
-  description = "Kami tidak menawarkan solusi biasa. Kami merancang arsitektur visual spekulatif, web art, konten provokatif, dan produk kreatif yang dirancang untuk meledakkan konvensi visual.",
-  ctaLabel = "PELAJARI SELURUH LAYANAN",
+  title = "Layanan kreatif untuk brand yang bosan seragam",
+  description = "Kami merancang identitas visual, web art, konten, dan produk kreatif yang dirancang buat brand yang berani tampil beda dan relevan sama audiens muda.",
+  ctaLabel = "Pelajari seluruh layanan",
   ctaUrl = "/services",
   services = defaultServices
 }: AbstractHomeServicePreviewProps) {
   return (
-    <section className="relative bg-[#111111] text-white py-24 px-6 border-b-8 border-white overflow-hidden">
-      {/* Decorative lines */}
-      <div className="absolute right-10 bottom-0 w-2 h-full bg-[#F56B71] opacity-20 transform -skew-x-12" />
-      <div className="absolute left-1/4 top-0 w-0.5 h-full bg-neutral-800" />
-      
+    <section className="relative bg-[#151515] text-white py-24 px-6 overflow-hidden">
+      <div className="absolute right-0 top-1/3 w-80 h-80 bg-[#F56B71] opacity-[0.08] rounded-full blur-[120px] pointer-events-none" />
+
       <div className="max-w-7xl mx-auto relative z-10">
-        
-        {/* Upper Title Area */}
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end mb-16">
           <div className="lg:col-span-8 space-y-4">
-            <div className="inline-flex items-center gap-2 text-xs font-mono font-bold tracking-widest text-[#B283AF]">
-              <Layers className="w-4 h-4" /> {"// AMUNISI KREATIF"}
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10">
+              <Layers className="w-3.5 h-3.5 text-[#B283AF]" />
+              <span className="font-mono text-xs lowercase tracking-wide text-neutral-200">amunisi kreatif</span>
             </div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-mono font-black uppercase tracking-tight leading-none">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-sans font-extrabold tracking-tight leading-[1.1]">
               {title}
             </h2>
           </div>
           <div className="lg:col-span-4">
-            <p className="text-neutral-400 font-sans text-sm leading-relaxed border-l-2 border-[#F56B71] pl-4">
+            <p className="text-neutral-400 font-sans text-sm leading-relaxed">
               {description}
             </p>
           </div>
         </div>
 
-        {/* Services Grid (Asymmetric) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
           {services.map((service, index) => {
             const IconComponent = iconMap[service.iconName] || Sparkles;
-            
-            // Choose color scheme based on index
-            const accentColors = {
-              border: index % 2 === 0 ? "hover:border-[#649FF6]" : "hover:border-[#F56B71]",
-              text: index % 2 === 0 ? "text-[#649FF6]" : "text-[#F56B71]",
-              badge: index % 2 === 0 ? "bg-[#B283AF] text-black" : "bg-[#649FF6] text-black"
-            };
+            const accent = ACCENTS[index % ACCENTS.length];
 
             return (
               <motion.div
@@ -74,60 +66,55 @@ export function AbstractHomeServicePreview({
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className={`relative group bg-black border-2 border-white p-8 hover:translate-x-1 hover:-translate-y-1 hover:shadow-[-8px_8px_0px_white] transition-all duration-300 ${accentColors.border}`}
+                className="relative group bg-white/5 hover:bg-white/[0.08] rounded-3xl p-8 transition-colors duration-300"
               >
-                {/* Diagonal background slice on hover */}
-                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-
                 <div className="flex justify-between items-start mb-6">
-                  {/* Icon container */}
-                  <div className="w-14 h-14 bg-neutral-900 border border-neutral-700 flex items-center justify-center relative">
-                    <div className="absolute inset-0.5 bg-neutral-900 border border-white opacity-40" />
-                    <IconComponent className={`w-7 h-7 relative z-10 ${accentColors.text}`} />
+                  <div
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                    style={{ backgroundColor: `${accent}22` }}
+                  >
+                    <IconComponent className="w-6 h-6" style={{ color: accent }} />
                   </div>
 
-                  {/* Badge */}
                   {service.badge && (
-                    <span className={`font-mono text-[9px] font-bold tracking-widest px-2.5 py-1 ${accentColors.badge} uppercase`}>
+                    <span
+                      className="font-mono text-[10px] lowercase font-semibold tracking-wide px-3 py-1 rounded-full text-white"
+                      style={{ backgroundColor: accent }}
+                    >
                       {service.badge}
                     </span>
                   )}
                 </div>
 
-                {/* Info */}
                 <div className="space-y-3">
-                  <span className="font-mono text-[9px] tracking-widest text-neutral-500 uppercase block">
-                    0{index + 1} {"//"} {service.category.toUpperCase()}
+                  <span className="font-mono text-[10px] lowercase tracking-wide text-neutral-500 block">
+                    {service.category}
                   </span>
-                  
-                  <h3 className="font-mono text-xl font-black uppercase tracking-tight text-white group-hover:text-[#649FF6] transition-colors">
+
+                  <h3 className="font-sans text-xl font-bold text-white group-hover:text-[#649FF6] transition-colors">
                     {service.title}
                   </h3>
-                  
+
                   <p className="text-neutral-400 font-sans text-sm leading-relaxed">
                     {service.description}
                   </p>
                 </div>
 
-                {/* Hover arrow indicator */}
-                <div className="mt-8 flex items-center justify-end">
-                  <span className="font-mono text-[10px] text-neutral-500 mr-2 group-hover:text-white transition-colors">
-                    EKPLORASI →
-                  </span>
+                <div className="mt-8 flex items-center gap-1.5 text-neutral-500 group-hover:text-white transition-colors">
+                  <span className="font-sans text-xs font-semibold">Eksplorasi</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </div>
               </motion.div>
             );
           })}
         </div>
 
-        {/* Bottom CTA Link */}
         <div className="flex justify-center">
-          <Link href={ctaUrl} className="group relative inline-block">
-            <div className="absolute -inset-1 bg-[#F56B71] transform skew-x-12 translate-x-1" />
-            <div className="absolute -inset-1 bg-[#649FF6] transform -skew-x-12 -translate-y-1 opacity-70" />
-            <button className="relative bg-black border-2 border-white px-10 py-5 font-mono font-bold text-xs tracking-widest text-white group-hover:text-black group-hover:bg-white transition-all">
-              {ctaLabel.toUpperCase()}
-            </button>
+          <Link
+            href={ctaUrl}
+            className="inline-flex items-center px-8 py-4 rounded-full bg-white text-neutral-900 font-sans font-bold text-sm hover:bg-neutral-200 transition-colors"
+          >
+            {ctaLabel}
           </Link>
         </div>
 
