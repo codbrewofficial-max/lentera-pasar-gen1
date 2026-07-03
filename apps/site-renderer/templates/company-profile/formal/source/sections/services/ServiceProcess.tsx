@@ -24,10 +24,10 @@ export const ServiceProcess: React.FC<ServiceProcessProps> = ({
         <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="secondary" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {steps.map((stepItem, idx) => (
-            <div key={`${stepItem.step}-${idx}`} className="bg-white border border-slate-100 rounded-lg p-7 shadow-sm relative overflow-hidden">
+            <div key={`${stepItem.step}-${idx}`} className="bg-white border border-slate-100 rounded-none p-7 shadow-sm relative overflow-hidden">
               <div className="absolute top-4 right-4 text-4xl font-bold text-slate-100 font-mono">{stepItem.step}</div>
               <div className="relative">
-                <div className="w-10 h-10 rounded bg-[#649FF6]/10 text-[#649FF6] flex items-center justify-center text-sm font-bold font-mono mb-5 border border-[#649FF6]/20">{idx + 1}</div>
+                <div className="w-10 h-10 rounded-none bg-[#1E3A5F]/10 text-[#1E3A5F] flex items-center justify-center text-sm font-bold font-mono mb-5 border border-[#1E3A5F]/20">{idx + 1}</div>
                 <h3 className="text-base font-semibold text-slate-900 mb-3 tracking-tight">{stepItem.title}</h3>
                 <p className="text-sm text-slate-600 font-light leading-relaxed">{stepItem.description}</p>
               </div>

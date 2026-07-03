@@ -12,7 +12,9 @@ import {
   AlertCircle,
   Image as ImageIcon,
   Link as LinkIcon,
-  HelpCircle
+  HelpCircle,
+  Sparkles,
+  ArrowRight
 } from "lucide-react";
 
 interface SchemaField {
@@ -28,6 +30,8 @@ interface SchemaField {
 interface SectionDetail {
   slotLabel: string;
   slotDescription: string;
+  isAutoManaged?: boolean;
+  autoManagedSource?: string | null;
   templateSection: {
     id: string;
     name: string;
@@ -275,6 +279,50 @@ export default function EditSectionContentPage() {
           <button onClick={() => router.push(`/websites/${websiteId}/sections/${slotKey}/choose`)} className="px-5 py-2.5 bg-[#649FF6] hover:bg-[#4f8be6] text-white text-xs font-semibold rounded-xl">
             Pilih Tampilan Sekarang
           </button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (section.isAutoManaged) {
+    const previewVision = String(section.effectiveContent?.vision || "");
+    const previewMission = String(section.effectiveContent?.mission || "");
+    return (
+      <DashboardLayout
+        title="Isi Konten Website"
+        subtitle={`Bagian: ${section.slotLabel} | Tampilan: ${section.templateSection.name}`}
+        showBackButton
+        backUrl={`/websites/${websiteId}/pages/${currentPageKey}`}
+      >
+        <div className="max-w-2xl mx-auto space-y-6">
+          <div className="bg-white rounded-3xl border border-[#649FF6]/25 p-8 text-center space-y-4 shadow-sm">
+            <div className="h-14 w-14 rounded-2xl bg-[#649FF6]/10 text-[#649FF6] flex items-center justify-center mx-auto">
+              <Sparkles className="h-7 w-7" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-800">Konten Bagian Ini Otomatis</h3>
+            <p className="text-sm text-slate-500 leading-relaxed max-w-md mx-auto">
+              Isi Visi dan Misi bagian ini otomatis mengikuti data yang Anda isi di halaman <strong>Profil Bisnis</strong>. Anda tidak perlu (dan tidak bisa) mengisi form terpisah di sini.
+            </p>
+            <button
+              onClick={() => router.push(`/websites/${websiteId}/profile`)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#649FF6] hover:bg-[#4f8be6] text-white text-xs font-bold rounded-xl shadow-md transition"
+            >
+              Kelola di Profil Bisnis
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-4 shadow-sm">
+            <h4 className="text-xs font-bold uppercase tracking-wide text-slate-500">Pratinjau Konten Saat Ini</h4>
+            <div className="space-y-1.5">
+              <p className="text-xs font-bold text-slate-700">Visi</p>
+              <p className="text-sm text-slate-600 leading-relaxed">{previewVision || "Belum diisi di Profil Bisnis."}</p>
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-xs font-bold text-slate-700">Misi</p>
+              <p className="text-sm text-slate-600 leading-relaxed">{previewMission || "Belum diisi di Profil Bisnis."}</p>
+            </div>
+          </div>
         </div>
       </DashboardLayout>
     );

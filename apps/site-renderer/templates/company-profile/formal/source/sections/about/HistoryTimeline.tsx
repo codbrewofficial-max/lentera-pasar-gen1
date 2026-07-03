@@ -23,9 +23,9 @@ export const HistoryTimeline: React.FC<HistoryTimelineProps> = ({
         <div className="relative border-l border-slate-200 max-w-3xl mx-auto pl-6 sm:pl-8 space-y-12">
           {items.map((item, idx) => (
             <div key={`${item.year}-${idx}`} className="relative group">
-              <span className="absolute -left-[31px] sm:-left-[39px] top-1.5 flex items-center justify-center w-4 h-4 rounded-full bg-white border-2 border-[#649FF6] ring-4 ring-[#649FF6]/10 group-hover:bg-[#649FF6] transition-colors duration-200" />
+              <span className="absolute -left-[31px] sm:-left-[39px] top-1.5 flex items-center justify-center w-4 h-4 rounded-none bg-white border-2 border-[#1E3A5F] ring-4 ring-[#1E3A5F]/10 group-hover:bg-[#1E3A5F] transition-colors duration-200" />
               <div className="flex flex-col sm:flex-row sm:items-start sm:space-x-6">
-                <div className="text-xl font-bold text-[#649FF6] font-mono leading-none mb-2 sm:mb-0 sm:w-20 flex-shrink-0">{item.year}</div>
+                <div className="text-xl font-bold text-[#1E3A5F] font-mono leading-none mb-2 sm:mb-0 sm:w-20 flex-shrink-0">{item.year}</div>
                 <div>
                   <h3 className="text-base md:text-lg font-semibold text-slate-900 mb-1 tracking-tight">{item.title}</h3>
                   <p className="text-slate-600 font-light text-sm md:text-base leading-relaxed">{item.description}</p>

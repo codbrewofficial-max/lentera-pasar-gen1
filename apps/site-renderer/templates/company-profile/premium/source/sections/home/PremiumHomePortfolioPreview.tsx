@@ -3,6 +3,7 @@
 import React from 'react';
 import { ArrowRight, MapPin } from 'lucide-react';
 import { defaultPortfolios, PortfolioItem } from '../../lib/dummy-data';
+import { stripHtmlToText } from '@/components/content/RichHtml';
 
 interface PremiumHomePortfolioPreviewProps {
   title?: string;
@@ -63,7 +64,7 @@ export function PremiumHomePortfolioPreview({
                     {project.title}
                   </h3>
                   <p className="text-stone-600 text-xs leading-relaxed font-sans font-light">
-                    {project.description}
+                    {stripHtmlToText(project.description, 140)}
                   </p>
                 </div>
 

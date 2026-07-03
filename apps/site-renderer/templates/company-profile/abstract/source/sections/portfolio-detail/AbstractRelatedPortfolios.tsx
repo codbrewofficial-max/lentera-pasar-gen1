@@ -4,6 +4,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { ArrowUpRight } from 'lucide-react';
 import { defaultPortfolios, PortfolioItem } from '../../lib/dummy-data';
+import { stripHtmlToText } from '@/components/content/RichHtml';
 
 interface AbstractRelatedPortfoliosProps {
   title?: string;
@@ -62,7 +63,7 @@ export function AbstractRelatedPortfolios({
                   {project.title}
                 </h3>
                 <p className="text-neutral-400 font-sans text-sm leading-relaxed line-clamp-2">
-                  {project.description}
+                  {stripHtmlToText(project.description, 140)}
                 </p>
 
                 <div className="pt-4 border-t border-neutral-800 flex justify-between items-center">

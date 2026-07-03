@@ -37,17 +37,30 @@ export const companyProfileTemplateRegistry: Record<CompanyProfileTemplateKey, C
   company_profile_premium: premiumCompanyProfileTemplate
 };
 
+// Template Pack ZIP boleh diimpor dengan templatePackKey bervariasi/berversi, mis.
+// "company_profile_formal_v1", "company-profile-formal-v2", dst (lihat manifest.json di
+// dalam ZIP). Supaya renderer tetap konsisten menemukan tema Formal/Casual/Abstract/Premium
+// yang benar walau nama pack-nya berubah versi, suffix versi (_v1, -v2, dst) dilepas dulu
+// sebelum dicocokkan ke alias map. Sebelumnya key seperti "company_profile_formal_v1" tidak
+// dikenali sama sekali dan renderer cuma "selamat" karena kebetulan jatuh ke fallback
+// templateTheme (section.templateTheme = "formal") — perbaikan ini membuatnya eksplisit,
+// bukan implisit/kebetulan.
+function stripVersionSuffix(value: string): string {
+  return value.replace(/[_-]v\d+(\.\d+)*$/i, "");
+}
+
 function normalizeTemplateKey(value?: string | null): CompanyProfileTemplateKey | null {
   if (!value) return null;
   const normalized = value.trim().toLowerCase().replace(/\s+/g, "_");
-  return TEMPLATE_KEY_ALIASES[normalized] || null;
+  return TEMPLATE_KEY_ALIASES[normalized] || TEMPLATE_KEY_ALIASES[stripVersionSuffix(normalized)] || null;
 }
 
 function inferTemplateKeyFromSectionKey(sectionKey?: string | null): CompanyProfileTemplateKey | null {
   if (!sectionKey) return null;
   const normalized = sectionKey.trim().toLowerCase();
+  const firstSegment = stripVersionSuffix(normalized.split(".")[0]);
   for (const key of Object.keys(companyProfileTemplateRegistry) as CompanyProfileTemplateKey[]) {
-    if (normalized === key || normalized.startsWith(`${key}.`)) return key;
+    if (normalized === key || normalized.startsWith(`${key}.`) || firstSegment === key) return key;
   }
   return null;
 }

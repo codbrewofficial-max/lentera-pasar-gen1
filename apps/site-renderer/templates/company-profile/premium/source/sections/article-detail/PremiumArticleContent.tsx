@@ -3,6 +3,7 @@
 import React from 'react';
 import { Share2, Instagram, Linkedin, Copy } from 'lucide-react';
 import { defaultArticles, ArticleItem } from '../../lib/dummy-data';
+import { RichHtml } from '@/components/content/RichHtml';
 
 interface PremiumArticleContentProps {
   contentMaxWidth?: string; // "max-w-2xl", "max-w-3xl", etc.
@@ -19,23 +20,15 @@ export function PremiumArticleContent({
 
   const displayShare = showShareHint === "true";
 
-  // Split content by paragraph to render elegantly
-  const paragraphs = (article.content || "").split('\n\n');
-
   return (
     <section id="premium-article-content" className="py-12 md:py-20 bg-[#FAF9F6] text-[#121212]">
       <div className={`${contentMaxWidth} mx-auto px-6`}>
         {/* Article Body Content */}
         <article className="prose prose-stone max-w-none text-stone-800 text-sm md:text-base leading-relaxed space-y-6 font-sans font-light">
-          {paragraphs.length > 0 ? (
-            paragraphs.map((para, i) => (
-              <p key={i} className="first-letter:font-serif first-letter:text-stone-900 whitespace-pre-line">
-                {para}
-              </p>
-            ))
-          ) : (
-            <p>Konten artikel kosong atau sedang dalam proses penyusunan oleh redaksi Niskala Atelier.</p>
-          )}
+          <RichHtml
+            html={article.content}
+            emptyFallback="Konten artikel kosong atau sedang dalam proses penyusunan oleh redaksi."
+          />
         </article>
 
         {/* Share Hint / Social Block */}

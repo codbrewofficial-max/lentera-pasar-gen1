@@ -29,7 +29,7 @@ export const FeaturedArticle: React.FC<FeaturedArticleProps> = ({
         <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="accent" />
         {/* Featured Card: full-width horizontal, image takes 40% */}
         <Link href={`${articlesHref}/${article.slug}`} className="group block">
-          <div className="border border-slate-100 rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow grid grid-cols-1 lg:grid-cols-5">
+          <div className="border border-slate-100 rounded-none overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow grid grid-cols-1 lg:grid-cols-5">
 
             {/* Cover Image (2 cols) */}
             <div className="relative lg:col-span-2 aspect-video lg:aspect-auto min-h-[240px] bg-slate-100 overflow-hidden">
@@ -81,7 +81,7 @@ export const FeaturedArticle: React.FC<FeaturedArticleProps> = ({
                 </div>
 
                 {/* Title */}
-                <h2 className="text-xl md:text-2xl font-semibold text-slate-900 leading-tight tracking-tight mb-3 group-hover:text-[#649FF6] transition-colors">
+                <h2 className="text-xl md:text-2xl font-semibold text-slate-900 leading-tight tracking-tight mb-3 group-hover:text-[#1E3A5F] transition-colors">
                   {article.title}
                 </h2>
 
@@ -97,7 +97,7 @@ export const FeaturedArticle: React.FC<FeaturedArticleProps> = ({
               <div className="flex items-center justify-between pt-5 mt-5 border-t border-slate-50">
                 {/* Author: logo bisnis sebagai avatar */}
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-100 flex-shrink-0 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-none overflow-hidden bg-slate-100 flex-shrink-0 flex items-center justify-center">
                     {businessLogoUrl ? (
                       <img src={businessLogoUrl} alt={article.author.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     ) : (

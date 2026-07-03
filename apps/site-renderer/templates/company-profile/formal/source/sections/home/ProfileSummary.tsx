@@ -40,7 +40,7 @@ export const ProfileSummary: React.FC<HomeProfileSummaryProps> = ({
 
           {/* Left Column: Visual & Facts Card */}
           <div className="lg:col-span-5 relative">
-            <div className="relative rounded-lg overflow-hidden shadow-lg border border-slate-100">
+            <div className="relative rounded-none overflow-hidden shadow-lg border border-slate-100">
               <img
                 src={imageUrl}
                 alt={imageAlt}

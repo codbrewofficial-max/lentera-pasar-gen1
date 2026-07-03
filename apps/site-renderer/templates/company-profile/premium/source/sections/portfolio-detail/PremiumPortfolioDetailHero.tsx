@@ -3,6 +3,7 @@
 import React from 'react';
 import { ArrowLeft, Sparkles } from 'lucide-react';
 import { defaultPortfolios, PortfolioItem } from '../../lib/dummy-data';
+import { stripHtmlToText } from '@/components/content/RichHtml';
 
 export interface PremiumPortfolioDetailHeroProps {
   showCoverImage?: string;
@@ -50,7 +51,7 @@ export function PremiumPortfolioDetailHero({
 
         {project.description && (
           <p className="mt-6 text-stone-400 text-sm md:text-base leading-relaxed max-w-2xl font-sans font-light">
-            {project.description}
+            {stripHtmlToText(project.description, 220)}
           </p>
         )}
 

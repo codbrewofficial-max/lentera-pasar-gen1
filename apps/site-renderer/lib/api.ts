@@ -1,4 +1,7 @@
-import type { ApiResponse, ArticleDetailPayload, ArticleSummary, PortfolioDetailPayload, PublicPagePayload, RedirectPayload } from './types';
+import type { ApiResponse, ArticleDetailPayload, ArticleSummary, PortfolioDetailPayload, PortfolioSummary, PublicPagePayload, RedirectPayload } from './types';
+
+export type PaginationMeta = { page: number; pageSize: number; total: number; totalPages: number };
+export type PaginatedResult<T> = { items: T[]; pagination: PaginationMeta };
 
 const DEFAULT_API_BASE_URL = 'http://localhost:4000/api/v1';
 
@@ -23,6 +26,25 @@ async function apiGet<T>(path: string, options: RequestInit = {}): Promise<T> {
     throw new Error((json as any)?.error?.message || `API request failed: ${res.status}`);
   }
   return json.data as T;
+}
+
+async function apiGetPaginated<T>(path: string, options: RequestInit = {}): Promise<PaginatedResult<T>> {
+  const baseUrl = getApiBaseUrl().replace(/\/$/, '');
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  const res = await fetch(`${baseUrl}${cleanPath}`, {
+    ...options,
+    headers: { Accept: 'application/json', ...(options.headers || {}) },
+    next: { revalidate: 30, ...(options as any).next }
+  });
+  const json = await readJsonSafe(res);
+  if (!res.ok || !json || !('data' in json)) {
+    throw new Error((json as any)?.error?.message || `API request failed: ${res.status}`);
+  }
+  const meta = (json as any).meta?.pagination;
+  return {
+    items: json.data as T[],
+    pagination: meta || { page: 1, pageSize: (json.data as T[]).length, total: (json.data as T[]).length, totalPages: 1 }
+  };
 }
 
 function stripUndefined(value: any): any {
@@ -60,8 +82,15 @@ export function getPublicPage(siteSlug: string, pageSlug: string) {
   return apiGet<PublicPagePayload | RedirectPayload>(`/public/sites/${siteSlug}/pages/${pageSlug}`);
 }
 
-export function getPublicArticles(siteSlug: string) {
-  return apiGet<ArticleSummary[]>(`/public/sites/${siteSlug}/articles`);
+// Halaman listing publik (Articles Grid / Portfolio Grid) — dipaginasi lewat query
+// ?page=&pageSize=, dipakai oleh apps/site-renderer/app/[siteSlug]/articles/page.tsx dan
+// halaman generic [pageSlug]/page.tsx khusus untuk pageKey "portfolio".
+export function getPublicArticles(siteSlug: string, page = 1, pageSize = 9) {
+  return apiGetPaginated<ArticleSummary>(`/public/sites/${siteSlug}/articles?page=${page}&pageSize=${pageSize}`);
+}
+
+export function getPublicPortfolios(siteSlug: string, page = 1, pageSize = 9) {
+  return apiGetPaginated<PortfolioSummary>(`/public/sites/${siteSlug}/portfolios?page=${page}&pageSize=${pageSize}`);
 }
 
 export function getPublicArticleDetail(siteSlug: string, articleSlug: string) {

@@ -40,22 +40,22 @@ export const Hero: React.FC<HomeHeroProps> = ({
       className="relative bg-slate-900 text-white overflow-hidden py-20 md:py-32 lg:py-40"
     >
       {/* Decorative vector background */}
-      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#649FF6_1px,transparent_1px)] [background-size:24px_24px]" />
-      <div className="absolute -top-40 -right-40 w-96 h-96 bg-[#649FF6] rounded-full filter blur-[150px] opacity-20" />
-      <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-[#F56B71] rounded-full filter blur-[150px] opacity-10" />
+      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#1E3A5F_1px,transparent_1px)] [background-size:24px_24px]" />
+      <div className="absolute -top-40 -right-40 w-96 h-96 bg-[#1E3A5F] rounded-none filter blur-[150px] opacity-20" />
+      <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-[#8A6D3B] rounded-none filter blur-[150px] opacity-10" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           {/* Text Column */}
           <div className="lg:col-span-7 flex flex-col space-y-6">
-            <div className="inline-flex items-center space-x-2 bg-white/10 px-3.5 py-1.5 rounded-full border border-white/10 text-xs md:text-sm text-[#649FF6] font-medium tracking-wide w-fit">
-              <ShieldCheck className="w-4 h-4 text-[#F56B71]" />
+            <div className="inline-flex items-center space-x-2 bg-white/10 px-3.5 py-1.5 rounded-none border border-white/10 text-xs md:text-sm text-[#fbe4bd] font-medium tracking-wide w-fit">
+              <ShieldCheck className="w-4 h-4 text-[#fbe4bd]" />
               <span>{eyebrow}</span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight leading-tight text-white">
               {headingLine1} <br />
-              <span className="text-[#649FF6]">{headingHighlight}</span> <br />
+              <span className="text-[#1E3A5F]">{headingHighlight}</span> <br />
               {headingLine3}
             </h1>
 
@@ -75,8 +75,8 @@ export const Hero: React.FC<HomeHeroProps> = ({
 
           {/* Visual Highlight Column */}
           <div className="lg:col-span-5 relative">
-            <div className="relative mx-auto max-w-md lg:max-w-none rounded-lg overflow-hidden shadow-2xl border border-slate-800 bg-slate-950 p-2">
-              <div className="aspect-video lg:aspect-square relative rounded bg-slate-900 overflow-hidden flex items-center justify-center">
+            <div className="relative mx-auto max-w-md lg:max-w-none rounded-none overflow-hidden shadow-2xl border border-slate-800 bg-slate-950 p-2">
+              <div className="aspect-video lg:aspect-square relative rounded-none bg-slate-900 overflow-hidden flex items-center justify-center">
                 {/* Simulated high-quality placeholder image with corporate stats overlay */}
                 <img 
                   src={imageUrl} 
@@ -85,7 +85,7 @@ export const Hero: React.FC<HomeHeroProps> = ({
                   referrerPolicy="no-referrer"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
-                {/* <div className="absolute bottom-6 left-6 right-6 p-4 bg-slate-950/80 backdrop-blur-md rounded border border-slate-800">
+                {/* <div className="absolute bottom-6 left-6 right-6 p-4 bg-slate-950/80 backdrop-blur-md rounded-none border border-slate-800">
                   <p className="text-xs text-slate-400 uppercase tracking-widest font-mono">{visualLabel}</p>
                   <p className="text-sm font-semibold text-white mt-1">{visualText}</p>
                 </div> */}

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { portfolioData, PortfolioItem } from '../../lib/dummy-data';
+import { RichHtml } from '@/components/content/RichHtml';
 
 export interface CasualPortfolioDetailContentProps {
   contentMaxWidth?: string;
@@ -19,8 +20,8 @@ export function CasualPortfolioDetailContent({
   return (
     <section id="CasualPortfolioDetailContent" className="py-12 bg-white">
       <div className={`${contentMaxWidth} mx-auto px-4 sm:px-6 lg:px-8`}>
-        <div className="prose prose-lg max-w-none font-sans text-gray-700 leading-relaxed whitespace-pre-line">
-          {project.description || 'Cerita lengkap proyek ini akan segera hadir.'}
+        <div className="prose prose-lg max-w-none font-sans text-gray-700 leading-relaxed">
+          <RichHtml html={project.description} emptyFallback="Cerita lengkap proyek ini akan segera hadir." />
         </div>
 
         {isShowShareHint && (

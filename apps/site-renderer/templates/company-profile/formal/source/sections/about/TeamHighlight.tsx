@@ -27,7 +27,7 @@ export const TeamHighlight: React.FC<TeamHighlightProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="accent" />
         {imageUrl && (
-          <div className="relative aspect-[21/9] w-full rounded overflow-hidden bg-slate-100 mb-10">
+          <div className="relative aspect-[21/9] w-full rounded-none overflow-hidden bg-slate-100 mb-10">
             <img src={imageUrl} alt={imageAlt} className="object-cover w-full h-full" referrerPolicy="no-referrer" />
           </div>
         )}
@@ -39,11 +39,11 @@ export const TeamHighlight: React.FC<TeamHighlightProps> = ({
               </div>
               <div className="p-6 flex flex-col flex-grow">
                 <h3 className="text-sm md:text-base font-semibold text-slate-900 leading-snug">{member.name}</h3>
-                <p className="text-xs text-[#649FF6] font-mono mt-1 uppercase tracking-wider">{member.role}</p>
+                <p className="text-xs text-[#1E3A5F] font-mono mt-1 uppercase tracking-wider">{member.role}</p>
                 <p className="text-xs text-slate-600 font-light leading-relaxed mt-4 flex-grow line-clamp-4">{member.bio}</p>
                 <div className="mt-6 pt-4 border-t border-slate-50 flex items-center space-x-3">
                   {member.social.linkedin && (
-                    <a href={member.social.linkedin} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded bg-slate-50 text-slate-400 hover:text-[#649FF6] hover:bg-slate-100 transition-colors" aria-label="LinkedIn Profile">
+                    <a href={member.social.linkedin} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-none bg-slate-50 text-slate-400 hover:text-[#1E3A5F] hover:bg-slate-100 transition-colors" aria-label="LinkedIn Profile">
                       <Linkedin className="w-4 h-4" />
                     </a>
                   )}

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { defaultPortfolios, PortfolioItem } from '../../lib/dummy-data';
+import { RichHtml } from '@/components/content/RichHtml';
 
 interface AbstractPortfolioDetailContentProps {
   contentMaxWidth?: string;
@@ -31,8 +32,8 @@ export function AbstractPortfolioDetailContent({
           {'// DETAIL_PROYEK'}
         </div>
 
-        <div className="font-sans text-base leading-relaxed text-neutral-800 whitespace-pre-line border-l-4 border-[#F56B71] pl-6">
-          {project.description || 'Cerita lengkap proyek ini akan segera hadir.'}
+        <div className="font-sans text-base leading-relaxed text-neutral-800 border-l-4 border-[#F56B71] pl-6">
+          <RichHtml html={project.description} emptyFallback="Cerita lengkap proyek ini akan segera hadir." />
         </div>
 
         {isShowShareHint && (

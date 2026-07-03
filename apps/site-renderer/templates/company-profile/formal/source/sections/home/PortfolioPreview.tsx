@@ -6,6 +6,7 @@ import { Card } from "../../shared/Card";
 import { Badge } from "../../shared/Badge";
 import { Button } from "../../shared/Button";
 import type { PortfolioItem } from "../../lib/types";
+import { stripHtmlToText } from '@/components/content/RichHtml';
 
 export interface HomePortfolioPreviewProps {
   title?: string;
@@ -66,7 +67,7 @@ export const PortfolioPreview: React.FC<HomePortfolioPreviewProps> = ({
                 </h3>
 
                 <p className="text-sm text-slate-600 font-light leading-relaxed mb-6 flex-grow line-clamp-3">
-                  {project.description}
+                  {stripHtmlToText(project.description, 140)}
                 </p>
 
                 <Button
@@ -74,7 +75,7 @@ export const PortfolioPreview: React.FC<HomePortfolioPreviewProps> = ({
                   variant="text"
                   size="sm"
                   iconRight={<ArrowRight className="w-4 h-4 ml-1" />}
-                  className="justify-start inline-flex text-xs font-semibold text-[#649FF6] mt-auto"
+                  className="justify-start inline-flex text-xs font-semibold text-[#1E3A5F] mt-auto"
                 >
                   Lihat Studi Kasus
                 </Button>

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion } from 'motion/react';
 import { ArrowUpRight, FolderGit } from 'lucide-react';
 import { defaultPortfolios, PortfolioItem } from '../../lib/dummy-data';
+import { stripHtmlToText } from '@/components/content/RichHtml';
 
 interface AbstractHomePortfolioPreviewProps {
   title?: string;
@@ -93,7 +94,7 @@ export function AbstractHomePortfolioPreview({
                       {item.title}
                     </h3>
                     <p className="text-neutral-400 font-sans text-xs line-clamp-3">
-                      {item.description}
+                      {stripHtmlToText(item.description, 140)}
                     </p>
                   </div>
 

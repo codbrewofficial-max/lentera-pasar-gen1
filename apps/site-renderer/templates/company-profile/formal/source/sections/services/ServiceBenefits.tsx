@@ -26,7 +26,7 @@ export const ServiceBenefits: React.FC<ServiceBenefitsProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {benefits.map((benefit, idx) => (
             <Card key={`${benefit.title}-${idx}`} className="p-8 bg-slate-50/40 border border-slate-100 h-full" hoverEffect={true}>
-              <div className="w-10 h-10 flex items-center justify-center rounded bg-[#649FF6]/10 text-[#649FF6] font-mono font-bold text-base mb-6 border border-[#649FF6]/20">
+              <div className="w-10 h-10 flex items-center justify-center rounded-none bg-[#1E3A5F]/10 text-[#1E3A5F] font-mono font-bold text-base mb-6 border border-[#1E3A5F]/20">
                 {idx + 1}
               </div>
               <h3 className="text-base font-semibold text-slate-900 mb-3 tracking-tight">{benefit.title}</h3>

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
-import type { ArticleDetailPayload, CrudItem, PublicPagePayload, PublicSection } from '@/lib/types';
+import type { ArticleDetailPayload, CrudItem, PortfolioDetailPayload, PortfolioSummary, PublicPagePayload, PublicSection } from '@/lib/types';
 import { resolveTargetHref, getSiteHref } from '@/lib/links';
+import { RichHtml, stripHtmlToText } from '@/components/content/RichHtml';
 import { CtaLink } from '@/components/tracking/CtaLink';
 import { PublicEmptyState } from '@/components/layout/PublicState';
 import { ContactForm } from './ContactForm';
@@ -240,7 +241,7 @@ function PreviewCards({
               </div>
               <h3 className="text-lg font-black text-slate-950">{titleOf(item)}</h3>
               <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">
-                {item.description || item.excerpt || item.quote || 'Informasi singkat akan tampil di sini.'}
+                {stripHtmlToText(item.description) || item.excerpt || item.quote || 'Informasi singkat akan tampil di sini.'}
               </p>
             </div>
           </article>
@@ -529,6 +530,7 @@ function PortfolioGridSection(props: SectionProps) {
           items={props.section.data?.portfolios || []}
           type="portfolios"
           siteSlug={props.siteSlug}
+          limit={100}
           emptyTitle="Belum ada portofolio"
           emptyDescription="Daftar portofolio akan tampil setelah owner menambahkannya di dashboard."
         />
@@ -548,6 +550,7 @@ function ArticlePreviewSection(props: SectionProps) {
           type="articles"
           siteSlug={props.siteSlug}
           payload={props.payload}
+          limit={100}
           emptyTitle="Belum ada artikel published"
           emptyDescription="Artikel yang sudah published akan tampil di sini untuk mendukung SEO dan edukasi calon client."
         />
@@ -628,8 +631,8 @@ function ArticleContentSection(props: SectionProps) {
 
   return (
     <section className="lp-section">
-      <article className={`lp-container ${width} prose-lite whitespace-pre-line text-slate-700`}>
-        {article?.content || 'Konten artikel belum tersedia.'}
+      <article className={`lp-container ${width} prose-lite text-slate-700`}>
+        <RichHtml html={article?.content} emptyFallback="Konten artikel belum tersedia." />
       </article>
       {showShare && (
         <div className={`lp-container ${width} mt-8`}>
@@ -684,7 +687,7 @@ function PortfolioDetailHeroSection(props: SectionProps) {
         <h1 className="mt-4 text-4xl font-black tracking-tight md:text-6xl">
           {portfolio?.title || props.payload.seo?.title || 'Detail Portfolio'}
         </h1>
-        {portfolio?.description && <p className="mt-5 text-lg leading-8 text-slate-600">{portfolio.description}</p>}
+        {portfolio?.description && <p className="mt-5 text-lg leading-8 text-slate-600">{stripHtmlToText(portfolio.description, 220)}</p>}
         {showCoverImage && portfolio?.imageUrl && (
           <img src={portfolio.imageUrl} alt={portfolio.title} className="mt-10 aspect-[16/8] w-full rounded-[32px] object-cover" />
         )}
@@ -701,8 +704,8 @@ function PortfolioDetailContentSection(props: SectionProps) {
 
   return (
     <section className="lp-section">
-      <div className={`lp-container ${width} prose-lite whitespace-pre-line text-slate-700`}>
-        {portfolio?.description || 'Detail proyek belum tersedia.'}
+      <div className={`lp-container ${width} prose-lite text-slate-700`}>
+        <RichHtml html={portfolio?.description} emptyFallback="Detail proyek belum tersedia." />
       </div>
     </section>
   );
@@ -1044,6 +1047,99 @@ export function RenderArticleDetail({ siteSlug, detail }: { siteSlug: string; de
       <ArticleContentSection siteSlug={siteSlug} payload={payload} section={contentSection} />
       <RelatedArticlesSection siteSlug={siteSlug} payload={payload} section={relatedSection} />
       <ArticleCtaSection siteSlug={siteSlug} payload={payload} section={ctaSection} />
+    </>
+  );
+}
+
+// Fallback renderer untuk halaman Portfolio Detail, sama polanya dengan RenderArticleDetail
+// di atas. Dipakai oleh apps/site-renderer/app/[siteSlug]/portfolio/[portfolioId]/page.tsx
+// saat page "portfolio_detail" milik website BELUM punya template section terpasang di
+// dashboard. Sebelumnya halaman ini tidak punya fallback ini sama sekali sehingga hanya
+// section "theme_probe" (dipakai SiteShell untuk mendeteksi tema header/footer) yang ikut
+// coba dirender lewat RenderSections, dan berakhir dengan "Template section belum tersedia".
+export function RenderPortfolioDetail({ siteSlug, detail }: { siteSlug: string; detail: PortfolioDetailPayload }) {
+  // PortfolioSummary.description bertipe `string | null` (dari Prisma), sedangkan
+  // PublicSection.data mengharapkan CrudItem (description: `string | undefined`).
+  // Normalisasi null -> undefined di sini supaya cocok dengan tipe CrudItem.
+  const asCrudItem = (item: PortfolioSummary): CrudItem => ({
+    ...item,
+    description: item.description ?? undefined,
+    imageUrl: item.imageUrl ?? undefined
+  });
+  const currentPortfolio = asCrudItem(detail.portfolio);
+  const relatedPortfolios = detail.relatedPortfolios.map(asCrudItem);
+
+  const assignedSections = (detail.portfolioDetailSections || []).map((section) => ({
+    ...section,
+    data: {
+      ...(section.data || {}),
+      portfolio: currentPortfolio,
+      relatedPortfolios,
+      portfolios: [currentPortfolio, ...relatedPortfolios]
+    }
+  }));
+
+  const payload: PublicPagePayload = {
+    website: detail.website,
+    seo: detail.seo,
+    businessProfile: detail.businessProfile,
+    navigation: detail.navigation,
+    page: {
+      pageKey: 'portfolio_detail',
+      title: detail.portfolio.title,
+      sections: assignedSections
+    }
+  };
+
+  if (assignedSections.length) {
+    return <RenderSections siteSlug={siteSlug} payload={payload} />;
+  }
+
+  const heroSection: PublicSection = {
+    id: 'portfolio-detail-hero',
+    slotKey: 'portfolio_detail.portfolio_detail_hero',
+    component: 'PortfolioDetailHeroSection',
+    content: {},
+    data: { portfolio: currentPortfolio, relatedPortfolios }
+  };
+
+  const contentSection: PublicSection = {
+    id: 'portfolio-detail-content',
+    slotKey: 'portfolio_detail.portfolio_detail_content',
+    component: 'PortfolioDetailContentSection',
+    content: {},
+    data: { portfolio: currentPortfolio, relatedPortfolios }
+  };
+
+  const relatedSection: PublicSection = {
+    id: 'related-portfolios',
+    slotKey: 'portfolio_detail.related_portfolios',
+    component: 'RelatedPortfoliosSection',
+    content: { title: 'Portfolio Terkait' },
+    data: { portfolio: currentPortfolio, relatedPortfolios }
+  };
+
+  const ctaSection: PublicSection = {
+    id: 'portfolio-detail-cta',
+    slotKey: 'portfolio_detail.portfolio_detail_cta',
+    component: 'PortfolioDetailCtaSection',
+    content: {
+      title: 'Tertarik dengan Hasil Kerja Kami?',
+      description: 'Hubungi tim kami untuk mendiskusikan kebutuhan proyek Anda selanjutnya.',
+      ctaLabel: 'Hubungi Kami',
+      ctaUrl: '/contact',
+      ctaTargetType: 'page',
+      ctaTargetPageKey: 'contact'
+    },
+    data: { portfolio: currentPortfolio, relatedPortfolios }
+  };
+
+  return (
+    <>
+      <PortfolioDetailHeroSection siteSlug={siteSlug} payload={payload} section={heroSection} />
+      <PortfolioDetailContentSection siteSlug={siteSlug} payload={payload} section={contentSection} />
+      <RelatedPortfoliosSection siteSlug={siteSlug} payload={payload} section={relatedSection} />
+      <PortfolioDetailCtaSection siteSlug={siteSlug} payload={payload} section={ctaSection} />
     </>
   );
 }

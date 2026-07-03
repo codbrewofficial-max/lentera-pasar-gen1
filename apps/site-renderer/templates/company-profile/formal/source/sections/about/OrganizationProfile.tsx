@@ -52,8 +52,8 @@ export const OrganizationProfile: React.FC<OrganizationProfileProps> = ({
 
           {/* Kolom Kanan: Gambar */}
           <div className="lg:col-span-5 relative">
-            <div className="relative rounded-lg overflow-hidden shadow-xl border border-slate-100 bg-slate-50 p-2">
-              <img src={imageUrl} alt={imageAlt} className="w-full h-[400px] object-cover rounded" referrerPolicy="no-referrer" />
+            <div className="relative rounded-none overflow-hidden shadow-xl border border-slate-100 bg-slate-50 p-2">
+              <img src={imageUrl} alt={imageAlt} className="w-full h-[400px] object-cover rounded-none" referrerPolicy="no-referrer" />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/20 via-transparent to-transparent" />
             </div>
           </div>

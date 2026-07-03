@@ -241,12 +241,45 @@ const createAuditLog = async (
   }
 };
 
+const stripHtmlTags = (html: string) =>
+  String(html || "")
+    .replace(/<\/(p|li|div|h[1-6])>/gi, "\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+// Vision & Mission are both rendered as plain paragraph strings by the runtime section component (TextImageSection),
+// which only accepts strings for its content fields (see SectionRegistry.tsx `text()` helper).
+const businessProfileToVisionMissionContent = (businessProfile: any) => {
+  if (!businessProfile) return {};
+  const visionLines = stripHtmlTags(businessProfile.vision || "");
+  const missionLines = stripHtmlTags(businessProfile.mission || "");
+  return {
+    vision: visionLines.join(" "),
+    mission: missionLines.join(" ")
+  };
+};
+
+const applyVisionMissionOverride = (slotKey: string, content: Record<string, unknown>, businessProfile: any) => {
+  if (slotKey !== "about.vision_mission") return content;
+  const { description, subtitle, ...rest } = content;
+  return { ...rest, ...businessProfileToVisionMissionContent(businessProfile) };
+};
+
 const mergeContent = (template: any, contentJson: unknown) => ({
   ...((template?.defaultContentJson as Record<string, unknown> | null) || {}),
   ...((contentJson as Record<string, unknown> | null) || {})
 });
 
-const sectionDetailContract = (section: any, websiteId: string) => ({
+const sectionDetailContract = (section: any, websiteId: string, businessProfile: any = null) => ({
   id: section.id,
   slotKey: section.slotKey,
   slotLabel: getSlotLabel(section.slotKey),
@@ -255,6 +288,8 @@ const sectionDetailContract = (section: any, websiteId: string) => ({
   isVisible: section.isVisible,
   hasTemplate: Boolean(section.templateSection),
   hasContent: Boolean(section.contentJson && Object.keys(section.contentJson as Record<string, unknown>).length > 0),
+  isAutoManaged: section.slotKey === "about.vision_mission",
+  autoManagedSource: section.slotKey === "about.vision_mission" ? "business_profile" : null,
   templateSection: section.templateSection
     ? {
         ...templateSummary(section.templateSection),
@@ -263,7 +298,7 @@ const sectionDetailContract = (section: any, websiteId: string) => ({
       }
     : null,
   contentJson: section.contentJson || {},
-  effectiveContent: mergeContent(section.templateSection, section.contentJson),
+  effectiveContent: applyVisionMissionOverride(section.slotKey, mergeContent(section.templateSection, section.contentJson), businessProfile),
   actions: {
     chooseTemplatePath: `/websites/${websiteId}/sections/${section.slotKey}/choose`,
     editContentPath: `/websites/${websiteId}/sections/${section.slotKey}/edit`
@@ -785,6 +820,9 @@ const getWebsiteForAccess = async (request: Req, websiteId?: string) => {
   return { user, website };
 };
 
+const getBusinessProfileForWebsite = async (websiteId: string) =>
+  prisma.businessProfile.findUnique({ where: { websiteId } });
+
 const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string; slug?: string }, options: { publicOnly?: boolean } = {}) => {
   const website = await prisma.website.findUnique({
     where: { id: websiteId },
@@ -856,7 +894,7 @@ const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string;
           templateTheme: section.templateSection?.templatePack?.theme || null,
           component: section.templateSection?.component || null,
           variant: section.templateSection?.variant || null,
-          content: mergeContent(section.templateSection, section.contentJson),
+          content: applyVisionMissionOverride(section.slotKey, mergeContent(section.templateSection, section.contentJson), website.businessProfile),
           tracking: {
             slotKey: section.slotKey,
             sectionKey: section.templateSection?.sectionKey || null
@@ -1728,6 +1766,7 @@ const registerWebsiteRoutes = () => {
       }
     });
     if (!page) throw new AppError(404, "PAGE_NOT_FOUND", "Page not found");
+    const businessProfile = await getBusinessProfileForWebsite(website.id);
     return ok(reply, {
       id: page.id,
       pageKey: page.pageKey,
@@ -1745,7 +1784,7 @@ const registerWebsiteRoutes = () => {
       seoTitle: page.seoTitle || null,
       seoDescription: page.seoDescription || null,
       isActive: page.isActive,
-      sections: page.sections.map((section: any) => sectionDetailContract(section, website.id))
+      sections: page.sections.map((section: any) => sectionDetailContract(section, website.id, businessProfile))
     }, "Page loaded");
   });
 };
@@ -1754,13 +1793,15 @@ const registerSectionRoutes = () => {
   app.get("/api/v1/websites/:websiteId/sections", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
     const sections = await prisma.pageSection.findMany({ where: { websiteId: website.id }, include: { templateSection: true }, orderBy: { sortOrder: "asc" } });
-    return ok(reply, sections.map((section: any) => sectionDetailContract(section, website.id)), "Sections loaded");
+    const businessProfile = await getBusinessProfileForWebsite(website.id);
+    return ok(reply, sections.map((section: any) => sectionDetailContract(section, website.id, businessProfile)), "Sections loaded");
   });
   app.get("/api/v1/websites/:websiteId/sections/:slotKey", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
     const section = await prisma.pageSection.findUnique({ where: { websiteId_slotKey: { websiteId: website.id, slotKey: request.params?.slotKey || "" } }, include: { templateSection: true } });
     if (!section) throw new AppError(404, "SECTION_NOT_FOUND", "Section not found");
-    return ok(reply, sectionDetailContract(section, website.id), "Section loaded");
+    const businessProfile = await getBusinessProfileForWebsite(website.id);
+    return ok(reply, sectionDetailContract(section, website.id, businessProfile), "Section loaded");
   });
   app.patch("/api/v1/websites/:websiteId/sections/:slotKey/template", async (request: Req, reply) => {
     const { user, website } = await getWebsiteForAccess(request);
@@ -1780,13 +1821,18 @@ const registerSectionRoutes = () => {
       summary: `Section template updated: ${updated.slotKey}`,
       metadata: { slotKey: updated.slotKey, templateSectionId: template.id, sectionKey: template.sectionKey }
     });
-    return ok(reply, sectionDetailContract(updated, website.id), "Section template updated");
+    const businessProfile = await getBusinessProfileForWebsite(website.id);
+    return ok(reply, sectionDetailContract(updated, website.id, businessProfile), "Section template updated");
   });
   app.patch("/api/v1/websites/:websiteId/sections/:slotKey/content", async (request: Req, reply) => {
     const { user, website } = await getWebsiteForAccess(request);
+    const slotKey = request.params?.slotKey || "";
+    if (slotKey === "about.vision_mission") {
+      throw new AppError(400, "SECTION_AUTO_MANAGED", "Konten Visi & Misi otomatis diambil dari Profil Bisnis dan tidak dapat diedit manual di sini. Silakan edit di halaman Profil Bisnis.");
+    }
     const body = sectionContentBody.parse(request.body);
     const updated = await prisma.pageSection.update({
-      where: { websiteId_slotKey: { websiteId: website.id, slotKey: request.params?.slotKey || "" } },
+      where: { websiteId_slotKey: { websiteId: website.id, slotKey } },
       data: { contentJson: prismaJson(limitJson(body.contentJson)) },
       include: { templateSection: true }
     });
@@ -1799,7 +1845,8 @@ const registerSectionRoutes = () => {
       summary: `Section content updated: ${updated.slotKey}`,
       metadata: { slotKey: updated.slotKey, contentKeys: Object.keys(body.contentJson || {}) }
     });
-    return ok(reply, sectionDetailContract(updated, website.id), "Section content updated");
+    const businessProfile = await getBusinessProfileForWebsite(website.id);
+    return ok(reply, sectionDetailContract(updated, website.id, businessProfile), "Section content updated");
   });
   app.patch("/api/v1/websites/:websiteId/sections/:slotKey/visibility", async (request: Req, reply) => {
     const { user, website } = await getWebsiteForAccess(request);
@@ -1818,7 +1865,8 @@ const registerSectionRoutes = () => {
       summary: `Section visibility updated: ${updated.slotKey}`,
       metadata: { slotKey: updated.slotKey, isVisible: updated.isVisible }
     });
-    return ok(reply, sectionDetailContract(updated, website.id), "Section visibility updated");
+    const businessProfile = await getBusinessProfileForWebsite(website.id);
+    return ok(reply, sectionDetailContract(updated, website.id, businessProfile), "Section visibility updated");
   });
 };
 

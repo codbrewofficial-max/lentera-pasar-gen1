@@ -64,15 +64,15 @@ export const FormalSiteFooter: React.FC<FormalSiteFooterProps> = ({
           <div className="md:col-span-5 flex flex-col space-y-4">
             <Link href={getHref("/")} className="flex items-center space-x-2.5">
               {logoUrl ? (
-                <img src={logoUrl} alt={businessName} className="w-8 h-8 rounded object-cover" referrerPolicy="no-referrer" />
+                <img src={logoUrl} alt={businessName} className="w-8 h-8 rounded-none object-cover" referrerPolicy="no-referrer" />
               ) : (
-                <div className="bg-[#649FF6] text-white p-2 rounded">
+                <div className="bg-slate-950 text-white p-2 rounded-none">
                   <Shield className="w-5 h-5" />
                 </div>
               )}
               <div className="flex flex-col">
                 <span className="font-semibold text-lg text-white leading-tight">{businessName}</span>
-                <span className="text-[9px] text-[#649FF6] font-mono tracking-wider uppercase leading-none">{taglineLabel}</span>
+                <span className="text-[9px] text-[#1E3A5F] font-mono tracking-wider uppercase leading-none">{taglineLabel}</span>
               </div>
             </Link>
             <p className="text-sm font-light leading-relaxed text-slate-400">{description}</p>
@@ -86,27 +86,27 @@ export const FormalSiteFooter: React.FC<FormalSiteFooterProps> = ({
             {hasSocial && (
               <div className="flex items-center gap-2 pt-1">
                 {instagramUrl && (
-                  <a href={instagramUrl} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="w-8 h-8 flex items-center justify-center rounded bg-slate-800 hover:bg-[#649FF6] text-slate-400 hover:text-white transition-colors">
+                  <a href={instagramUrl} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="w-8 h-8 flex items-center justify-center rounded-none bg-slate-800 hover:bg-[#1E3A5F] text-slate-400 hover:text-white transition-colors">
                     <Instagram className="w-4 h-4" />
                   </a>
                 )}
                 {facebookUrl && (
-                  <a href={facebookUrl} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="w-8 h-8 flex items-center justify-center rounded bg-slate-800 hover:bg-[#649FF6] text-slate-400 hover:text-white transition-colors">
+                  <a href={facebookUrl} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="w-8 h-8 flex items-center justify-center rounded-none bg-slate-800 hover:bg-[#1E3A5F] text-slate-400 hover:text-white transition-colors">
                     <Facebook className="w-4 h-4" />
                   </a>
                 )}
                 {linkedinUrl && (
-                  <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="w-8 h-8 flex items-center justify-center rounded bg-slate-800 hover:bg-[#649FF6] text-slate-400 hover:text-white transition-colors">
+                  <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="w-8 h-8 flex items-center justify-center rounded-none bg-slate-800 hover:bg-[#1E3A5F] text-slate-400 hover:text-white transition-colors">
                     <Linkedin className="w-4 h-4" />
                   </a>
                 )}
                 {twitterUrl && (
-                  <a href={twitterUrl} target="_blank" rel="noopener noreferrer" aria-label="Twitter/X" className="w-8 h-8 flex items-center justify-center rounded bg-slate-800 hover:bg-[#649FF6] text-slate-400 hover:text-white transition-colors">
+                  <a href={twitterUrl} target="_blank" rel="noopener noreferrer" aria-label="Twitter/X" className="w-8 h-8 flex items-center justify-center rounded-none bg-slate-800 hover:bg-[#1E3A5F] text-slate-400 hover:text-white transition-colors">
                     <Twitter className="w-4 h-4" />
                   </a>
                 )}
                 {websiteUrl && (
-                  <a href={websiteUrl} target="_blank" rel="noopener noreferrer" aria-label="Website" className="w-8 h-8 flex items-center justify-center rounded bg-slate-800 hover:bg-[#649FF6] text-slate-400 hover:text-white transition-colors">
+                  <a href={websiteUrl} target="_blank" rel="noopener noreferrer" aria-label="Website" className="w-8 h-8 flex items-center justify-center rounded-none bg-slate-800 hover:bg-[#1E3A5F] text-slate-400 hover:text-white transition-colors">
                     <Globe className="w-4 h-4" />
                   </a>
                 )}
@@ -120,7 +120,7 @@ export const FormalSiteFooter: React.FC<FormalSiteFooterProps> = ({
             <ul className="space-y-2 text-sm font-light">
               {resolvedLinks.map((link) => (
                 <li key={link.path}>
-                  <Link href={getHref(link.path)} className="hover:text-[#649FF6] hover:underline transition-all">
+                  <Link href={getHref(link.path)} className="hover:text-[#1E3A5F] hover:underline transition-all">
                     {link.label}
                   </Link>
                 </li>
@@ -134,25 +134,25 @@ export const FormalSiteFooter: React.FC<FormalSiteFooterProps> = ({
             <div className="space-y-3 text-sm font-light text-slate-400">
               {address && (
                 <div className="flex items-start space-x-2.5">
-                  <MapPin className="w-4 h-4 text-[#649FF6] mt-0.5 flex-shrink-0" />
+                  <MapPin className="w-4 h-4 text-[#1E3A5F] mt-0.5 flex-shrink-0" />
                   <span>{address}</span>
                 </div>
               )}
               {email && (
                 <div className="flex items-center space-x-2.5">
-                  <Mail className="w-4 h-4 text-[#649FF6] flex-shrink-0" />
-                  <a href={`mailto:${email}`} className="hover:text-[#649FF6] transition-colors">{email}</a>
+                  <Mail className="w-4 h-4 text-[#1E3A5F] flex-shrink-0" />
+                  <a href={`mailto:${email}`} className="hover:text-[#1E3A5F] transition-colors">{email}</a>
                 </div>
               )}
               {phone && (
                 <div className="flex items-center space-x-2.5">
-                  <Phone className="w-4 h-4 text-[#649FF6] flex-shrink-0" />
-                  <a href={`tel:${phone.replace(/[^0-9+]/g, "")}`} className="hover:text-[#649FF6] transition-colors">{phone}</a>
+                  <Phone className="w-4 h-4 text-[#1E3A5F] flex-shrink-0" />
+                  <a href={`tel:${phone.replace(/[^0-9+]/g, "")}`} className="hover:text-[#1E3A5F] transition-colors">{phone}</a>
                 </div>
               )}
               {workingHours && (
                 <div className="flex items-start space-x-2.5 pt-1 border-t border-slate-800">
-                  <Clock className="w-4 h-4 text-[#F56B71] mt-0.5 flex-shrink-0" />
+                  <Clock className="w-4 h-4 text-[#8A6D3B] mt-0.5 flex-shrink-0" />
                   <span className="text-xs font-mono">{workingHours}</span>
                 </div>
               )}

@@ -36,18 +36,19 @@ export const SectionHeading: React.FC<SectionHeadingProps> = ({
       )}
       <h2
         className={cn(
-          "text-3xl md:text-4xl font-semibold tracking-tight leading-tight",
-          dark ? "text-white" : "text-slate-900"
+          "text-3xl md:text-4xl font-bold tracking-tight leading-tight",
+          dark ? "text-white" : "text-slate-950"
         )}
       >
         {title}
       </h2>
+      {/* Garis aksen tegas (bukan pil membulat) — kesan garis bawah dokumen formal */}
       <div
         className={cn(
-          "h-1 w-16 my-4 rounded",
-          badgeVariant === "primary" ? "bg-[#649FF6]" :
-          badgeVariant === "secondary" ? "bg-[#F56B71]" :
-          badgeVariant === "accent" ? "bg-[#B283AF]" : "bg-slate-400"
+          "my-4 h-[3px] w-16",
+          badgeVariant === "primary" ? "bg-slate-950" :
+          badgeVariant === "secondary" ? "bg-[#1E3A5F]" :
+          badgeVariant === "accent" ? "bg-slate-500" : "bg-slate-400"
         )}
       />
       {subtitle && (
