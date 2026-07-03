@@ -479,6 +479,46 @@ function TextImageSection(props: SectionProps) {
   );
 }
 
+// Dipakai khusus untuk slot about.vision_mission pada tema Clean (default/fallback).
+// Berbeda dari TextImageSection generik: vision/mission di sini selalu HTML dari
+// RichTextEditor (TipTap) di Profil Bisnis, jadi dirender lewat <RichHtml> supaya format
+// (bold, list, dst) tampil, bukan cuma teks polos atau tag HTML mentah.
+function CleanAboutVisionMissionSection(props: SectionProps) {
+  const c = props.section.content || {};
+  const bp = props.payload.businessProfile || {};
+  const visionHtml = text(c.vision, text((bp as any).vision, ''));
+  const missionHtml = text(c.mission, text((bp as any).mission, ''));
+
+  return (
+    <section className="lp-section">
+      <div className="lp-container">
+        <Heading
+          title={text(c.title, props.section.slotLabel || 'Visi & Misi')}
+          description={text(c.badge, '')}
+        />
+        <div className="mt-10 grid grid-cols-1 gap-8 md:grid-cols-2">
+          <div className="lp-card p-8">
+            <h3 className="text-lg font-semibold text-slate-900">{text(c.visionTitle, 'Visi')}</h3>
+            {visionHtml ? (
+              <RichHtml html={visionHtml} className="prose prose-sm max-w-none mt-4 text-slate-600 prose-p:my-2 prose-ul:my-2 prose-li:my-1" />
+            ) : (
+              <p className="mt-4 text-sm text-slate-500">Visi belum diisi di Profil Bisnis.</p>
+            )}
+          </div>
+          <div className="lp-card p-8">
+            <h3 className="text-lg font-semibold text-slate-900">{text(c.missionTitle, 'Misi')}</h3>
+            {missionHtml ? (
+              <RichHtml html={missionHtml} className="prose prose-sm max-w-none mt-4 text-slate-600 prose-p:my-2 prose-ul:my-2 prose-li:my-1" />
+            ) : (
+              <p className="mt-4 text-sm text-slate-500">Misi belum diisi di Profil Bisnis.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function PageHeroSection(props: SectionProps) {
   const c = props.section.content || {};
   const imageUrl = contentImageOf(c);
@@ -894,7 +934,7 @@ export const companyProfileCleanComponents: Record<string, SectionComponent> = {
 
   CompanyProfileCleanAboutOrganizationProfile: TextImageSection,
   CompanyProfileCleanAboutHistoryTimeline: TextImageSection,
-  CompanyProfileCleanAboutVisionMission: TextImageSection,
+  CompanyProfileCleanAboutVisionMission: CleanAboutVisionMissionSection,
   CompanyProfileCleanAboutValueStatement: TextImageSection,
   CompanyProfileCleanAboutTeamHighlight: TextImageSection,
 

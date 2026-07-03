@@ -1,8 +1,8 @@
 import React from "react";
-import { CheckCircle2, Eye, Target } from "lucide-react";
+import { Eye, Target } from "lucide-react";
 import { companyData as defaultCompanyData } from "../../data/companyProfileData";
 import { SectionHeading } from "../../shared/SectionHeading";
-import { stripHtmlToText } from '@/components/content/RichHtml';
+import { RichHtml } from '@/components/content/RichHtml';
 
 interface VisionMissionProps {
   title?: string;
@@ -11,8 +11,12 @@ interface VisionMissionProps {
   visionTitle?: string;
   missionTitle?: string;
   vision?: string;
-  mission?: string[];
+  mission?: string;
 }
+
+const defaultMissionHtml = Array.isArray(defaultCompanyData.mission)
+  ? defaultCompanyData.mission.map((item) => `<p>${item}</p>`).join("")
+  : String(defaultCompanyData.mission || "");
 
 export const VisionMission: React.FC<VisionMissionProps> = ({
   title = "Visi & Misi Korporasi",
@@ -21,7 +25,7 @@ export const VisionMission: React.FC<VisionMissionProps> = ({
   visionTitle = "Visi",
   missionTitle = "Misi",
   vision = defaultCompanyData.vision,
-  mission = defaultCompanyData.mission,
+  mission = defaultMissionHtml,
 }) => {
   return (
     <section id="about-vision-mission" className="py-16 md:py-24 bg-white">
@@ -36,7 +40,10 @@ export const VisionMission: React.FC<VisionMissionProps> = ({
               </div>
               <h3 className="text-xl font-semibold text-slate-900 tracking-tight">{visionTitle}</h3>
             </div>
-            {stripHtmlToText(vision)}
+            <RichHtml
+              html={vision}
+              className="prose prose-slate max-w-none text-slate-600 font-light leading-relaxed text-sm md:text-base prose-p:my-2 prose-ul:my-2 prose-li:my-1"
+            />
           </div>
 
           <div className="border border-slate-100 rounded-none bg-white p-8 md:p-10 shadow-sm">
@@ -46,14 +53,10 @@ export const VisionMission: React.FC<VisionMissionProps> = ({
               </div>
               <h3 className="text-xl font-semibold text-slate-900 tracking-tight">{missionTitle}</h3>
             </div>
-            {mission.map((item, idx) => (
-              <div 
-                key={idx}
-                className="flex items-start space-x-3 text-sm md:text-base text-slate-600 font-light leading-relaxed"
-              >
-                {stripHtmlToText(item)}
-              </div>
-            ))}
+            <RichHtml
+              html={mission}
+              className="prose prose-slate max-w-none text-slate-600 font-light leading-relaxed text-sm md:text-base prose-p:my-2 prose-ul:my-2 prose-li:my-1"
+            />
           </div>
         </div>
       </div>

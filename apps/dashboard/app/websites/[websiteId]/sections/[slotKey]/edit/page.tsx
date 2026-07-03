@@ -69,6 +69,35 @@ const targetTypeKey = (key: string) => `${targetPrefix(key)}TargetType`;
 const targetPageKey = (key: string) => `${targetPrefix(key)}TargetPageKey`;
 const targetCustomUrlKey = (key: string) => `${targetPrefix(key)}CustomUrl`;
 
+const isEffectivelyEmptyHtml = (html: string) => {
+  const value = (html || "").trim();
+  return !value || value === "<p></p>" || value === "<p><br></p>";
+};
+
+// Sanitasi dasar untuk preview di dashboard: buang tag berbahaya (script, iframe, dst) dan
+// atribut event handler on*, sebelum dirender sebagai HTML lewat dangerouslySetInnerHTML.
+// Konten ini berasal dari RichTextEditor (TipTap) yang diisi owner sendiri di Profil Bisnis,
+// jadi risikonya rendah, tapi sanitasi tetap dijaga sebagai lapisan pertahanan tambahan.
+const sanitizeHtmlPreview = (html: string) =>
+  String(html || "")
+    .replace(/<(script|style|iframe|object|embed|form|link|meta)[^>]*>[\s\S]*?<\/\1>/gi, "")
+    .replace(/<(script|style|iframe|object|embed|form|link|meta)[^>]*\/?>(?!<\/\1>)/gi, "")
+    .replace(/\son\w+="[^"]*"/gi, "")
+    .replace(/\son\w+='[^']*'/gi, "")
+    .replace(/href\s*=\s*["']\s*javascript:[^"']*["']/gi, "");
+
+function AutoManagedHtmlPreview({ html }: { html: string }) {
+  if (isEffectivelyEmptyHtml(html)) {
+    return <p className="text-sm text-slate-400 italic">Belum diisi di Profil Bisnis.</p>;
+  }
+  return (
+    <div
+      className="prose prose-sm max-w-none text-slate-600 leading-relaxed prose-p:my-2 prose-ul:my-2 prose-li:my-1"
+      dangerouslySetInnerHTML={{ __html: sanitizeHtmlPreview(html) }}
+    />
+  );
+}
+
 export default function EditSectionContentPage() {
   const router = useRouter();
   const params = useParams();
@@ -316,11 +345,11 @@ export default function EditSectionContentPage() {
             <h4 className="text-xs font-bold uppercase tracking-wide text-slate-500">Pratinjau Konten Saat Ini</h4>
             <div className="space-y-1.5">
               <p className="text-xs font-bold text-slate-700">Visi</p>
-              <p className="text-sm text-slate-600 leading-relaxed">{previewVision || "Belum diisi di Profil Bisnis."}</p>
+              <AutoManagedHtmlPreview html={previewVision} />
             </div>
             <div className="space-y-1.5">
               <p className="text-xs font-bold text-slate-700">Misi</p>
-              <p className="text-sm text-slate-600 leading-relaxed">{previewMission || "Belum diisi di Profil Bisnis."}</p>
+              <AutoManagedHtmlPreview html={previewMission} />
             </div>
           </div>
         </div>

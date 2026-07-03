@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Eye, Rocket } from 'lucide-react';
+import { RichHtml } from '@/components/content/RichHtml';
 
 interface AbstractAboutVisionMissionProps {
   visionTitle?: string;
@@ -11,11 +12,14 @@ interface AbstractAboutVisionMissionProps {
   mission?: string;
 }
 
+const defaultVisionHtml = '<p>Menjadi episentrum inovasi desain avant-garde di Asia Tenggara yang membongkar standardisasi korporat membosankan, memberdayakan UMKM lokal dengan kepribadian visual yang legendaris, tak kenal takut, dan berdaya saing global.</p>';
+const defaultMissionHtml = '<ul><li>Mendekonstruksi pola pikir branding kaku melalui edukasi visual eksperimental.</li><li>Melahirkan arsitektur web digital interaktif berkinerja tinggi yang menggabungkan ekspresi seni murni dengan rekayasa fungsional.</li><li>Menghadirkan identitas visual eksklusif kelas atas yang dapat diakses dengan mudah oleh para pelaku UMKM progresif di Indonesia.</li></ul>';
+
 export function AbstractAboutVisionMission({
   visionTitle = "Visi Kreatif Spekulatif Kami",
-  vision = "Menjadi episentrum inovasi desain avant-garde di Asia Tenggara yang membongkar standardisasi korporat membosankan, memberdayakan UMKM lokal dengan kepribadian visual yang legendaris, tak kenal takut, dan berdaya saing global.",
+  vision = defaultVisionHtml,
   missionTitle = "Misi Dekonstruksi Berkelanjutan",
-  mission = "1. Mendekonstruksi pola pikir branding kaku melalui edukasi visual eksperimental.\n2. Melahirkan arsitektur web digital interaktif berkinerja tinggi yang menggabungkan ekspresi seni murni dengan rekayasa fungsional.\n3. Menghadirkan identitas visual eksklusif kelas atas yang dapat diakses dengan mudah oleh para pelaku UMKM progresif di Indonesia."
+  mission = defaultMissionHtml
 }: AbstractAboutVisionMissionProps) {
   return (
     <section className="relative bg-[#111111] text-white py-24 px-6 border-b-8 border-white overflow-hidden">
@@ -46,9 +50,10 @@ export function AbstractAboutVisionMission({
                   {visionTitle}
                 </h3>
                 
-                <p className="font-sans text-base sm:text-lg leading-relaxed font-medium">
-                  {vision}
-                </p>
+                <RichHtml
+                  html={vision}
+                  className="prose prose-sm max-w-none font-sans text-base sm:text-lg leading-relaxed font-medium text-black prose-p:my-2 prose-ul:my-2 prose-li:my-1"
+                />
               </div>
               
               <div className="mt-12 font-mono text-xs font-bold tracking-wider text-black/60">
@@ -78,9 +83,10 @@ export function AbstractAboutVisionMission({
                   {missionTitle}
                 </h3>
                 
-                <div className="font-sans text-sm sm:text-base leading-relaxed text-neutral-300 whitespace-pre-line space-y-4">
-                  {mission}
-                </div>
+                <RichHtml
+                  html={mission}
+                  className="prose prose-sm prose-invert max-w-none font-sans text-sm sm:text-base leading-relaxed text-neutral-300 prose-p:my-2 prose-ul:my-2 prose-li:my-1"
+                />
               </div>
               
               <div className="mt-12 font-mono text-xs font-bold tracking-wider text-neutral-600">

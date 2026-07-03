@@ -341,7 +341,7 @@ export function AbstractAboutVisionMissionSection(props: AbstractSectionProps) {
       visionTitle={text(content.visionTitle)}
       vision={text(content.vision, text(business.vision))}
       missionTitle={text(content.missionTitle)}
-      mission={text(content.mission)}
+      mission={text(content.mission, text(business.mission))}
     />
   );
 }

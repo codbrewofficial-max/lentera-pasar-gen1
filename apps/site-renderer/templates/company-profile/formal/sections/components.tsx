@@ -516,6 +516,8 @@ export function FormalAboutHistoryTimeline(props: FormalSectionProps) {
 export function FormalAboutVisionMission(props: FormalSectionProps) {
   const content = contentOf(props.section);
   const company = companyDataFor(props.payload);
+  const business = businessOf(props.payload);
+  const missionFallback = text(business.mission) || company.mission.join(" ");
   return (
     <AiAboutVisionMission
       title={text(content.title)}
@@ -524,7 +526,7 @@ export function FormalAboutVisionMission(props: FormalSectionProps) {
       visionTitle={text(content.visionTitle, "Visi")}
       missionTitle={text(content.missionTitle, "Misi")}
       vision={text(content.vision, company.vision)}
-      mission={text(content.mission) ? text(content.mission).split("\n").map((line) => line.trim()).filter(Boolean) : company.mission}
+      mission={text(content.mission, missionFallback)}
     />
   );
 }

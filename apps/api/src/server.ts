@@ -241,30 +241,15 @@ const createAuditLog = async (
   }
 };
 
-const stripHtmlTags = (html: string) =>
-  String(html || "")
-    .replace(/<\/(p|li|div|h[1-6])>/gi, "\n")
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<[^>]*>/g, "")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-// Vision & Mission are both rendered as plain paragraph strings by the runtime section component (TextImageSection),
-// which only accepts strings for its content fields (see SectionRegistry.tsx `text()` helper).
+// Vision & Mission are sent as raw HTML from the RichTextEditor (TipTap) in Business Profile.
+// The site-renderer renders them with <RichHtml> (see components/content/RichHtml.tsx) so
+// formatting (bold, lists, headings, links) from the editor displays correctly on the public
+// site, instead of being stripped to plain text or shown as literal HTML tags.
 const businessProfileToVisionMissionContent = (businessProfile: any) => {
   if (!businessProfile) return {};
-  const visionLines = stripHtmlTags(businessProfile.vision || "");
-  const missionLines = stripHtmlTags(businessProfile.mission || "");
   return {
-    vision: visionLines.join(" "),
-    mission: missionLines.join(" ")
+    vision: businessProfile.vision || "",
+    mission: businessProfile.mission || ""
   };
 };
 
