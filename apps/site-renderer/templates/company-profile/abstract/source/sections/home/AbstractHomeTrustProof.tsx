@@ -11,15 +11,15 @@ interface AbstractBrandItem {
   logoUrl?: string;
 }
 
+interface AbstractMetricItem {
+  label?: string;
+  value?: string;
+}
+
 interface AbstractHomeTrustProofProps {
   title?: string;
   description?: string;
-  metricOneLabel?: string;
-  metricOneValue?: string;
-  metricTwoLabel?: string;
-  metricTwoValue?: string;
-  metricThreeLabel?: string;
-  metricThreeValue?: string;
+  metrics?: AbstractMetricItem[];
   testimonials?: TestimonialItem[];
   brands?: AbstractBrandItem[];
 }
@@ -27,14 +27,9 @@ interface AbstractHomeTrustProofProps {
 const ACCENTS = ['#649FF6', '#F56B71', '#B283AF'];
 
 export function AbstractHomeTrustProof({
-  title = "Bukti nyata karya kami diakui industri",
-  description = "Kami tidak sekadar berteori. Angka-angka ini merepresentasikan hasil kerja yang memberi dampak bisnis terukur bagi para mitra kami.",
-  metricOneLabel = "Mitra UMKM & Korporasi Aktif",
-  metricOneValue = "120+",
-  metricTwoLabel = "Karya Visual Terselesaikan",
-  metricTwoValue = "450+",
-  metricThreeLabel = "Penghargaan Eksperimen Desain",
-  metricThreeValue = "12",
+  title,
+  description,
+  metrics = [],
   testimonials,
   brands = []
 }: AbstractHomeTrustProofProps) {
@@ -45,45 +40,40 @@ export function AbstractHomeTrustProof({
 
       <div className="max-w-7xl mx-auto relative z-10">
 
-        <div className="max-w-3xl mb-16 space-y-4">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10">
-            <Trophy className="w-3.5 h-3.5 text-[#649FF6]" />
-            <span className="font-mono text-xs lowercase tracking-wide text-neutral-200">rekam jejak</span>
+        {(title || description) && (
+          <div className="max-w-3xl mb-16 space-y-4">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10">
+              <Trophy className="w-3.5 h-3.5 text-[#649FF6]" />
+              <span className="font-mono text-xs lowercase tracking-wide text-neutral-200">rekam jejak</span>
+            </div>
+            {title && (
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-sans font-extrabold tracking-tight leading-tight">{title}</h2>
+            )}
+            {description && (
+              <p className="text-neutral-400 font-sans text-sm sm:text-base leading-relaxed max-w-2xl">{description}</p>
+            )}
           </div>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-sans font-extrabold tracking-tight leading-tight">
-            {title}
-          </h2>
-          <p className="text-neutral-400 font-sans text-sm sm:text-base leading-relaxed max-w-2xl">
-            {description}
-          </p>
-        </div>
+        )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            { label: metricOneLabel, value: metricOneValue },
-            { label: metricTwoLabel, value: metricTwoValue },
-            { label: metricThreeLabel, value: metricThreeValue },
-          ].map((metric, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="rounded-3xl bg-white/5 p-8 flex flex-col justify-between min-h-[200px]"
-            >
-              <span
-                className="font-sans font-extrabold text-5xl sm:text-6xl tracking-tight"
-                style={{ color: ACCENTS[index % ACCENTS.length] }}
+        {metrics.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {metrics.map((metric, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="rounded-3xl bg-white/5 p-8 flex flex-col justify-between min-h-[200px]"
               >
-                {metric.value}
-              </span>
-              <p className="font-sans text-sm font-semibold text-neutral-300 mt-6">
-                {metric.label}
-              </p>
-            </motion.div>
-          ))}
-        </div>
+                <span className="font-sans font-extrabold text-5xl sm:text-6xl tracking-tight" style={{ color: ACCENTS[index % ACCENTS.length] }}>
+                  {metric.value}
+                </span>
+                <p className="font-sans text-sm font-semibold text-neutral-300 mt-6">{metric.label}</p>
+              </motion.div>
+            ))}
+          </div>
+        )}
 
         {testimonials && testimonials.length > 0 && (
           <div className="mt-20 pt-16 border-t border-white/10">

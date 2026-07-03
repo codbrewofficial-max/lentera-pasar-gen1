@@ -35,12 +35,10 @@ export const abstractCompanyProfileTemplate = {
     "articles.featured_article": "AbstractFeaturedArticle",
     "articles.article_preview": "AbstractArticlePreview",
 
-    "article_detail.article_detail_hero": "AbstractArticleDetailHero",
     "article_detail.article_content": "AbstractArticleContent",
     "article_detail.related_articles": "AbstractRelatedArticles",
     "article_detail.article_cta": "AbstractArticleCta",
 
-    "portfolio_detail.portfolio_detail_hero": "AbstractPortfolioDetailHero",
     "portfolio_detail.portfolio_detail_content": "AbstractPortfolioDetailContent",
     "portfolio_detail.related_portfolios": "AbstractRelatedPortfolios",
     "portfolio_detail.portfolio_detail_cta": "AbstractPortfolioDetailCta",
