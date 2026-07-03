@@ -35,12 +35,10 @@ export const formalCompanyProfileTemplate = {
     "articles.featured_article": "FormalFeaturedArticle",
     "articles.article_preview": "FormalArticlePreview",
 
-    "article_detail.article_detail_hero": "FormalArticleDetailHero",
     "article_detail.article_content": "FormalArticleContent",
     "article_detail.related_articles": "FormalRelatedArticles",
     "article_detail.article_cta": "FormalArticleCta",
 
-    "portfolio_detail.portfolio_detail_hero": "FormalPortfolioDetailHero",
     "portfolio_detail.portfolio_detail_content": "FormalPortfolioDetailContent",
     "portfolio_detail.related_portfolios": "FormalRelatedPortfolios",
     "portfolio_detail.portfolio_detail_cta": "FormalPortfolioDetailCta",

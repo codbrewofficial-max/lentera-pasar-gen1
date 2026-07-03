@@ -29,7 +29,6 @@ import { ArticleHero as AiArticlesHero } from "../source/sections/articles/Artic
 import { FeaturedArticle as AiFeaturedArticle } from "../source/sections/articles/FeaturedArticle";
 import { ArticlePreview as AiArticlePreview } from "../source/sections/articles/ArticlePreview";
 
-import { ArticleDetailHero as AiArticleDetailHero } from "../source/sections/article-detail/ArticleDetailHero";
 import { ArticleContent as AiArticleContent } from "../source/sections/article-detail/ArticleContent";
 import { RelatedArticles as AiRelatedArticles } from "../source/sections/article-detail/RelatedArticles";
 import { ArticleCta as AiArticleCta } from "../source/sections/article-detail/ArticleCta";
@@ -294,15 +293,45 @@ function timelineFor(section: PublicSection): TimelineItem[] | undefined {
   }));
 }
 
-function valuesFor(section: PublicSection, valueFour?: string): ValueItem[] | undefined {
+// Field "items" adalah tipe repeater (lihat schema Template Pack) — array bebas jumlah,
+// tiap item punya {title, value}. Sebelumnya section ini pakai field tetap valueOne..Four
+// yang menyebabkan slot 1-3 selalu hardcode dummy data kalau schema section tidak
+// mendefinisikan field itu (lihat riwayat perbaikan). Sekarang murni dari input owner.
+function itemsOf(section: PublicSection): Array<{ title?: string; value?: string }> {
   const content = contentOf(section);
+  const raw = content.items;
+  return Array.isArray(raw) ? raw : [];
+}
+
+function valuesFor(section: PublicSection): ValueItem[] | undefined {
   const icons = ["Shield", "Award", "Users", "TrendingUp"];
-  const items = [content.valueOne, content.valueTwo, content.valueThree, valueFour || content.valueFour]
-    .map((value, index) => {
-      const title = text(value as string);
-      return title ? { title, description: "", iconName: icons[index % icons.length] } : null;
+  const items = itemsOf(section)
+    .map((item, index) => {
+      const title = text(item?.title as string);
+      return title ? { title, description: text(item?.value as string), iconName: icons[index % icons.length] } : null;
     })
     .filter(Boolean) as ValueItem[];
+  return items.length ? items : undefined;
+}
+
+function stepsFor(section: PublicSection): ProcessStep[] | undefined {
+  const items = itemsOf(section)
+    .map((item, index) => {
+      const title = text(item?.title as string);
+      return title ? { step: String(index + 1).padStart(2, "0"), title, description: text(item?.value as string) } : null;
+    })
+    .filter(Boolean) as ProcessStep[];
+  return items.length ? items : undefined;
+}
+
+function benefitsFor(section: PublicSection): BenefitItem[] | undefined {
+  const icons = ["Shield", "Compass", "Users", "CheckCircle"];
+  const items = itemsOf(section)
+    .map((item, index) => {
+      const title = text(item?.title as string);
+      return title ? { title, description: text(item?.value as string), iconName: icons[index % icons.length] } : null;
+    })
+    .filter(Boolean) as BenefitItem[];
   return items.length ? items : undefined;
 }
 
@@ -329,28 +358,7 @@ function teamFor(section: PublicSection): TeamItem[] | undefined {
   }));
 }
 
-function stepsFor(section: PublicSection, stepFour?: string): ProcessStep[] | undefined {
-  const content = contentOf(section);
-  const items = [content.stepOne, content.stepTwo, content.stepThree, stepFour || content.stepFour]
-    .map((value, index) => {
-      const title = text(value as string);
-      return title ? { step: String(index + 1).padStart(2, "0"), title, description: "" } : null;
-    })
-    .filter(Boolean) as ProcessStep[];
-  return items.length ? items : undefined;
-}
 
-function benefitsFor(section: PublicSection, benefitFour?: string): BenefitItem[] | undefined {
-  const content = contentOf(section);
-  const icons = ["Shield", "Compass", "Users", "CheckCircle"];
-  const items = [content.benefitOne, content.benefitTwo, content.benefitThree, benefitFour || content.benefitFour]
-    .map((value, index) => {
-      const title = text(value as string);
-      return title ? { title, description: "", iconName: icons[index % icons.length] } : null;
-    })
-    .filter(Boolean) as BenefitItem[];
-  return items.length ? items : undefined;
-}
 
 function faqsFor(section: PublicSection, fallback: CrudItem[] = []) {
   return (section.data?.faqs?.length ? section.data.faqs : fallback).slice(0, 10).map(mapFaq);
@@ -382,14 +390,14 @@ export function FormalHomeHero(props: FormalSectionProps) {
 
   return (
     <AiHomeHero
-      eyebrow={text(content.eyebrow, tagline || "Mitra Korporat Terpercaya Indonesia")}
+      eyebrow={text(content.badge, tagline || "Mitra Korporat Terpercaya Indonesia")}
       headingLine1={headingParts.headingLine1}
       headingHighlight={headingParts.headingHighlight}
       headingLine3={headingParts.headingLine3}
-      description={text(content.subtitle, text(business.description, props.payload.page.purpose || "Website company profile profesional untuk memperkenalkan bisnis, layanan, portofolio, dan informasi kontak kepada calon klien."))}
-      primaryCtaLabel={text(content.ctaLabel, "Lihat Layanan")}
+      description={text(content.description, text(business.description, props.payload.page.purpose || "Website company profile profesional untuk memperkenalkan bisnis, layanan, portofolio, dan informasi kontak kepada calon klien."))}
+      primaryCtaLabel={text(content.ctaLabel)}
       primaryCtaHref={sectionHref(props, "cta", "/services")}
-      secondaryCtaLabel={text(content.secondaryCtaLabel, "Hubungi Kami")}
+      secondaryCtaLabel={text(content.secondaryCtaLabel)}
       secondaryCtaHref={sectionHref(props, "secondaryCta", "/contact")}
       imageUrl={contentImage(content, text(business.heroImageUrl, text(business.logoUrl, "https://picsum.photos/seed/integra-hero/600/600")))}
       imageAlt={text(business.logoAlt, businessName)}
@@ -407,9 +415,9 @@ export function FormalHomeProfileSummary(props: FormalSectionProps) {
       imageUrl={contentImage(content, text(business.aboutImage, text(business.logoUrl, "https://picsum.photos/seed/integra-about/800/600")))}
       imageAlt={businessName}
       title={text(content.title, `Mengenal ${businessName}`)}
-      badge={text(content.badge, "Profil Singkat")}
+      badge={text(content.badge)}
       description={text(content.description, text(business.description, "Ceritakan profil bisnis Anda agar calon pelanggan memahami layanan, pengalaman, dan alasan untuk menghubungi Anda."))}
-      ctaLabel={text(content.ctaLabel, "Pelajari Profil Kami")}
+      ctaLabel={text(content.ctaLabel)}
       ctaHref={sectionHref(props, "cta", "/about")}
     />
   );
@@ -421,12 +429,12 @@ export function FormalHomeServicePreview(props: FormalSectionProps) {
 
   return (
     <AiHomeServicePreview
-      title={text(content.title, "Layanan Utama Kami")}
-      subtitle={text(content.description, "Pilih layanan unggulan yang paling ingin ditampilkan di halaman utama.")}
-      badge={text(content.badge, "Fokus Solusi")}
+      title={text(content.title)}
+      subtitle={text(content.description)}
+      badge={text(content.badge)}
       services={services}
       allServicesHref={sectionHref(props, "cta", getPageHrefByKey(props.siteSlug, props.payload.navigation, "services", "/services"))}
-      allServicesLabel={text(content.ctaLabel, "Lihat Semua Layanan")}
+      allServicesLabel={text(content.ctaLabel)}
     />
   );
 }
@@ -437,12 +445,12 @@ export function FormalHomePortfolioPreview(props: FormalSectionProps) {
 
   return (
     <AiHomePortfolioPreview
-      title={text(content.title, "Portofolio Pilihan")}
-      subtitle={text(content.description, "Tampilkan portofolio unggulan agar calon pelanggan melihat bukti pekerjaan Anda.")}
-      badge={text(content.badge, "Rekam Jejak")}
+      title={text(content.title)}
+      subtitle={text(content.description)}
+      badge={text(content.badge)}
       portfolios={portfolios}
       allPortfolioHref={sectionHref(props, "cta", getPageHrefByKey(props.siteSlug, props.payload.navigation, "portfolio", "/portfolio"))}
-      allPortfolioLabel={text(content.ctaLabel, "Lihat Semua Portofolio")}
+      allPortfolioLabel={text(content.ctaLabel)}
       portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)}
     />
   );
@@ -457,17 +465,15 @@ export function FormalHomeTrustProof(props: FormalSectionProps) {
   const restRows = testimonialRows.filter((item) => !item.isFeatured);
   const testimonials = [...featuredRows, ...restRows].slice(0, 3).map(mapTestimonial);
   const brands = (props.section.data?.brands || []).map(mapBrand);
-  const metrics = [
-    { label: text(content.metricOneLabel), value: text(content.metricOneValue) },
-    { label: text(content.metricTwoLabel), value: text(content.metricTwoValue) },
-    { label: text(content.metricThreeLabel), value: text(content.metricThreeValue) },
-  ].filter((m) => m.label && m.value);
+  const metrics = itemsOf(props.section)
+    .map((item) => ({ value: text(item?.title as string), label: text(item?.value as string) }))
+    .filter((m) => m.label && m.value);
 
   return (
     <AiHomeTrustProof
-      title={text(content.title, "Dipercaya oleh Pelanggan Kami")}
-      subtitle={text(content.description, "Testimoni unggulan dari pelanggan kami.")}
-      badge={text(content.badge, "Jaminan Mutu")}
+      title={text(content.title)}
+      subtitle={text(content.description)}
+      badge={text(content.badge)}
       testimonials={testimonials}
       metrics={metrics}
       brands={brands}
@@ -480,9 +486,9 @@ export function FormalHomeCtaContact(props: FormalSectionProps) {
 
   return (
     <AiHomeCtaContact
-      title={text(content.title, "Siap Berdiskusi dengan Kami?")}
-      description={text(content.description, "Hubungi kami untuk konsultasi awal atau informasi lebih lanjut tentang layanan yang tersedia.")}
-      primaryCtaLabel={text(content.ctaLabel, "Hubungi Kami")}
+      title={text(content.title)}
+      description={text(content.description)}
+      primaryCtaLabel={text(content.ctaLabel)}
       primaryCtaHref={sectionHref(props, "cta", "/contact")}
     />
   );
@@ -507,8 +513,8 @@ export function FormalAboutHistoryTimeline(props: FormalSectionProps) {
   const content = contentOf(props.section);
   return (
     <AiAboutHistoryTimeline
-      title={text(content.title, "Milestone & Sejarah Perkembangan")}
-      subtitle={text(content.description, "Ikuti perjalanan bisnis dan perkembangan layanan dari waktu ke waktu.")}
+      title={text(content.title)}
+      subtitle={text(content.description)}
       badge={text(content.badge)}
       items={timelineFor(props.section)}
     />
@@ -525,8 +531,8 @@ export function FormalAboutVisionMission(props: FormalSectionProps) {
       title={text(content.title)}
       subtitle={text(content.description)}
       badge={text(content.badge)}
-      visionTitle={text(content.visionTitle, "Visi")}
-      missionTitle={text(content.missionTitle, "Misi")}
+      visionTitle={text(content.visionTitle)}
+      missionTitle={text(content.missionTitle)}
       vision={text(content.vision, company.vision)}
       mission={text(content.mission, missionFallback)}
     />
@@ -537,11 +543,10 @@ export function FormalAboutValueStatement(props: FormalSectionProps) {
   const content = contentOf(props.section);
   return (
     <AiAboutValueStatement
-      title={text(content.title, "Nilai yang Kami Pegang")}
-      subtitle={text(content.description, "Prinsip kerja yang menjaga kualitas layanan dan kepercayaan pelanggan.")}
+      title={text(content.title)}
+      subtitle={text(content.description)}
       badge={text(content.badge)}
-      valueFour={text(content.valueFour)}
-      values={valuesFor(props.section, text(content.valueFour))}
+      values={valuesFor(props.section)}
     />
   );
 }
@@ -550,8 +555,8 @@ export function FormalAboutTeamHighlight(props: FormalSectionProps) {
   const content = contentOf(props.section);
   return (
     <AiAboutTeamHighlight
-      title={text(content.title, "Tim Profesional Kami")}
-      subtitle={text(content.description, "Orang-orang di balik layanan yang membantu pelanggan mendapatkan solusi terbaik.")}
+      title={text(content.title)}
+      subtitle={text(content.description)}
       badge={text(content.badge)}
       members={teamFor(props.section)}
       imageUrl={contentImage(content)}
@@ -561,32 +566,32 @@ export function FormalAboutTeamHighlight(props: FormalSectionProps) {
 
 export function FormalServicesHero(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiServicesHero title={text(content.title, "Layanan Profesional untuk Kebutuhan Bisnis")} subtitle={text(content.description, "Pilih layanan yang paling sesuai dengan kebutuhan pelanggan Anda.")} badge={text(content.badge)} />;
+  return <AiServicesHero title={text(content.title)} subtitle={text(content.description)} badge={text(content.badge)} />;
 }
 
 export function FormalServicesGrid(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiServicesGrid title={text(content.title, "Layanan Terintegrasi Sesuai Kebutuhan Bisnis")} subtitle={text(content.description, "Setiap layanan disusun agar mudah dipahami dan relevan dengan kebutuhan pelanggan.")} badge={text(content.badge)} services={(props.section.data?.services || []).map(mapService)} />;
+  return <AiServicesGrid title={text(content.title)} subtitle={text(content.description)} badge={text(content.badge)} services={(props.section.data?.services || []).map(mapService)} />;
 }
 
 export function FormalServicesProcess(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiServicesProcess title={text(content.title, "Alur Kerja yang Jelas dan Terukur")} subtitle={text(content.description, "Setiap pekerjaan dijalankan melalui tahapan yang rapi agar pelanggan memahami proses sejak awal.")} badge={text(content.badge)} stepFour={text(content.stepFour)} steps={stepsFor(props.section, text(content.stepFour))} />;
+  return <AiServicesProcess title={text(content.title)} subtitle={text(content.description)} badge={text(content.badge)} steps={stepsFor(props.section)} />;
 }
 
 export function FormalServicesBenefits(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiServicesBenefits title={text(content.title, "Manfaat Menggunakan Layanan Kami")} subtitle={text(content.description, "Keunggulan yang membantu pelanggan mengambil keputusan dengan lebih yakin.")} badge={text(content.badge)} benefitFour={text(content.benefitFour)} benefits={benefitsFor(props.section, text(content.benefitFour))} />;
+  return <AiServicesBenefits title={text(content.title)} subtitle={text(content.description)} badge={text(content.badge)} benefits={benefitsFor(props.section)} />;
 }
 
 export function FormalServicesFaq(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiServicesFaq title={text(content.title, "Tanya Jawab Seputar Layanan")} subtitle={text(content.description, "Temukan jawaban cepat atas pertanyaan umum tentang layanan kami.")} badge={text(content.badge)} faqs={faqsForPage(props, ["services", "service", "general", "umum"]).length > 0 ? faqsForPage(props, ["services", "service", "general", "umum"]) : faqsFor(props.section)} />;
+  return <AiServicesFaq title={text(content.title)} subtitle={text(content.description)} badge={text(content.badge)} faqs={faqsForPage(props, ["services", "service", "general", "umum"]).length > 0 ? faqsForPage(props, ["services", "service", "general", "umum"]) : faqsFor(props.section)} />;
 }
 
 export function FormalPortfolioHero(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiPortfolioHero title={text(content.title, "Portofolio dan Studi Kasus")} subtitle={text(content.description, "Lihat contoh pekerjaan, pengalaman, dan hasil yang pernah kami tangani.")} badge={text(content.badge)} />;
+  return <AiPortfolioHero title={text(content.title)} subtitle={text(content.description)} badge={text(content.badge)} />;
 }
 
 export function FormalPortfolioCategory(props: FormalSectionProps) {
@@ -605,17 +610,17 @@ export function FormalPortfolioCaseHighlight(props: FormalSectionProps) {
   const content = contentOf(props.section);
   const caseProject = (props.section.data?.portfolios || []).find((item) => item.isFeatured) || props.section.data?.portfolios?.[0];
   const project = caseProject ? mapPortfolio(caseProject, 0) : undefined;
-  return <AiPortfolioCaseHighlight title={text(content.title, "Studi Kasus Pilihan")} subtitle={text(content.description, "Sorotan pekerjaan yang menunjukkan pendekatan dan hasil layanan kami.")} badge={text(content.badge)} project={project} imageUrl={contentImage(content)} />;
+  return <AiPortfolioCaseHighlight title={text(content.title)} subtitle={text(content.description)} badge={text(content.badge)} project={project} imageUrl={contentImage(content)} />;
 }
 
 export function FormalPortfolioCta(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiPortfolioCta title={text(content.title, "Ingin Mendiskusikan Kebutuhan Anda?")} description={text(content.description, "Hubungi kami untuk membahas kebutuhan dan rencana pekerjaan Anda.")} ctaLabel={text(content.ctaLabel, "Hubungi Kami")} ctaHref={sectionHref(props, "cta", "/contact")} />;
+  return <AiPortfolioCta title={text(content.title)} description={text(content.description)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} />;
 }
 
 export function FormalArticlesHero(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiArticlesHero title={text(content.title, "Artikel dan Insight")} subtitle={text(content.description, "Baca informasi terbaru, panduan, dan pemikiran yang relevan untuk pelanggan.")} badge={text(content.badge)} />;
+  return <AiArticlesHero title={text(content.title)} subtitle={text(content.description)} badge={text(content.badge)} />;
 }
 
 export function FormalFeaturedArticle(props: FormalSectionProps) {
@@ -628,47 +633,59 @@ export function FormalFeaturedArticle(props: FormalSectionProps) {
 
 export function FormalArticlePreview(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiArticlePreview articles={articlesFor(props)} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} title={text(content.title, "Semua Publikasi Kami")} subtitle={text(content.description)} />;
-}
-
-export function FormalArticleDetailHero(props: FormalSectionProps) {
-  const content = contentOf(props.section);
-  return <AiArticleDetailHero article={currentArticleFor(props)} backHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} showPublishedDate={boolValue(content.showPublishedDate, true)} showCoverImage={boolValue(content.showCoverImage, false)} />;
+  return <AiArticlePreview articles={articlesFor(props)} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} title={text(content.title)} subtitle={text(content.description)} />;
 }
 
 export function FormalArticleContent(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiArticleContent article={currentArticleFor(props)} maxWidth={text(content.contentMaxWidth, "normal")} showShareCta={boolValue(content.showShareHint, false)} />;
+  const business = businessOf(props.payload);
+  return (
+    <AiArticleContent
+      article={currentArticleFor(props)}
+      backHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")}
+      businessName={text(business.name, props.payload.website.name)}
+      businessLogoUrl={text(business.logoUrl)}
+      contentMaxWidth={text(content.contentMaxWidth, "normal")}
+      showAuthor={boolValue(content.showAuthor, true)}
+      showPublishDate={boolValue(content.showPublishDate, true)}
+      showShareLink={boolValue(content.showShareLink, true)}
+    />
+  );
 }
 
 export function FormalRelatedArticles(props: FormalSectionProps) {
   const content = contentOf(props.section);
   const article = currentArticleFor(props);
   const related = (props.section.data?.relatedArticles || []).map((item, index) => mapArticle(item, props.payload, index));
-  return <AiRelatedArticles articles={related} currentSlug={article.slug} baseHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} title={text(content.title, "Analisis & Pemikiran Terkait")} subtitle={text(content.description, "Baca ulasan lain yang masih relevan dengan topik ini.")} />;
+  return <AiRelatedArticles articles={related} currentSlug={article.slug} baseHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} title={text(content.title)} subtitle={text(content.description)} />;
 }
 
 export function FormalArticleCta(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiArticleCta title={text(content.title, "Butuh Bantuan Lebih Lanjut?")} description={text(content.description, "Hubungi kami untuk membahas kebutuhan Anda secara langsung.")} ctaLabel={text(content.ctaLabel, "Hubungi Kami")} ctaHref={sectionHref(props, "cta", "/contact")} />;
+  return <AiArticleCta title={text(content.title)} description={text(content.description)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} />;
 }
 
 export function FormalContactHero(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiContactHero title={text(content.title, "Hubungi Kami")} subtitle={text(content.description, "Sampaikan kebutuhan Anda dan tim kami akan membantu memberi arahan awal.")} badge={text(content.badge)} />;
+  return <AiContactHero title={text(content.title)} subtitle={text(content.description)} badge={text(content.badge)} />;
 }
 
 export function FormalContactInformation(props: FormalSectionProps) {
   const content = contentOf(props.section);
+  const business = businessOf(props.payload);
+  // showAddress/showEmail/showWhatsapp sudah tidak ada lagi di schema section (field itu
+  // dihapus supaya tidak dobel sumber data dengan Business Profile) — sekarang otomatis
+  // mengikuti aturan "kosong = hilang": kalau field itu memang belum diisi di Business
+  // Profile, blok terkait tidak ditampilkan sama sekali, bukan menampilkan teks placeholder.
   return (
     <AiContactInformation
-      title={text(content.title, "Saluran Hubung Resmi")}
-      subtitle={text(content.description, "Gunakan informasi kontak resmi untuk menghubungi bisnis ini.")}
+      title={text(content.title)}
+      subtitle={text(content.description)}
       badge={text(content.badge)}
       company={companyDataFor(props.payload)}
-      showAddress={boolValue(content.showAddress, true)}
-      showEmail={boolValue(content.showEmail, true)}
-      showWhatsapp={boolValue(content.showWhatsapp, true)}
+      showAddress={Boolean(text(business.address as string))}
+      showEmail={Boolean(text(business.contactEmail as string))}
+      showWhatsapp={Boolean(text(business.whatsapp as string))}
     />
   );
 }
@@ -682,42 +699,46 @@ export function FormalMapsLocation(props: FormalSectionProps) {
     ...company,
     contact: { ...company.contact, mapEmbedUrl: text(content.mapEmbedUrl, company.contact.mapEmbedUrl) }
   };
-  return <AiMapsLocation title={text(content.title, "Lokasi Bisnis")} subtitle={text(content.description, "Temukan lokasi bisnis melalui informasi peta berikut.")} company={companyWithMapOverride} />;
+  return <AiMapsLocation title={text(content.title)} subtitle={text(content.description)} company={companyWithMapOverride} />;
 }
 
 export function FormalContactFaq(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiContactFaq title={text(content.title, "Kirim Pesan dan Pertanyaan Umum")} subtitle={text(content.description, "Ajukan pertanyaan melalui form kontak dan lihat jawaban cepat yang sering ditanyakan.")} faqs={faqsFor(props.section)} siteSlug={props.siteSlug} pageKey={props.payload.page.pageKey} slotKey={props.section.slotKey} />;
+  return <AiContactFaq title={text(content.title)} subtitle={text(content.description)} faqs={faqsFor(props.section)} siteSlug={props.siteSlug} pageKey={props.payload.page.pageKey} slotKey={props.section.slotKey} />;
 }
 
 export function FormalContactCta(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiContactCta title={text(content.title, "Siap Menghubungi Kami?")} description={text(content.description, "Gunakan tombol berikut untuk menuju saluran kontak utama bisnis.")} ctaLabel={text(content.ctaLabel, "Hubungi Sekarang")} ctaHref={sectionHref(props, "cta", "/contact")} />;
+  return <AiContactCta title={text(content.title)} description={text(content.description)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} />;
 }
 
 
 // ---- Portfolio Detail ----
 
-import { PortfolioDetailHero as AiPortfolioDetailHero } from "../source/sections/portfolio-detail/PortfolioDetailHero";
 import { PortfolioDetailContent as AiPortfolioDetailContent } from "../source/sections/portfolio-detail/PortfolioDetailContent";
 import { PortfolioDetailCta as AiPortfolioDetailCta } from "../source/sections/portfolio-detail/PortfolioDetailCta";
 import { RelatedPortfolios as AiRelatedPortfolios } from "../source/sections/portfolio-detail/RelatedPortfolios";
 
-export function FormalPortfolioDetailHero(props: FormalSectionProps) {
-  const content = contentOf(props.section);
-  const sectionData = props.section.data as any;
-  const project = sectionData.portfolio
-  ? mapPortfolio(sectionData.portfolio, 0)
-  : (props.section.data?.portfolios?.[0] ? mapPortfolio(props.section.data.portfolios[0], 0) : undefined);
-  return <AiPortfolioDetailHero project={project} backHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "portfolio", "/portfolio")} badge={text(content.badge)} />;
-}
-
 export function FormalPortfolioDetailContent(props: FormalSectionProps) {
+  const content = contentOf(props.section);
+  const business = businessOf(props.payload);
   const sectionData = props.section.data as any;
   const project = sectionData.portfolio
   ? mapPortfolio(sectionData.portfolio, 0)
   : (props.section.data?.portfolios?.[0] ? mapPortfolio(props.section.data.portfolios[0], 0) : undefined);
-  return <AiPortfolioDetailContent project={project} />;
+  return (
+    <AiPortfolioDetailContent
+      project={project}
+      badge={text(content.badge)}
+      backHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "portfolio", "/portfolio")}
+      businessName={text(business.name, props.payload.website.name)}
+      businessLogoUrl={text(business.logoUrl)}
+      contentMaxWidth={text(content.contentMaxWidth, "normal")}
+      showAuthor={boolValue(content.showAuthor, true)}
+      showPublishDate={boolValue(content.showPublishDate, true)}
+      showShareLink={boolValue(content.showShareLink, true)}
+    />
+  );
 }
 
 export function FormalPortfolioDetailCta(props: FormalSectionProps) {
@@ -735,8 +756,8 @@ export function FormalRelatedPortfolios(props: FormalSectionProps) {
     <AiRelatedPortfolios
       portfolios={related}
       currentSlug={currentProject?.slug}
-      title={text(content.title, "Portofolio Terkait")}
-      subtitle={text(content.description, "Lihat proyek lain yang mungkin menarik untuk Anda.")}
+      title={text(content.title)}
+      subtitle={text(content.description)}
       portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)}
     />
   );
@@ -767,7 +788,6 @@ export const formalSectionComponents: Record<string, FormalSectionComponent> = {
   FormalArticlesHero,
   FormalFeaturedArticle,
   FormalArticlePreview,
-  FormalArticleDetailHero,
   FormalArticleContent,
   FormalRelatedArticles,
   FormalArticleCta,
@@ -777,7 +797,6 @@ export const formalSectionComponents: Record<string, FormalSectionComponent> = {
   FormalContactFaq,
   FormalContactCta,
 
-  FormalPortfolioDetailHero,
   FormalPortfolioDetailContent,
   FormalRelatedPortfolios,
   FormalPortfolioDetailCta,
