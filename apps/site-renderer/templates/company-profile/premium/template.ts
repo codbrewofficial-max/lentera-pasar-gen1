@@ -35,12 +35,10 @@ export const premiumCompanyProfileTemplate = {
     "articles.featured_article": "PremiumFeaturedArticle",
     "articles.article_preview": "PremiumArticlePreview",
 
-    "article_detail.article_detail_hero": "PremiumArticleDetailHero",
     "article_detail.article_content": "PremiumArticleContent",
     "article_detail.related_articles": "PremiumRelatedArticles",
     "article_detail.article_cta": "PremiumArticleCta",
 
-    "portfolio_detail.portfolio_detail_hero": "PremiumPortfolioDetailHero",
     "portfolio_detail.portfolio_detail_content": "PremiumPortfolioDetailContent",
     "portfolio_detail.related_portfolios": "PremiumRelatedPortfolios",
     "portfolio_detail.portfolio_detail_cta": "PremiumPortfolioDetailCta",

@@ -259,10 +259,47 @@ const applyVisionMissionOverride = (slotKey: string, content: Record<string, unk
   return { ...rest, ...businessProfileToVisionMissionContent(businessProfile) };
 };
 
+// Sama seperti Visi & Misi: Maps Location dan Informasi Kontak selalu ambil datanya dari
+// Business Profile (bukan dari input per-section), supaya owner cukup isi satu tempat dan
+// section terkait ikut update otomatis. Field section untuk kedua slot ini cuma menyisakan
+// field umum (title/subtitle/badge/cta/imgUrl) plus mapEmbedUrl/address/email/whatsapp
+// yang di-override di sini akan selalu ditimpa oleh data Business Profile.
+const applyMapsLocationOverride = (slotKey: string, content: Record<string, unknown>, businessProfile: any) => {
+  if (slotKey !== "contact.maps_location") return content;
+  return { ...content, mapEmbedUrl: businessProfile?.mapEmbedUrl || "" };
+};
+
+const applyContactInformationOverride = (slotKey: string, content: Record<string, unknown>, businessProfile: any) => {
+  if (slotKey !== "contact.contact_information") return content;
+  return {
+    ...content,
+    address: businessProfile?.address || "",
+    contactEmail: businessProfile?.contactEmail || "",
+    phone: businessProfile?.phone || "",
+    whatsapp: businessProfile?.whatsapp || ""
+  };
+};
+
+const applyBusinessProfileOverrides = (slotKey: string, content: Record<string, unknown>, businessProfile: any) => {
+  let result = applyVisionMissionOverride(slotKey, content, businessProfile);
+  result = applyMapsLocationOverride(slotKey, result, businessProfile);
+  result = applyContactInformationOverride(slotKey, result, businessProfile);
+  return result;
+};
+
 const mergeContent = (template: any, contentJson: unknown) => ({
   ...((template?.defaultContentJson as Record<string, unknown> | null) || {}),
   ...((contentJson as Record<string, unknown> | null) || {})
 });
+
+// Slot yang isinya sepenuhnya diambil dari Business Profile (lihat applyBusinessProfileOverrides
+// di atas) — dashboard perlu tahu field mana saja yang "auto-managed" ini supaya bisa
+// menyembunyikan form manual dan mengarahkan owner ke halaman Profil Bisnis.
+const AUTO_MANAGED_SLOT_FIELDS: Record<string, string[]> = {
+  "about.vision_mission": ["vision", "mission"],
+  "contact.maps_location": ["mapEmbedUrl"],
+  "contact.contact_information": ["address", "contactEmail", "phone", "whatsapp"]
+};
 
 const sectionDetailContract = (section: any, websiteId: string, businessProfile: any = null) => ({
   id: section.id,
@@ -273,8 +310,9 @@ const sectionDetailContract = (section: any, websiteId: string, businessProfile:
   isVisible: section.isVisible,
   hasTemplate: Boolean(section.templateSection),
   hasContent: Boolean(section.contentJson && Object.keys(section.contentJson as Record<string, unknown>).length > 0),
-  isAutoManaged: section.slotKey === "about.vision_mission",
-  autoManagedSource: section.slotKey === "about.vision_mission" ? "business_profile" : null,
+  isAutoManaged: Boolean(AUTO_MANAGED_SLOT_FIELDS[section.slotKey]),
+  autoManagedSource: AUTO_MANAGED_SLOT_FIELDS[section.slotKey] ? "business_profile" : null,
+  autoManagedFields: AUTO_MANAGED_SLOT_FIELDS[section.slotKey] || [],
   templateSection: section.templateSection
     ? {
         ...templateSummary(section.templateSection),
@@ -283,7 +321,7 @@ const sectionDetailContract = (section: any, websiteId: string, businessProfile:
       }
     : null,
   contentJson: section.contentJson || {},
-  effectiveContent: applyVisionMissionOverride(section.slotKey, mergeContent(section.templateSection, section.contentJson), businessProfile),
+  effectiveContent: applyBusinessProfileOverrides(section.slotKey, mergeContent(section.templateSection, section.contentJson), businessProfile),
   actions: {
     chooseTemplatePath: `/websites/${websiteId}/sections/${section.slotKey}/choose`,
     editContentPath: `/websites/${websiteId}/sections/${section.slotKey}/edit`
@@ -879,7 +917,7 @@ const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string;
           templateTheme: section.templateSection?.templatePack?.theme || null,
           component: section.templateSection?.component || null,
           variant: section.templateSection?.variant || null,
-          content: applyVisionMissionOverride(section.slotKey, mergeContent(section.templateSection, section.contentJson), website.businessProfile),
+          content: applyBusinessProfileOverrides(section.slotKey, mergeContent(section.templateSection, section.contentJson), website.businessProfile),
           tracking: {
             slotKey: section.slotKey,
             sectionKey: section.templateSection?.sectionKey || null

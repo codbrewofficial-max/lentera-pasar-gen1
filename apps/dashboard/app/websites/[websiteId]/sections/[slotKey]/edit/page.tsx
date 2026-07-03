@@ -6,25 +6,37 @@ import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
 import BooleanRadio from "@/components/ui/BooleanRadio";
 import EnhancedTextarea from "@/components/ui/EnhancedTextarea";
+import MediaPickerInput from "@/components/ui/MediaPickerInput";
 import {
   Edit3,
   Save,
   AlertCircle,
-  Image as ImageIcon,
   Link as LinkIcon,
   HelpCircle,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Plus,
+  Trash2,
+  GripVertical
 } from "lucide-react";
+
+interface RepeaterItemField {
+  key: string;
+  label: string;
+  type?: "text" | "textarea";
+  placeholder?: string | null;
+}
 
 interface SchemaField {
   key: string;
   label: string;
-  type: "text" | "textarea" | "image_url" | "url";
+  type: "text" | "textarea" | "image_url" | "url" | "repeater";
   required?: boolean;
   placeholder?: string | null;
   helpText?: string | null;
   defaultValue?: string;
+  itemFields?: RepeaterItemField[];
+  itemLabel?: string;
 }
 
 interface SectionDetail {
@@ -32,6 +44,7 @@ interface SectionDetail {
   slotDescription: string;
   isAutoManaged?: boolean;
   autoManagedSource?: string | null;
+  autoManagedFields?: string[];
   templateSection: {
     id: string;
     name: string;
@@ -53,6 +66,14 @@ type NavigationContract = {
 };
 
 const isCtaUrlField = (key: string) => /(cta|button|link).*url/i.test(key);
+const DEFAULT_REPEATER_ITEM_FIELDS: RepeaterItemField[] = [
+  { key: "title", label: "Judul", type: "text" },
+  { key: "value", label: "Nilai / Isi", type: "text" }
+];
+const repeaterItemFields = (field: SchemaField) =>
+  field.itemFields && field.itemFields.length ? field.itemFields : DEFAULT_REPEATER_ITEM_FIELDS;
+const emptyRepeaterItem = (field: SchemaField) =>
+  Object.fromEntries(repeaterItemFields(field).map((f) => [f.key, ""]));
 const isBooleanLikeField = (field: SchemaField, value: unknown) => {
   const key = field.key || "";
   const rawValue = String(value ?? field.defaultValue ?? "").toLowerCase();
@@ -132,6 +153,13 @@ export default function EditSectionContentPage() {
         data.templateSection.schema.forEach((field) => {
           const fKey = field.key;
           if (!fKey) return;
+
+          if (field.type === "repeater") {
+            const existing = data.effectiveContent?.[fKey];
+            initialForm[fKey] = Array.isArray(existing) ? existing : [];
+            return;
+          }
+
           initialForm[fKey] = data.effectiveContent?.[fKey] ?? field.defaultValue ?? "";
 
           if (field.type === "url" && isCtaUrlField(fKey)) {
@@ -161,6 +189,28 @@ export default function EditSectionContentPage() {
 
   const handleInputChange = (fieldName: string, value: string) => {
     setFormData((prev) => ({ ...prev, [fieldName]: value }));
+  };
+
+  const handleRepeaterAdd = (field: SchemaField) => {
+    setFormData((prev) => {
+      const items = Array.isArray(prev[field.key]) ? prev[field.key] : [];
+      return { ...prev, [field.key]: [...items, emptyRepeaterItem(field)] };
+    });
+  };
+
+  const handleRepeaterRemove = (field: SchemaField, index: number) => {
+    setFormData((prev) => {
+      const items = Array.isArray(prev[field.key]) ? prev[field.key] : [];
+      return { ...prev, [field.key]: items.filter((_: unknown, i: number) => i !== index) };
+    });
+  };
+
+  const handleRepeaterItemChange = (field: SchemaField, index: number, itemKey: string, value: string) => {
+    setFormData((prev) => {
+      const items = Array.isArray(prev[field.key]) ? [...prev[field.key]] : [];
+      items[index] = { ...items[index], [itemKey]: value };
+      return { ...prev, [field.key]: items };
+    });
   };
 
   const resolveTargetUrl = (fieldKey: string, nextData: Record<string, any>) => {
@@ -193,6 +243,9 @@ export default function EditSectionContentPage() {
 
     try {
       const contentJson = { ...formData };
+      autoManagedFieldSet.forEach((key) => {
+        delete contentJson[key as string];
+      });
       section?.templateSection?.schema.forEach((field) => {
         if (field.type === "url" && isCtaUrlField(field.key)) {
           contentJson[field.key] = resolveTargetUrl(field.key, contentJson);
@@ -313,49 +366,7 @@ export default function EditSectionContentPage() {
     );
   }
 
-  if (section.isAutoManaged) {
-    const previewVision = String(section.effectiveContent?.vision || "");
-    const previewMission = String(section.effectiveContent?.mission || "");
-    return (
-      <DashboardLayout
-        title="Isi Konten Website"
-        subtitle={`Bagian: ${section.slotLabel} | Tampilan: ${section.templateSection.name}`}
-        showBackButton
-        backUrl={`/websites/${websiteId}/pages/${currentPageKey}`}
-      >
-        <div className="max-w-2xl mx-auto space-y-6">
-          <div className="bg-white rounded-3xl border border-[#649FF6]/25 p-8 text-center space-y-4 shadow-sm">
-            <div className="h-14 w-14 rounded-2xl bg-[#649FF6]/10 text-[#649FF6] flex items-center justify-center mx-auto">
-              <Sparkles className="h-7 w-7" />
-            </div>
-            <h3 className="text-lg font-bold text-slate-800">Konten Bagian Ini Otomatis</h3>
-            <p className="text-sm text-slate-500 leading-relaxed max-w-md mx-auto">
-              Isi Visi dan Misi bagian ini otomatis mengikuti data yang Anda isi di halaman <strong>Profil Bisnis</strong>. Anda tidak perlu (dan tidak bisa) mengisi form terpisah di sini.
-            </p>
-            <button
-              onClick={() => router.push(`/websites/${websiteId}/profile`)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#649FF6] hover:bg-[#4f8be6] text-white text-xs font-bold rounded-xl shadow-md transition"
-            >
-              Kelola di Profil Bisnis
-              <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
-
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-4 shadow-sm">
-            <h4 className="text-xs font-bold uppercase tracking-wide text-slate-500">Pratinjau Konten Saat Ini</h4>
-            <div className="space-y-1.5">
-              <p className="text-xs font-bold text-slate-700">Visi</p>
-              <AutoManagedHtmlPreview html={previewVision} />
-            </div>
-            <div className="space-y-1.5">
-              <p className="text-xs font-bold text-slate-700">Misi</p>
-              <AutoManagedHtmlPreview html={previewMission} />
-            </div>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  const autoManagedFieldSet = new Set(section?.autoManagedFields || []);
 
   return (
     <DashboardLayout
@@ -386,6 +397,43 @@ export default function EditSectionContentPage() {
               if (!fKey) return null;
               const fieldId = `field-input-${fKey}`;
               const isFieldRequired = field.required === true;
+
+              // Field yang datanya diambil otomatis dari Business Profile (mis. vision/
+              // mission, alamat, email, WhatsApp, embed maps) tidak bisa diedit di sini —
+              // tampilkan pratinjau saja + link ke Profil Bisnis, field lain di section yang
+              // sama (title/badge/subtitle/cta/dst) tetap bisa diisi normal.
+              if (autoManagedFieldSet.has(fKey)) {
+                const rawValue = String(formData[fKey] ?? "");
+                const looksLikeHtml = /<[a-z][\s\S]*>/i.test(rawValue);
+                return (
+                  <div key={fKey} className="space-y-1.5" id={`form-group-${fKey}`}>
+                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                      {field.label}
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-[#649FF6] bg-[#649FF6]/10 px-2 py-0.5 rounded-full">
+                        <Sparkles className="h-3 w-3" /> Dari Profil Bisnis
+                      </span>
+                    </label>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-2">
+                      {looksLikeHtml ? (
+                        <AutoManagedHtmlPreview html={rawValue} />
+                      ) : (
+                        <p className={`text-sm ${rawValue ? "text-slate-700" : "text-slate-400 italic"}`}>
+                          {rawValue || "Belum diisi di Profil Bisnis."}
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/websites/${websiteId}/profile`)}
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-[#649FF6] hover:underline"
+                      >
+                        Kelola di Profil Bisnis
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div key={fKey} className="space-y-1.5" id={`form-group-${fKey}`}>
                   <label htmlFor={fieldId} className="block text-sm font-semibold text-slate-700">
@@ -403,21 +451,66 @@ export default function EditSectionContentPage() {
                       helperText={field.helpText || "Tulis dengan bahasa yang mudah dipahami calon pelanggan."}
                     />
                   ) : field.type === "image_url" ? (
-                    <div className="space-y-2">
-                      <div className="relative">
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><ImageIcon className="h-4 w-4" /></span>
-                        <input
-                          id={fieldId}
-                          type="url"
-                          required={isFieldRequired}
-                          placeholder={field.placeholder || "https://picsum.photos/seed/.../800/600"}
-                          value={formData[fKey] || ""}
-                          onChange={(e) => handleInputChange(fKey, e.target.value)}
-                          className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors text-sm font-mono text-xs"
-                        />
-                      </div>
-                      <button type="button" onClick={() => handleInputChange(fKey, `https://picsum.photos/seed/${fKey + Date.now()}/800/600`)} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-[10px] font-bold text-slate-600 transition">
-                        Gunakan Gambar Contoh
+                    <MediaPickerInput
+                      id={fieldId}
+                      required={isFieldRequired}
+                      value={formData[fKey] || ""}
+                      onChange={(url) => handleInputChange(fKey, url)}
+                      picsumSeedPrefix={fKey}
+                      helperText={field.helpText || undefined}
+                    />
+                  ) : field.type === "repeater" ? (
+                    <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+                      {(Array.isArray(formData[fKey]) ? formData[fKey] : []).length === 0 && (
+                        <p className="text-xs text-slate-400 italic">Belum ada item. Klik &quot;Tambah Item&quot; untuk mulai menambahkan.</p>
+                      )}
+                      {(Array.isArray(formData[fKey]) ? formData[fKey] : []).map((item: Record<string, string>, index: number) => (
+                        <div key={index} className="rounded-xl border border-slate-200 bg-white p-4 space-y-3 relative">
+                          <div className="flex items-center justify-between">
+                            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                              <GripVertical className="h-3.5 w-3.5" />
+                              {field.itemLabel || "Item"} {index + 1}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleRepeaterRemove(field, index)}
+                              className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-500 hover:text-rose-600 hover:bg-rose-50 px-2 py-1 rounded-lg transition"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              Hapus
+                            </button>
+                          </div>
+                          {repeaterItemFields(field).map((subField) => (
+                            <div key={subField.key} className="space-y-1">
+                              <label className="block text-[11px] font-semibold text-slate-600">{subField.label}</label>
+                              {subField.type === "textarea" ? (
+                                <EnhancedTextarea
+                                  id={`${fieldId}-${index}-${subField.key}`}
+                                  minRows={2}
+                                  placeholder={subField.placeholder || `Masukkan ${subField.label}...`}
+                                  value={item?.[subField.key] || ""}
+                                  onChange={(value) => handleRepeaterItemChange(field, index, subField.key, value)}
+                                />
+                              ) : (
+                                <input
+                                  type="text"
+                                  placeholder={subField.placeholder || `Masukkan ${subField.label}...`}
+                                  value={item?.[subField.key] || ""}
+                                  onChange={(e) => handleRepeaterItemChange(field, index, subField.key, e.target.value)}
+                                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors text-sm"
+                                />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => handleRepeaterAdd(field)}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-[#649FF6]/10 hover:bg-[#649FF6]/20 text-[#649FF6] text-xs font-bold rounded-xl transition"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Tambah {field.itemLabel || "Item"}
                       </button>
                     </div>
                   ) : field.type === "url" ? (
@@ -441,7 +534,7 @@ export default function EditSectionContentPage() {
                     />
                   )}
 
-                  {field.helpText && <p className="text-[11px] text-slate-400 mt-1 pl-1">{field.helpText}</p>}
+                  {field.helpText && field.type !== "image_url" && <p className="text-[11px] text-slate-400 mt-1 pl-1">{field.helpText}</p>}
                 </div>
               );
             })}

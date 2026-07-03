@@ -29,12 +29,10 @@ import { AbstractArticlesHero } from "../source/sections/articles/AbstractArticl
 import { AbstractFeaturedArticle } from "../source/sections/articles/AbstractFeaturedArticle";
 import { AbstractArticlePreview } from "../source/sections/articles/AbstractArticlePreview";
 
-import { AbstractArticleDetailHero } from "../source/sections/article-detail/AbstractArticleDetailHero";
 import { AbstractArticleContent } from "../source/sections/article-detail/AbstractArticleContent";
 import { AbstractRelatedArticles } from "../source/sections/article-detail/AbstractRelatedArticles";
 import { AbstractArticleCta } from "../source/sections/article-detail/AbstractArticleCta";
 
-import { AbstractPortfolioDetailHero } from "../source/sections/portfolio-detail/AbstractPortfolioDetailHero";
 import { AbstractPortfolioDetailContent } from "../source/sections/portfolio-detail/AbstractPortfolioDetailContent";
 import { AbstractRelatedPortfolios } from "../source/sections/portfolio-detail/AbstractRelatedPortfolios";
 import { AbstractPortfolioDetailCta } from "../source/sections/portfolio-detail/AbstractPortfolioDetailCta";
@@ -72,6 +70,13 @@ function numberValue(value: unknown, fallback = 0) {
 
 function contentOf(section: PublicSection) {
   return section.content || {};
+}
+
+// Field "items" adalah tipe repeater (lihat schema Template Pack) — array bebas jumlah,
+// dipakai oleh value_statement/service_benefits/service_process/trust_proof.
+function itemsOf(section: PublicSection): Array<{ title?: string; value?: string }> {
+  const raw = contentOf(section).items;
+  return Array.isArray(raw) ? raw : [];
 }
 
 function businessOf(payload: PublicPagePayload) {
@@ -267,9 +272,9 @@ export function AbstractHomeHeroSection(props: AbstractSectionProps) {
   const content = contentOf(props.section);
   return (
     <AbstractHomeHero
-      eyebrow={text(content.eyebrow)}
+      eyebrow={text(content.badge)}
       title={text(content.title)}
-      subtitle={text(content.subtitle)}
+      subtitle={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", "/contact")}
       secondaryCtaLabel={text(content.secondaryCtaLabel)}
@@ -325,12 +330,7 @@ export function AbstractHomeTrustProofSection(props: AbstractSectionProps) {
     <AbstractHomeTrustProof
       title={text(content.title)}
       description={text(content.description)}
-      metricOneLabel={text(content.metricOneLabel)}
-      metricOneValue={text(content.metricOneValue)}
-      metricTwoLabel={text(content.metricTwoLabel)}
-      metricTwoValue={text(content.metricTwoValue)}
-      metricThreeLabel={text(content.metricThreeLabel)}
-      metricThreeValue={text(content.metricThreeValue)}
+      metrics={itemsOf(props.section).map((item) => ({ value: text(item?.title as string), label: text(item?.value as string) })).filter((m) => m.label && m.value)}
       testimonials={testimonialsFor(props)}
       brands={brandsFor(props)}
     />
@@ -387,10 +387,7 @@ export function AbstractAboutValueStatementSection(props: AbstractSectionProps) 
     <AbstractAboutValueStatement
       title={text(content.title)}
       description={text(content.description)}
-      valueOne={text(content.valueOne)}
-      valueTwo={text(content.valueTwo)}
-      valueThree={text(content.valueThree)}
-      valueFour={text(content.valueFour) || undefined}
+      items={itemsOf(props.section)}
     />
   );
 }
@@ -425,10 +422,7 @@ export function AbstractServicesProcessSection(props: AbstractSectionProps) {
     <AbstractServicesProcess
       title={text(content.title)}
       description={text(content.description)}
-      stepOne={text(content.stepOne)}
-      stepTwo={text(content.stepTwo)}
-      stepThree={text(content.stepThree)}
-      stepFour={text(content.stepFour) || undefined}
+      items={itemsOf(props.section)}
     />
   );
 }
@@ -439,10 +433,7 @@ export function AbstractServicesBenefitsSection(props: AbstractSectionProps) {
     <AbstractServicesBenefits
       title={text(content.title)}
       description={text(content.description)}
-      benefitOne={text(content.benefitOne)}
-      benefitTwo={text(content.benefitTwo)}
-      benefitThree={text(content.benefitThree)}
-      benefitFour={text(content.benefitFour) || undefined}
+      items={itemsOf(props.section)}
     />
   );
 }
@@ -513,24 +504,19 @@ export function AbstractArticlePreviewSection(props: AbstractSectionProps) {
 
 // ---- Article Detail ----
 
-export function AbstractArticleDetailHeroSection(props: AbstractSectionProps) {
-  const content = contentOf(props.section);
-  return (
-    <AbstractArticleDetailHero
-      showPublishedDate={boolValue(content.showPublishedDate, true) ? "true" : "false"}
-      showCoverImage={boolValue(content.showCoverImage, true) ? "true" : "false"}
-      article={currentArticleFor(props)}
-    />
-  );
-}
-
 export function AbstractArticleContentSection(props: AbstractSectionProps) {
   const content = contentOf(props.section);
+  const business = businessOf(props.payload);
   return (
     <AbstractArticleContent
-      contentMaxWidth={text(content.contentMaxWidth, "max-w-3xl")}
-      showShareHint={boolValue(content.showShareHint, true) ? "true" : "false"}
       article={currentArticleFor(props)}
+      backHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")}
+      businessName={text(business.name, props.payload.website.name)}
+      businessLogoUrl={text(business.logoUrl as string)}
+      contentMaxWidth={text(content.contentMaxWidth, "max-w-3xl")}
+      showAuthor={boolValue(content.showAuthor, true) ? "true" : "false"}
+      showPublishDate={boolValue(content.showPublishDate, true) ? "true" : "false"}
+      showShareLink={boolValue(content.showShareLink, true) ? "true" : "false"}
     />
   );
 }
@@ -562,24 +548,20 @@ export function AbstractArticleCtaSection(props: AbstractSectionProps) {
 
 // ---- Portfolio Detail ----
 
-export function AbstractPortfolioDetailHeroSection(props: AbstractSectionProps) {
-  const content = contentOf(props.section);
-  return (
-    <AbstractPortfolioDetailHero
-      showCoverImage={boolValue(content.showCoverImage, true) ? "true" : "false"}
-      badge={text(content.badge, "Studi Kasus")}
-      project={currentPortfolioFor(props)}
-    />
-  );
-}
-
 export function AbstractPortfolioDetailContentSection(props: AbstractSectionProps) {
   const content = contentOf(props.section);
+  const business = businessOf(props.payload);
   return (
     <AbstractPortfolioDetailContent
-      contentMaxWidth={text(content.contentMaxWidth, "max-w-3xl")}
-      showShareHint={boolValue(content.showShareHint, true) ? "true" : "false"}
       project={currentPortfolioFor(props)}
+      badge={text(content.badge, "Studi Kasus")}
+      backHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "portfolio", "/portfolio")}
+      businessName={text(business.name, props.payload.website.name)}
+      businessLogoUrl={text(business.logoUrl as string)}
+      contentMaxWidth={text(content.contentMaxWidth, "max-w-3xl")}
+      showAuthor={boolValue(content.showAuthor, true) ? "true" : "false"}
+      showPublishDate={boolValue(content.showPublishDate, true) ? "true" : "false"}
+      showShareLink={boolValue(content.showShareLink, true) ? "true" : "false"}
     />
   );
 }
@@ -628,16 +610,16 @@ export function AbstractContactInformationSection(props: AbstractSectionProps) {
     <AbstractContactInformation
       title={text(content.title)}
       description={text(content.description)}
-      showWhatsapp={boolValue(content.showWhatsapp, true) ? "true" : "false"}
-      showEmail={boolValue(content.showEmail, true) ? "true" : "false"}
-      showAddress={boolValue(content.showAddress, true) ? "true" : "false"}
+      showWhatsapp={Boolean(text(business.whatsapp as string) || text(business.phone as string)) ? "true" : "false"}
+      showEmail={Boolean(text(business.contactEmail as string)) ? "true" : "false"}
+      showAddress={Boolean(text(business.address as string)) ? "true" : "false"}
       siteSlug={props.siteSlug}
       pageKey={props.payload.page.pageKey}
       slotKey={props.section.slotKey}
       whatsappHref={waNumber ? `https://wa.me/${waNumber}` : undefined}
       whatsappLabel={text(business.whatsapp, text(business.phone)) || undefined}
-      email={text(business.email) || undefined}
-      address={text(business.address) || undefined}
+      email={text(business.contactEmail as string) || undefined}
+      address={text(business.address as string) || undefined}
     />
   );
 }
@@ -704,12 +686,10 @@ export const abstractSectionComponents: Record<string, AbstractSectionComponent>
   AbstractFeaturedArticle: AbstractFeaturedArticleSection,
   AbstractArticlePreview: AbstractArticlePreviewSection,
 
-  AbstractArticleDetailHero: AbstractArticleDetailHeroSection,
   AbstractArticleContent: AbstractArticleContentSection,
   AbstractRelatedArticles: AbstractRelatedArticlesSection,
   AbstractArticleCta: AbstractArticleCtaSection,
 
-  AbstractPortfolioDetailHero: AbstractPortfolioDetailHeroSection,
   AbstractPortfolioDetailContent: AbstractPortfolioDetailContentSection,
   AbstractRelatedPortfolios: AbstractRelatedPortfoliosSection,
   AbstractPortfolioDetailCta: AbstractPortfolioDetailCtaSection,

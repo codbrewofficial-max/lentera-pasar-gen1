@@ -70,7 +70,7 @@ export const TRACKING_EVENT_LABELS = {
   article_view: "Baca Artikel"
 } as const satisfies Record<TrackingEventName, string>;
 
-export const SECTION_FIELD_TYPES = ["text", "textarea", "image_url", "url"] as const;
+export const SECTION_FIELD_TYPES = ["text", "textarea", "image_url", "url", "repeater"] as const;
 export type SectionFieldType = (typeof SECTION_FIELD_TYPES)[number];
 
 export type PageKey = (typeof COMPANY_PROFILE_PAGES)[number]["pageKey"];

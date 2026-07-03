@@ -116,6 +116,15 @@ export const ensureCompanyProfileStructure = async (
       }
     });
   }
+
+  // Bersihkan PageSection yang slotKey-nya sudah tidak ada lagi di struktur saat ini
+  // (mis. "article_detail.article_detail_hero" / "portfolio_detail.portfolio_detail_hero"
+  // yang sudah digabung ke dalam slot Content). Tanpa ini, "Sync Structure" cuma nambah
+  // section baru dan section basi/deprecated akan terus nyangkut selamanya di database.
+  const currentSlotKeys = COMPANY_PROFILE_SECTION_SLOTS.map((slot) => slot.slotKey);
+  await tx.pageSection.deleteMany({
+    where: { websiteId, slotKey: { notIn: currentSlotKeys } }
+  });
 };
 
 export const pageLabel = (pageKey: PageKey) =>

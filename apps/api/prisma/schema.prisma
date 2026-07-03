@@ -267,6 +267,7 @@ model BusinessProfile {
   phone        String?
   whatsapp     String?
   address      String?
+  mapEmbedUrl  String?
   instagramUrl String?
   facebookUrl  String?
   linkedinUrl  String?

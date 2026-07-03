@@ -29,7 +29,6 @@ import { CasualArticlesHero } from "../source/sections/articles/CasualArticlesHe
 import { CasualFeaturedArticle } from "../source/sections/articles/CasualFeaturedArticle";
 import { CasualArticlePreview } from "../source/sections/articles/CasualArticlePreview";
 
-import { CasualArticleDetailHero } from "../source/sections/article-detail/CasualArticleDetailHero";
 import { CasualArticleContent } from "../source/sections/article-detail/CasualArticleContent";
 import { CasualRelatedArticles } from "../source/sections/article-detail/CasualRelatedArticles";
 import { CasualArticleCta } from "../source/sections/article-detail/CasualArticleCta";
@@ -40,7 +39,6 @@ import { CasualMapsLocation } from "../source/sections/contact/CasualMapsLocatio
 import { CasualContactFaq } from "../source/sections/contact/CasualContactFaq";
 import { CasualContactCta } from "../source/sections/contact/CasualContactCta";
 
-import { CasualPortfolioDetailHero } from "../source/sections/portfolio-detail/CasualPortfolioDetailHero";
 import { CasualPortfolioDetailContent } from "../source/sections/portfolio-detail/CasualPortfolioDetailContent";
 import { CasualRelatedPortfolios } from "../source/sections/portfolio-detail/CasualRelatedPortfolios";
 import { CasualPortfolioDetailCta } from "../source/sections/portfolio-detail/CasualPortfolioDetailCta";
@@ -72,6 +70,13 @@ function numberValue(value: unknown, fallback = 0) {
 
 function contentOf(section: PublicSection) {
   return section.content || {};
+}
+
+// Field "items" adalah tipe repeater (lihat schema Template Pack) — array bebas jumlah,
+// dipakai oleh value_statement/service_benefits/service_process/trust_proof.
+function itemsOf(section: PublicSection): Array<{ title?: string; value?: string }> {
+  const raw = contentOf(section).items;
+  return Array.isArray(raw) ? raw : [];
 }
 
 function businessOf(payload: PublicPagePayload) {
@@ -252,9 +257,9 @@ export function CasualHomeHeroSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
   return (
     <CasualHomeHero
-      eyebrow={text(content.eyebrow)}
+      eyebrow={text(content.badge)}
       title={text(content.title)}
-      subtitle={text(content.subtitle)}
+      subtitle={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", "/contact")}
       secondaryCtaLabel={text(content.secondaryCtaLabel)}
@@ -319,12 +324,7 @@ export function CasualHomeTrustProofSection(props: CasualSectionProps) {
     <CasualHomeTrustProof
       title={text(content.title)}
       description={text(content.description)}
-      metricOneLabel={text(content.metricOneLabel)}
-      metricOneValue={text(content.metricOneValue)}
-      metricTwoLabel={text(content.metricTwoLabel)}
-      metricTwoValue={text(content.metricTwoValue)}
-      metricThreeLabel={text(content.metricThreeLabel)}
-      metricThreeValue={text(content.metricThreeValue)}
+      metrics={itemsOf(props.section).map((item) => ({ label: text(item?.value as string), value: text(item?.title as string) })).filter((m) => m.label && m.value)}
       testimonials={testimonials}
       brands={brandsFor(props)}
     />
@@ -381,10 +381,7 @@ export function CasualAboutValueStatementSection(props: CasualSectionProps) {
     <CasualAboutValueStatement
       title={text(content.title)}
       description={text(content.description)}
-      valueOne={text(content.valueOne)}
-      valueTwo={text(content.valueTwo)}
-      valueThree={text(content.valueThree)}
-      valueFour={text(content.valueFour) || undefined}
+      items={itemsOf(props.section)}
     />
   );
 }
@@ -419,10 +416,7 @@ export function CasualServicesProcessSection(props: CasualSectionProps) {
     <CasualServicesProcess
       title={text(content.title)}
       description={text(content.description)}
-      stepOne={text(content.stepOne)}
-      stepTwo={text(content.stepTwo)}
-      stepThree={text(content.stepThree)}
-      stepFour={text(content.stepFour) || undefined}
+      items={itemsOf(props.section)}
     />
   );
 }
@@ -433,10 +427,7 @@ export function CasualServicesBenefitsSection(props: CasualSectionProps) {
     <CasualServicesBenefits
       title={text(content.title)}
       description={text(content.description)}
-      benefitOne={text(content.benefitOne)}
-      benefitTwo={text(content.benefitTwo)}
-      benefitThree={text(content.benefitThree)}
-      benefitFour={text(content.benefitFour) || undefined}
+      items={itemsOf(props.section)}
     />
   );
 }
@@ -507,24 +498,18 @@ export function CasualArticlePreviewSection(props: CasualSectionProps) {
 
 // ---- Article Detail ----
 
-export function CasualArticleDetailHeroSection(props: CasualSectionProps) {
-  const content = contentOf(props.section);
-  return (
-    <CasualArticleDetailHero
-      showPublishedDate={boolValue(content.showPublishedDate, true) ? "true" : "false"}
-      showCoverImage={boolValue(content.showCoverImage, true) ? "true" : "false"}
-      article={currentArticleFor(props)}
-      backHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")}
-    />
-  );
-}
-
 export function CasualArticleContentSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
+  const business = businessOf(props.payload);
   return (
     <CasualArticleContent
       contentMaxWidth={text(content.contentMaxWidth, "max-w-3xl")}
-      showShareHint={boolValue(content.showShareHint, true) ? "true" : "false"}
+      showAuthor={boolValue(content.showAuthor, true) ? "true" : "false"}
+      showPublishDate={boolValue(content.showPublishDate, true) ? "true" : "false"}
+      showShareLink={boolValue(content.showShareLink, true) ? "true" : "false"}
+      backHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")}
+      businessName={text(business.name, props.payload.website.name)}
+      businessLogoUrl={text(business.logoUrl as string)}
       article={currentArticleFor(props)}
     />
   );
@@ -559,25 +544,20 @@ export function CasualArticleCtaSection(props: CasualSectionProps) {
 
 // ---- Portfolio Detail ----
 
-export function CasualPortfolioDetailHeroSection(props: CasualSectionProps) {
-  const content = contentOf(props.section);
-  return (
-    <CasualPortfolioDetailHero
-      showCoverImage={boolValue(content.showCoverImage, true) ? "true" : "false"}
-      badge={text(content.badge, "Studi Kasus")}
-      project={currentPortfolioFor(props)}
-      backHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "portfolio", "/portfolio")}
-    />
-  );
-}
-
 export function CasualPortfolioDetailContentSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
+  const business = businessOf(props.payload);
   return (
     <CasualPortfolioDetailContent
-      contentMaxWidth={text(content.contentMaxWidth, "max-w-3xl")}
-      showShareHint={boolValue(content.showShareHint, true) ? "true" : "false"}
       project={currentPortfolioFor(props)}
+      badge={text(content.badge, "Studi Kasus")}
+      backHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "portfolio", "/portfolio")}
+      businessName={text(business.name, props.payload.website.name)}
+      businessLogoUrl={text(business.logoUrl as string)}
+      contentMaxWidth={text(content.contentMaxWidth, "max-w-3xl")}
+      showAuthor={boolValue(content.showAuthor, true) ? "true" : "false"}
+      showPublishDate={boolValue(content.showPublishDate, true) ? "true" : "false"}
+      showShareLink={boolValue(content.showShareLink, true) ? "true" : "false"}
     />
   );
 }
@@ -626,16 +606,16 @@ export function CasualContactInformationSection(props: CasualSectionProps) {
     <CasualContactInformation
       title={text(content.title)}
       description={text(content.description)}
-      showWhatsapp={boolValue(content.showWhatsapp, true) ? "true" : "false"}
-      showEmail={boolValue(content.showEmail, true) ? "true" : "false"}
-      showAddress={boolValue(content.showAddress, true) ? "true" : "false"}
+      showWhatsapp={Boolean(text(business.whatsapp as string) || text(business.phone as string)) ? "true" : "false"}
+      showEmail={Boolean(text(business.contactEmail as string)) ? "true" : "false"}
+      showAddress={Boolean(text(business.address as string)) ? "true" : "false"}
       siteSlug={props.siteSlug}
       pageKey={props.payload.page.pageKey}
       slotKey={props.section.slotKey}
       whatsappHref={waNumber ? `https://wa.me/${waNumber}` : undefined}
       whatsappLabel={text(business.whatsapp, text(business.phone)) || undefined}
-      email={text(business.email) || undefined}
-      address={text(business.address) || undefined}
+      email={text(business.contactEmail as string) || undefined}
+      address={text(business.address as string) || undefined}
     />
   );
 }
@@ -702,12 +682,10 @@ export const casualSectionComponents: Record<string, CasualSectionComponent> = {
   CasualFeaturedArticle: CasualFeaturedArticleSection,
   CasualArticlePreview: CasualArticlePreviewSection,
 
-  CasualArticleDetailHero: CasualArticleDetailHeroSection,
   CasualArticleContent: CasualArticleContentSection,
   CasualRelatedArticles: CasualRelatedArticlesSection,
   CasualArticleCta: CasualArticleCtaSection,
 
-  CasualPortfolioDetailHero: CasualPortfolioDetailHeroSection,
   CasualPortfolioDetailContent: CasualPortfolioDetailContentSection,
   CasualRelatedPortfolios: CasualRelatedPortfoliosSection,
   CasualPortfolioDetailCta: CasualPortfolioDetailCtaSection,
