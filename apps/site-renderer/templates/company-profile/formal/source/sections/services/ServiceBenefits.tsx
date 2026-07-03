@@ -23,7 +23,7 @@ export const ServiceBenefits: React.FC<ServiceBenefitsProps> = ({
     <section id="services-benefits" className="py-16 md:py-24 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="accent" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {benefits.map((benefit, idx) => (
             <Card key={`${benefit.title}-${idx}`} className="p-8 bg-slate-50/40 border border-slate-100 h-full" hoverEffect={true}>
               <div className="w-10 h-10 flex items-center justify-center rounded bg-[#649FF6]/10 text-[#649FF6] font-mono font-bold text-base mb-6 border border-[#649FF6]/20">

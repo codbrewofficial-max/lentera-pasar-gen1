@@ -7,6 +7,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import BooleanRadio from "@/components/ui/BooleanRadio";
 import EnhancedTextarea from "@/components/ui/EnhancedTextarea";
 import { AlertCircle, CheckCircle, Edit2, HelpCircle, Plus, Save, Search, Trash2, X } from "lucide-react";
+import Pagination from "@/components/ui/Pagination";
 
 type FaqItem = {
   id: string;
@@ -50,12 +51,22 @@ export default function FaqCrudPage() {
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
-  const fetchItems = async () => {
+  const [page, setPage] = useState(1);
+  const [pageMeta, setPageMeta] = useState({ pageSize: 12, total: 0, totalPages: 1 });
+
+  const fetchItems = async (targetPage = page) => {
     setLoading(true);
     setErrorMsg("");
     try {
-      const res = await apiCall<FaqItem[]>("GET", `websites/${websiteId}/faqs`);
+      const res = await apiCall<FaqItem[]>("GET", `websites/${websiteId}/faqs?page=${targetPage}&pageSize=${pageMeta.pageSize}`);
       setItems(res.data || []);
+      if (res.meta?.pagination) {
+        setPageMeta({
+          pageSize: res.meta.pagination.pageSize,
+          total: res.meta.pagination.total,
+          totalPages: res.meta.pagination.totalPages
+        });
+      }
     } catch (err: any) {
       setErrorMsg(err.error?.message || err.message || "Gagal memuat FAQ.");
     } finally {
@@ -64,8 +75,12 @@ export default function FaqCrudPage() {
   };
 
   useEffect(() => {
-    if (websiteId) fetchItems();
-  }, [websiteId]);
+    if (websiteId) fetchItems(page);
+  }, [websiteId, page]);
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
 
   const showSuccess = (message: string) => {
     setSuccessMsg(message);
@@ -117,7 +132,7 @@ export default function FaqCrudPage() {
       }
 
       setIsFormOpen(false);
-      fetchItems();
+      fetchItems(page);
     } catch (err: any) {
       setErrorMsg(err.error?.message || err.message || "Gagal menyimpan FAQ.");
     } finally {
@@ -133,7 +148,11 @@ export default function FaqCrudPage() {
       await apiCall("DELETE", `websites/${websiteId}/faqs/${deletingItem.id}`);
       setDeletingItem(null);
       showSuccess("FAQ berhasil dihapus.");
-      fetchItems();
+      if (items.length === 1 && page > 1) {
+        setPage(page - 1);
+      } else {
+        fetchItems(page);
+      }
     } catch (err: any) {
       setErrorMsg(err.error?.message || err.message || "Gagal menghapus FAQ.");
     } finally {
@@ -211,6 +230,17 @@ export default function FaqCrudPage() {
               </div>
             ))}
           </div>
+        )}
+
+        {!loading && filtered.length > 0 && (
+          <Pagination
+            page={page}
+            totalPages={pageMeta.totalPages}
+            total={pageMeta.total}
+            pageSize={pageMeta.pageSize}
+            onPageChange={handlePageChange}
+            itemLabel="FAQ"
+          />
         )}
 
         {isFormOpen && (

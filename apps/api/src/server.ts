@@ -32,7 +32,7 @@ import {
 } from "@lentera-pasar/shared";
 import { prisma } from "./prisma.js";
 import { createCompanyProfileDefaults, ensureCompanyProfileStructure, defaultPageNavLabel, isDynamicDetailPage, pagePurpose } from "./defaults.js";
-import { AppError, created, ok, publicUser, toErrorPayload } from "./http.js";
+import { AppError, buildPaginationMeta, created, ok, paginated, parsePagination, publicUser, toErrorPayload } from "./http.js";
 import { hashIp, hashPassword, hashToken, limitJson, prismaJson, randomToken, verifyApiKey, verifyPassword } from "./security.js";
 import { buildPasswordResetEmail, buildVerificationEmail, sendEmail } from "./email.js";
 import sharp from "sharp";
@@ -2205,8 +2205,13 @@ const registerCrud = (
     const orderBy = base === "services" || base === "portfolios"
       ? [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }]
       : [{ sortOrder: "asc" }];
-    const rows = await (model as any).findMany({ where: { websiteId: website.id }, orderBy, ...(include ? { include } : {}) });
-    return ok(reply, rows, `${base} loaded`);
+    const { page, pageSize, skip, take } = parsePagination(request.query as Record<string, unknown>);
+    const where = { websiteId: website.id };
+    const [rows, total] = await Promise.all([
+      (model as any).findMany({ where, orderBy, skip, take, ...(include ? { include } : {}) }),
+      (model as any).count({ where })
+    ]);
+    return paginated(reply, rows, buildPaginationMeta(page, pageSize, total), `${base} loaded`);
   });
   app.post(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {
     const { user, website } = await getWebsiteForAccess(request);
@@ -2301,8 +2306,13 @@ const articleData = (body: z.infer<typeof articleBody>, existing?: { publishedAt
 const registerArticleRoutes = () => {
   app.get("/api/v1/websites/:websiteId/articles", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
-    const articles = await prisma.article.findMany({ where: { websiteId: website.id }, orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }], include: { category: true } });
-    return ok(reply, articles.map(articleContract), "Articles loaded");
+    const { page, pageSize, skip, take } = parsePagination(request.query as Record<string, unknown>);
+    const where = { websiteId: website.id };
+    const [articles, total] = await Promise.all([
+      prisma.article.findMany({ where, orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }], include: { category: true }, skip, take }),
+      prisma.article.count({ where })
+    ]);
+    return paginated(reply, articles.map(articleContract), buildPaginationMeta(page, pageSize, total), "Articles loaded");
   });
   app.post("/api/v1/websites/:websiteId/articles", async (request: Req, reply) => {
     const { user, website } = await getWebsiteForAccess(request);
@@ -2404,8 +2414,13 @@ const registerStage9cContentRoutes = () => {
 
     app.get(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {
       const { website } = await getWebsiteForAccess(request);
-      const rows = await (model as any).findMany({ where: { websiteId: website.id }, orderBy: { sortOrder: "asc" } });
-      return ok(reply, rows.map(categoryContract), `${base} loaded`);
+      const { page, pageSize, skip, take } = parsePagination(request.query as Record<string, unknown>);
+      const where = { websiteId: website.id };
+      const [rows, total] = await Promise.all([
+        (model as any).findMany({ where, orderBy: { sortOrder: "asc" }, skip, take }),
+        (model as any).count({ where })
+      ]);
+      return paginated(reply, rows.map(categoryContract), buildPaginationMeta(page, pageSize, total), `${base} loaded`);
     });
 
     app.post(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {
@@ -2472,11 +2487,13 @@ const registerStage9cContentRoutes = () => {
   app.get("/api/v1/websites/:websiteId/faqs", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
     const pageKey = request.query?.pageKey;
-    const faqs = await prisma.faq.findMany({
-      where: { websiteId: website.id, ...(pageKey ? { pageKey } : {}) },
-      orderBy: { sortOrder: "asc" }
-    });
-    return ok(reply, faqs.map(faqContract), "FAQs loaded");
+    const { page, pageSize, skip, take } = parsePagination(request.query as Record<string, unknown>);
+    const where = { websiteId: website.id, ...(pageKey ? { pageKey } : {}) };
+    const [faqs, total] = await Promise.all([
+      prisma.faq.findMany({ where, orderBy: { sortOrder: "asc" }, skip, take }),
+      prisma.faq.count({ where })
+    ]);
+    return paginated(reply, faqs.map(faqContract), buildPaginationMeta(page, pageSize, total), "FAQs loaded");
   });
 
   app.post("/api/v1/websites/:websiteId/faqs", async (request: Req, reply) => {
@@ -2532,8 +2549,13 @@ const registerStage9cContentRoutes = () => {
 
   app.get("/api/v1/websites/:websiteId/media", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
-    const assets = await prisma.mediaAsset.findMany({ where: { websiteId: website.id }, orderBy: { createdAt: "desc" } });
-    return ok(reply, assets.map(mediaAssetContract), "Media assets loaded");
+    const { page, pageSize, skip, take } = parsePagination(request.query as Record<string, unknown>);
+    const where = { websiteId: website.id };
+    const [assets, total] = await Promise.all([
+      prisma.mediaAsset.findMany({ where, orderBy: { createdAt: "desc" }, skip, take }),
+      prisma.mediaAsset.count({ where })
+    ]);
+    return paginated(reply, assets.map(mediaAssetContract), buildPaginationMeta(page, pageSize, total), "Media assets loaded");
   });
 
   app.post("/api/v1/websites/:websiteId/media", { config: { rateLimit: apiConfig.rateLimits.templateUpload } }, async (request, reply) => {
@@ -3315,11 +3337,13 @@ export const buildApp = async () => {
     const base = "team-members";
     app.get(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {
       const { website } = await getWebsiteForAccess(request);
-      const rows = await prisma.teamMember.findMany({
-        where: { websiteId: website.id },
-        orderBy: { sortOrder: "asc" }
-      });
-      return ok(reply, rows, "team members loaded");
+      const { page, pageSize, skip, take } = parsePagination(request.query as Record<string, unknown>);
+      const where = { websiteId: website.id };
+      const [rows, total] = await Promise.all([
+        prisma.teamMember.findMany({ where, orderBy: { sortOrder: "asc" }, skip, take }),
+        prisma.teamMember.count({ where })
+      ]);
+      return paginated(reply, rows, buildPaginationMeta(page, pageSize, total), "team members loaded");
     });
 
     app.post(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {

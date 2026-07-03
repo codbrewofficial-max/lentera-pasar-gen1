@@ -5,8 +5,9 @@ import { useParams } from "next/navigation";
 import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
 import BooleanRadio from "@/components/ui/BooleanRadio";
-import EnhancedTextarea from "@/components/ui/EnhancedTextarea";
+import RichTextEditor from "@/components/ui/RichTextEditor";
 import { AlertCircle, CheckCircle, Edit2, Plus, Save, Search, Tags, Trash2, X } from "lucide-react";
+import Pagination from "@/components/ui/Pagination";
 
 type CategoryItem = {
   id: string;
@@ -59,12 +60,22 @@ export default function CategoryCrudPage() {
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
-  const fetchItems = async () => {
+  const [page, setPage] = useState(1);
+  const [pageMeta, setPageMeta] = useState({ pageSize: 12, total: 0, totalPages: 1 });
+
+  const fetchItems = async (targetPage = page) => {
     setLoading(true);
     setErrorMsg("");
     try {
-      const res = await apiCall<CategoryItem[]>("GET", `websites/${websiteId}/${endpoint}`);
+      const res = await apiCall<CategoryItem[]>("GET", `websites/${websiteId}/${endpoint}?page=${targetPage}&pageSize=${pageMeta.pageSize}`);
       setItems(res.data || []);
+      if (res.meta?.pagination) {
+        setPageMeta({
+          pageSize: res.meta.pagination.pageSize,
+          total: res.meta.pagination.total,
+          totalPages: res.meta.pagination.totalPages
+        });
+      }
     } catch (err: any) {
       setErrorMsg(err.error?.message || err.message || `Gagal memuat ${title.toLowerCase()}.`);
     } finally {
@@ -73,8 +84,12 @@ export default function CategoryCrudPage() {
   };
 
   useEffect(() => {
-    if (websiteId) fetchItems();
-  }, [websiteId]);
+    if (websiteId) fetchItems(page);
+  }, [websiteId, page]);
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
 
   const showSuccess = (message: string) => {
     setSuccessMsg(message);
@@ -126,7 +141,7 @@ export default function CategoryCrudPage() {
       }
 
       setIsFormOpen(false);
-      fetchItems();
+      fetchItems(page);
     } catch (err: any) {
       setErrorMsg(err.error?.message || err.message || `Gagal menyimpan ${title.toLowerCase()}.`);
     } finally {
@@ -142,7 +157,11 @@ export default function CategoryCrudPage() {
       await apiCall("DELETE", `websites/${websiteId}/${endpoint}/${deletingItem.id}`);
       setDeletingItem(null);
       showSuccess(`${title} berhasil dihapus.`);
-      fetchItems();
+      if (items.length === 1 && page > 1) {
+        setPage(page - 1);
+      } else {
+        fetchItems(page);
+      }
     } catch (err: any) {
       setErrorMsg(err.error?.message || err.message || `Gagal menghapus ${title.toLowerCase()}.`);
     } finally {
@@ -228,16 +247,27 @@ export default function CategoryCrudPage() {
           </div>
         )}
 
+        {!loading && filtered.length > 0 && (
+          <Pagination
+            page={page}
+            totalPages={pageMeta.totalPages}
+            total={pageMeta.total}
+            pageSize={pageMeta.pageSize}
+            onPageChange={handlePageChange}
+            itemLabel="kategori"
+          />
+        )}
+
         {isFormOpen && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl shadow-xl w-full max-w-xl border border-slate-100 overflow-hidden">
+            <div className="bg-white rounded-3xl shadow-xl w-full max-w-lg border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden animate-slideUp">
               <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                 <h3 className="font-bold text-slate-800 text-base">{editingItem ? "Edit Kategori" : "Tambah Kategori"}</h3>
                 <button onClick={() => setIsFormOpen(false)} className="p-2 hover:bg-slate-50 text-slate-400 hover:text-slate-600 rounded-xl transition">
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 flex-1">
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Nama Kategori</label>
                   <input
@@ -257,25 +287,23 @@ export default function CategoryCrudPage() {
                 </div>
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Deskripsi</label>
-                  <EnhancedTextarea id={`${endpoint}-description`} minRows={3} value={formData.description} onChange={(value) => setFormData({ ...formData, description: value })} helperText="Deskripsi singkat untuk membantu pengelolaan konten." />
+                  <RichTextEditor id={`${endpoint}-description`} minHeight={110} value={formData.description} onChange={(value) => setFormData({ ...formData, description: value })} helperText="Deskripsi singkat untuk membantu pengelolaan konten." />
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Urutan</label>
-                    <input
-                      type="number"
-                      value={formData.sortOrder}
-                      onChange={(event) => setFormData({ ...formData, sortOrder: Number(event.target.value) })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6]"
-                    />
-                  </div>
-                  <BooleanRadio id={`${endpoint}-is-active`} label="Status" value={formData.isActive} onChange={(value) => setFormData({ ...formData, isActive: value })} />
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Urutan</label>
+                  <input
+                    type="number"
+                    value={formData.sortOrder}
+                    onChange={(event) => setFormData({ ...formData, sortOrder: Number(event.target.value) })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6]"
+                  />
                 </div>
+                <BooleanRadio id={`${endpoint}-is-active`} label="Status" value={formData.isActive} onChange={(value) => setFormData({ ...formData, isActive: value })} />
                 <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
                   <button type="button" onClick={() => setIsFormOpen(false)} className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition">Batal</button>
-                  <button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-5 py-2 bg-[#649FF6] hover:bg-[#4f8be6] disabled:bg-[#8bb8fb] text-white text-xs font-bold rounded-xl shadow-md transition">
+                  <button type="submit" disabled={saving} className="inline-flex items-center space-x-1 px-5 py-2 bg-[#649FF6] hover:bg-[#4f8be6] disabled:bg-[#8bb8fb] text-white text-xs font-bold rounded-xl shadow-md transition">
                     <Save className="h-4 w-4" />
-                    {saving ? "Menyimpan..." : "Simpan Kategori"}
+                    <span>{saving ? "Menyimpan..." : "Simpan Kategori"}</span>
                   </button>
                 </div>
               </form>
@@ -285,12 +313,12 @@ export default function CategoryCrudPage() {
 
         {deletingItem && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-6 shadow-xl w-full max-w-sm border border-slate-100 space-y-4">
+            <div className="bg-white rounded-3xl p-6 shadow-xl w-full max-w-sm border border-slate-100 space-y-4 animate-scaleUp">
               <h3 className="font-bold text-slate-900 text-base">Konfirmasi Hapus</h3>
               <p className="text-xs text-slate-500 leading-relaxed">Hapus kategori <strong>{deletingItem.name}</strong>? Konten yang memakai kategori ini akan kehilangan kategori.</p>
               <div className="flex justify-end gap-2 pt-2">
                 <button onClick={() => setDeletingItem(null)} className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition">Batal</button>
-                <button onClick={handleDelete} disabled={deleting} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 disabled:bg-rose-400 text-white text-xs font-bold rounded-xl transition">
+                <button onClick={handleDelete} disabled={deleting} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 disabled:bg-rose-400 text-white text-xs font-bold rounded-xl transition shadow-md shadow-rose-600/10">
                   {deleting ? "Menghapus..." : "Ya, Hapus"}
                 </button>
               </div>

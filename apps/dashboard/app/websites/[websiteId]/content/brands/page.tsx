@@ -5,6 +5,8 @@ import { useRouter, useParams } from "next/navigation";
 import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
 import BooleanRadio from "@/components/ui/BooleanRadio";
+import MediaPickerInput from "@/components/ui/MediaPickerInput";
+import Pagination from "@/components/ui/Pagination";
 import {
   Award,
   Plus,
@@ -40,6 +42,10 @@ export default function BrandCrudPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [pageMeta, setPageMeta] = useState({ pageSize: 12, total: 0, totalPages: 1 });
+
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -58,12 +64,19 @@ export default function BrandCrudPage() {
   const [deletingItem, setDeletingItem] = useState<BrandItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const fetchItems = async () => {
+  const fetchItems = async (targetPage = page) => {
     setLoading(true);
     setErrorMsg("");
     try {
-      const res = await apiCall<BrandItem[]>("GET", `websites/${websiteId}/brand-partners`);
+      const res = await apiCall<BrandItem[]>("GET", `websites/${websiteId}/brand-partners?page=${targetPage}&pageSize=${pageMeta.pageSize}`);
       setItems(res.data || []);
+      if (res.meta?.pagination) {
+        setPageMeta({
+          pageSize: res.meta.pagination.pageSize,
+          total: res.meta.pagination.total,
+          totalPages: res.meta.pagination.totalPages
+        });
+      }
     } catch (err: any) {
       console.error("Fetch brands error:", err);
       setErrorMsg(err.error?.message || "Gagal memuat logo partner / brand.");
@@ -75,10 +88,14 @@ export default function BrandCrudPage() {
   useEffect(() => {
     if (websiteId) {
       Promise.resolve().then(() => {
-        fetchItems();
+        fetchItems(page);
       });
     }
-  }, [websiteId]);
+  }, [websiteId, page]);
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
 
   const showSuccess = (msg: string) => {
     setSuccessMsg(msg);
@@ -135,7 +152,7 @@ export default function BrandCrudPage() {
         showSuccess("Logo brand rekanan baru berhasil disimpan!");
       }
       setIsFormOpen(false);
-      fetchItems();
+      fetchItems(page);
     } catch (err: any) {
       console.error("Save brand error:", err);
       setErrorMsg(err.error?.message || "Gagal menyimpan data rekanan.");
@@ -152,7 +169,11 @@ export default function BrandCrudPage() {
       await apiCall("DELETE", `websites/${websiteId}/brand-partners/${deletingItem.id}`);
       showSuccess("Logo brand rekanan berhasil dihapus!");
       setDeletingItem(null);
-      fetchItems();
+      if (items.length === 1 && page > 1) {
+        setPage(page - 1);
+      } else {
+        fetchItems(page);
+      }
     } catch (err: any) {
       console.error("Delete brand error:", err);
       setErrorMsg(err.error?.message || "Gagal menghapus data rekanan.");
@@ -307,6 +328,17 @@ export default function BrandCrudPage() {
           </div>
         )}
 
+        {!loading && filteredItems.length > 0 && (
+          <Pagination
+            page={page}
+            totalPages={pageMeta.totalPages}
+            total={pageMeta.total}
+            pageSize={pageMeta.pageSize}
+            onPageChange={handlePageChange}
+            itemLabel="brand/partner"
+          />
+        )}
+
         {/* Modal Form Dialog */}
         {isFormOpen && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -342,17 +374,15 @@ export default function BrandCrudPage() {
 
                 {/* Logo URL */}
                 <div className="space-y-1">
-                  <label htmlFor="brand-logo" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
-                    URL File Logo Rekanan <span className="text-rose-500">*</span>
-                  </label>
-                  <input
+                  <MediaPickerInput
                     id="brand-logo"
-                    type="url"
+                    label="URL File Logo Rekanan"
                     required
-                    placeholder="Contoh: https://picsum.photos/seed/logo/200/100"
                     value={formData.logoUrl}
-                    onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors font-mono"
+                    onChange={(url) => setFormData({ ...formData, logoUrl: url })}
+                    picsumSeedPrefix="brand-logo"
+                    picsumSize={{ width: 200, height: 100 }}
+                    aspect="wide"
                   />
                 </div>
 

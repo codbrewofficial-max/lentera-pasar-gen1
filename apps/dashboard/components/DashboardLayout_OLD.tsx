@@ -26,19 +26,12 @@ import {
   Image as ImageIcon,
   Tags,
   CalendarDays,
-  Lock,
-  ChevronDown
+  Lock
 } from "lucide-react";
 import BrandMark from "@/components/brand/BrandMark";
 import BrandSignature from "@/components/brand/BrandSignature";
 
 type UserRole = "internal_admin" | "owner_admin" | string;
-
-type SubNavItem = {
-  label: string;
-  href: string;
-  active: boolean;
-};
 
 type NavItem = {
   label: string;
@@ -46,7 +39,6 @@ type NavItem = {
   icon: React.ComponentType<{ className?: string }>;
   href: string;
   active: boolean;
-  children?: SubNavItem[]; // Ditambahkan untuk struktur submenu
 };
 
 type NavGroup = {
@@ -71,73 +63,26 @@ function userInitials(name: string) {
     .toUpperCase() || "PG";
 }
 
-function NavButton({ item, onClick }: { item: NavItem; onClick: (href: string) => void }) {
-  // Mengecek apakah salah satu anak menu sedang aktif berdasarkan kecocokan awal URL
-  const hasActiveChild = item.children?.some((child) => child.active) || false;
-  const [isOpen, setIsOpen] = useState(hasActiveChild);
-
-  // Otomatis buka sidebar group jika ada child yang aktif saat page reload / navigasi
-  useEffect(() => {
-    if (hasActiveChild) {
-      setIsOpen(true);
-    }
-  }, [hasActiveChild]);
-
-  const handleParentClick = () => {
-    if (item.children) {
-      setIsOpen(!isOpen);
-    } else {
-      onClick(item.href);
-    }
-  };
-
+function NavButton({ item, onClick }: { item: NavItem; onClick: () => void }) {
   return (
-    <div className="space-y-1">
-      <button
-        onClick={handleParentClick}
-        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-left transition ${
-          item.active || hasActiveChild
-            ? "bg-[#649FF6]/10 text-[#3f6fae] ring-1 ring-[#649FF6]/15"
-            : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-        }`}
-      >
-        <item.icon className={`h-4 w-4 shrink-0 ${item.active || hasActiveChild ? "text-[#649FF6]" : "text-slate-400"}`} />
-        <span className="min-w-0 flex-1">
-          <span className="block text-xs font-bold leading-5">{item.label}</span>
-          {item.description && (
-            <span className="mt-0.5 block text-[10px] leading-4 text-slate-400 truncate">
-              {item.description}
-            </span>
-          )}
-        </span>
-        {item.children && (
-          <ChevronDown
-            className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-200 ${
-              isOpen ? "rotate-180 text-[#649FF6]" : ""
-            }`}
-          />
+    <button
+      onClick={onClick}
+      className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-2xl text-left transition ${
+        item.active
+          ? "bg-[#649FF6]/10 text-[#3f6fae] ring-1 ring-[#649FF6]/15"
+          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+      }`}
+    >
+      <item.icon className={`mt-0.5 h-4 w-4 shrink-0 ${item.active ? "text-[#649FF6]" : "text-slate-400"}`} />
+      <span className="min-w-0 flex-1">
+        <span className="block text-xs font-bold leading-5">{item.label}</span>
+        {item.description && (
+          <span className="mt-0.5 block text-[10px] leading-4 text-slate-400">
+            {item.description}
+          </span>
         )}
-      </button>
-
-      {/* Render Submenu */}
-      {item.children && isOpen && (
-        <div className="pl-9 pr-2 space-y-1 border-l-2 border-slate-100 ml-5 animate-fadeIn">
-          {item.children.map((child) => (
-            <button
-              key={child.href}
-              onClick={() => onClick(child.href)}
-              className={`w-full text-left block px-3 py-1.5 text-[11px] font-semibold rounded-lg transition ${
-                child.active
-                  ? "text-[#3f6fae] font-bold bg-slate-50"
-                  : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
-              }`}
-            >
-              {child.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+      </span>
+    </button>
   );
 }
 
@@ -152,7 +97,7 @@ function NavGroupBlock({ group, onNavigate }: { group: NavGroup; onNavigate: (hr
       </div>
       <nav className="space-y-1">
         {group.items.map((item) => (
-          <NavButton key={item.href} item={item} onClick={onNavigate} />
+          <NavButton key={item.href} item={item} onClick={() => onNavigate(item.href)} />
         ))}
       </nav>
     </div>
@@ -283,41 +228,14 @@ export default function DashboardLayout({
               description: "Hasil kerja, kegiatan, project, atau studi kasus.",
               icon: FolderKanban,
               href: `/websites/${websiteId}/content/portfolio`,
-              // Menggunakan penanda utama kelompok portfolio
-              active: pathname?.includes(`/websites/${websiteId}/content/portfolio`) || false,
-              children: [
-                {
-                  label: "Semua Portfolio",
-                  href: `/websites/${websiteId}/content/portfolio`,
-                  // Aktif jika berada di halaman list, create, maupun edit portfolio, tapi BUKAN halaman kategori
-                  active: (pathname?.includes(`/websites/${websiteId}/content/portfolio`) && !pathname?.includes(`portfolio-categories`)) || false
-                },
-                {
-                  label: "Kategori Portfolio",
-                  href: `/websites/${websiteId}/content/portfolio-categories`,
-                  active: pathname?.includes(`/websites/${websiteId}/content/portfolio-categories`) || false
-                }
-              ]
+              active: pathname?.includes(`/websites/${websiteId}/content/portfolio`) || false
             },
             {
               label: "Artikel",
               description: "Tulisan edukasi, berita, insight, dan SEO.",
               icon: FileText,
               href: `/websites/${websiteId}/content/articles`,
-              active: pathname?.includes(`/websites/${websiteId}/content/articles`) || false,
-              children: [
-                {
-                  label: "Semua Artikel",
-                  href: `/websites/${websiteId}/content/articles`,
-                  // Aktif jika berada di halaman list, create, maupun edit artikel, tapi BUKAN halaman kategori
-                  active: (pathname?.includes(`/websites/${websiteId}/content/articles`) && !pathname?.includes(`article-categories`)) || false
-                },
-                {
-                  label: "Kategori Artikel",
-                  href: `/websites/${websiteId}/content/article-categories`,
-                  active: pathname?.includes(`/websites/${websiteId}/content/article-categories`) || false
-                }
-              ]
+              active: pathname?.includes(`/websites/${websiteId}/content/articles`) || false
             }
           ]
         },
@@ -326,11 +244,18 @@ export default function DashboardLayout({
           description: "Data bantu agar konten lebih rapi dan meyakinkan.",
           items: [
             {
-              label: "Media Library",
-              description: "Bank gambar untuk logo, artikel, portfolio, dan section.",
-              icon: ImageIcon,
-              href: `/websites/${websiteId}/content/media`,
-              active: pathname?.includes(`/websites/${websiteId}/content/media`) || false
+              label: "Kategori Artikel",
+              description: "Kelompokkan artikel agar mudah dicari.",
+              icon: Tags,
+              href: `/websites/${websiteId}/content/article-categories`,
+              active: pathname?.includes(`/websites/${websiteId}/content/article-categories`) || false
+            },
+            {
+              label: "Kategori Portfolio",
+              description: "Kelompokkan portfolio berdasarkan jenis kegiatan/project.",
+              icon: Tags,
+              href: `/websites/${websiteId}/content/portfolio-categories`,
+              active: pathname?.includes(`/websites/${websiteId}/content/portfolio-categories`) || false
             },
             {
               label: "Perjalanan Bisnis",
@@ -347,6 +272,20 @@ export default function DashboardLayout({
               active: pathname?.includes(`/websites/${websiteId}/content/team-members`) || false
             },
             {
+              label: "FAQ",
+              description: "Pertanyaan umum untuk halaman layanan dan kontak.",
+              icon: HelpCircle,
+              href: `/websites/${websiteId}/content/faq`,
+              active: pathname?.includes(`/websites/${websiteId}/content/faq`) || false
+            },
+            {
+              label: "Media Library",
+              description: "Bank gambar untuk logo, artikel, portfolio, dan section.",
+              icon: ImageIcon,
+              href: `/websites/${websiteId}/content/media`,
+              active: pathname?.includes(`/websites/${websiteId}/content/media`) || false
+            },
+            {
               label: "Testimoni",
               description: "Cerita pelanggan/klien untuk memperkuat trust.",
               icon: MessageSquare,
@@ -359,13 +298,6 @@ export default function DashboardLayout({
               icon: Award,
               href: `/websites/${websiteId}/content/brands`,
               active: pathname?.includes(`/websites/${websiteId}/content/brands`) || false
-            },
-            {
-              label: "FAQ",
-              description: "Pertanyaan umum untuk halaman layanan dan kontak.",
-              icon: HelpCircle,
-              href: `/websites/${websiteId}/content/faq`,
-              active: pathname?.includes(`/websites/${websiteId}/content/faq`) || false
             }
           ]
         },

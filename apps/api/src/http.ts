@@ -19,6 +19,47 @@ export const ok = (reply: FastifyReply, data: unknown, message = "OK", statusCod
 export const created = (reply: FastifyReply, data: unknown, message = "Created") =>
   ok(reply, data, message, 201);
 
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export const paginated = (
+  reply: FastifyReply,
+  data: unknown[],
+  meta: PaginationMeta,
+  message = "OK"
+) => reply.code(200).send({ data, meta: { pagination: meta }, message });
+
+export interface PaginationParams {
+  page: number;
+  pageSize: number;
+  skip: number;
+  take: number;
+}
+
+const DEFAULT_PAGE_SIZE = 12;
+const MAX_PAGE_SIZE = 100;
+
+export const parsePagination = (query: Record<string, unknown> | undefined): PaginationParams => {
+  const rawPage = Number(query?.page);
+  const rawPageSize = Number(query?.pageSize ?? query?.limit);
+  const page = Number.isFinite(rawPage) && rawPage >= 1 ? Math.floor(rawPage) : 1;
+  const pageSize = Number.isFinite(rawPageSize) && rawPageSize >= 1
+    ? Math.min(Math.floor(rawPageSize), MAX_PAGE_SIZE)
+    : DEFAULT_PAGE_SIZE;
+  return { page, pageSize, skip: (page - 1) * pageSize, take: pageSize };
+};
+
+export const buildPaginationMeta = (page: number, pageSize: number, total: number): PaginationMeta => ({
+  page,
+  pageSize,
+  total,
+  totalPages: Math.max(1, Math.ceil(total / pageSize))
+});
+
 export const fail = (
   reply: FastifyReply,
   statusCode: number,

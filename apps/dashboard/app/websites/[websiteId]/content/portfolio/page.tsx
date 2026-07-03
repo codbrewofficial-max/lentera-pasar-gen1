@@ -4,8 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
-import BooleanRadio from "@/components/ui/BooleanRadio";
-import EnhancedTextarea from "@/components/ui/EnhancedTextarea";
 import {
   FolderKanban,
   Plus,
@@ -14,13 +12,10 @@ import {
   Trash2,
   AlertCircle,
   CheckCircle,
-  Save,
-  X,
   PlusCircle,
-  ExternalLink,
-  Tag,
-  User
+  Tag
 } from "lucide-react";
+import Pagination from "@/components/ui/Pagination";
 
 interface PortfolioCategory {
   id: string;
@@ -30,75 +25,57 @@ interface PortfolioCategory {
 }
 
 interface PortfolioItem {
-  id: string | number;
+  id: string;
   categoryId?: string | null;
   category?: PortfolioCategory | null;
   title: string;
+  slug: string;
   description: string;
   imageUrl: string;
-  projectUrl?: string;
-  clientName?: string;
   isActive: boolean;
   isFeatured?: boolean;
   featuredOrder?: number;
   sortOrder?: number;
 }
 
-const DEFAULT_PORTFOLIO_CATEGORIES = [
-  "Desain & Kreatif",
-  "Teknologi & IT",
-  "Konstruksi & Properti",
-  "Konsultasi",
-  "Pendidikan",
-  "Event Organizer",
-  "Lainnya"
-];
+const stripHtml = (html: string) => {
+  if (!html) return "";
+  if (typeof window === "undefined") return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  const div = document.createElement("div");
+  div.innerHTML = html;
+  return (div.textContent || div.innerText || "").trim();
+};
 
-export default function PortfolioCrudPage() {
+export default function PortfolioListPage() {
   const router = useRouter();
   const params = useParams();
   const websiteId = params?.websiteId as string;
 
   const [items, setItems] = useState<PortfolioItem[]>([]);
-  const [categories, setCategories] = useState<PortfolioCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
-
-  // Search & Filter
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Form State
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null);
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    categoryId: "",
-    category: "Desain & Kreatif",
-    imageUrl: "https://picsum.photos/seed/portfolio/800/600",
-    projectUrl: "",
-    clientName: "",
-    isActive: true,
-    isFeatured: false,
-    featuredOrder: 0
-  });
-  const [saving, setSaving] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageMeta, setPageMeta] = useState({ pageSize: 12, total: 0, totalPages: 1 });
 
-  // Delete State
   const [deletingItem, setDeletingItem] = useState<PortfolioItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const fetchItems = async () => {
+  const fetchItems = async (targetPage = page) => {
     setLoading(true);
     setErrorMsg("");
     try {
-      const [portfolioRes, categoriesRes] = await Promise.all([
-        apiCall<PortfolioItem[]>("GET", `websites/${websiteId}/portfolios`),
-        apiCall<PortfolioCategory[]>("GET", `websites/${websiteId}/portfolio-categories`).catch(() => ({ data: [] as PortfolioCategory[] }))
-      ]);
+      const portfolioRes = await apiCall<PortfolioItem[]>("GET", `websites/${websiteId}/portfolios?page=${targetPage}&pageSize=${pageMeta.pageSize}`);
       setItems(portfolioRes.data || []);
-      setCategories(categoriesRes.data || []);
+      if (portfolioRes.meta?.pagination) {
+        setPageMeta({
+          pageSize: portfolioRes.meta.pagination.pageSize,
+          total: portfolioRes.meta.pagination.total,
+          totalPages: portfolioRes.meta.pagination.totalPages
+        });
+      }
     } catch (err: any) {
       console.error("Fetch portfolios error:", err);
       setErrorMsg(err.error?.message || "Gagal memuat daftar portfolio.");
@@ -109,89 +86,17 @@ export default function PortfolioCrudPage() {
 
   useEffect(() => {
     if (websiteId) {
-      Promise.resolve().then(() => {
-        fetchItems();
-      });
+      fetchItems(page);
     }
-  }, [websiteId]);
+  }, [websiteId, page]);
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
 
   const showSuccess = (msg: string) => {
     setSuccessMsg(msg);
     setTimeout(() => setSuccessMsg(""), 4000);
-  };
-
-  const handleOpenAdd = () => {
-    setEditingItem(null);
-    setFormData({
-      title: "",
-      description: "",
-      categoryId: "",
-      category: "Desain & Kreatif",
-      imageUrl: "https://picsum.photos/seed/" + Math.floor(Math.random() * 1000) + "/800/600",
-      projectUrl: "",
-      clientName: "",
-      isActive: true,
-      isFeatured: false,
-      featuredOrder: 0
-    });
-    setIsFormOpen(true);
-  };
-
-  const handleOpenEdit = (item: PortfolioItem) => {
-    setEditingItem(item);
-    setFormData({
-      title: item.title,
-      description: item.description,
-      categoryId: item.categoryId || "",
-      category: item.category?.name || "Desain & Kreatif",
-      imageUrl: item.imageUrl || "https://picsum.photos/seed/portfolio/800/600",
-      projectUrl: item.projectUrl || "",
-      clientName: item.clientName || "",
-      isActive: item.isActive ?? true,
-      isFeatured: item.isFeatured ?? false,
-      featuredOrder: item.featuredOrder ?? 0
-    });
-    setIsFormOpen(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.title || !formData.description || !formData.imageUrl) {
-      setErrorMsg("Judul, deskripsi, dan URL gambar wajib diisi.");
-      return;
-    }
-
-    setSaving(true);
-    setErrorMsg("");
-    try {
-      const payload = {
-        categoryId: formData.categoryId || null,
-        title: formData.title,
-        description: formData.description,
-        imageUrl: formData.imageUrl,
-        sortOrder: editingItem?.sortOrder ?? 0,
-        isFeatured: formData.isFeatured,
-        featuredOrder: Number(formData.featuredOrder) || 0,
-        isActive: formData.isActive
-      };
-
-      if (editingItem) {
-        // Edit mode
-        await apiCall("PATCH", `websites/${websiteId}/portfolios/${editingItem.id}`, payload);
-        showSuccess("Item portfolio berhasil diperbarui!");
-      } else {
-        // Add mode
-        await apiCall("POST", `websites/${websiteId}/portfolios`, payload);
-        showSuccess("Item portfolio baru berhasil ditambahkan!");
-      }
-      setIsFormOpen(false);
-      fetchItems();
-    } catch (err: any) {
-      console.error("Save portfolio error:", err);
-      setErrorMsg(err.error?.message || "Gagal menyimpan portfolio.");
-    } finally {
-      setSaving(false);
-    }
   };
 
   const handleDelete = async () => {
@@ -202,7 +107,11 @@ export default function PortfolioCrudPage() {
       await apiCall("DELETE", `websites/${websiteId}/portfolios/${deletingItem.id}`);
       showSuccess("Item portfolio berhasil dihapus!");
       setDeletingItem(null);
-      fetchItems();
+      if (items.length === 1 && page > 1) {
+        setPage(page - 1);
+      } else {
+        fetchItems(page);
+      }
     } catch (err: any) {
       console.error("Delete portfolio error:", err);
       setErrorMsg(err.error?.message || "Gagal menghapus portfolio.");
@@ -211,10 +120,9 @@ export default function PortfolioCrudPage() {
     }
   };
 
-  // Filter items
   const filteredItems = items.filter((item) =>
     item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    stripHtml(item.description).toLowerCase().includes(searchQuery.toLowerCase()) ||
     (item.category?.name || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -226,7 +134,6 @@ export default function PortfolioCrudPage() {
       backUrl={`/websites/${websiteId}/overview`}
     >
       <div className="space-y-6" id="portfolio-crud-root">
-        {/* Alerts */}
         {successMsg && (
           <div className="p-4 bg-[#649FF6]/10 border border-[#649FF6]/25 rounded-2xl text-[#3f6fae] text-sm flex items-start space-x-3 animate-fadeIn">
             <CheckCircle className="h-5 w-5 shrink-0 text-[#649FF6] mt-0.5" />
@@ -275,7 +182,7 @@ export default function PortfolioCrudPage() {
           </div>
 
           <button
-            onClick={handleOpenAdd}
+            onClick={() => router.push(`/websites/${websiteId}/content/portfolio/new`)}
             className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-4 py-2.5 bg-[#649FF6] hover:bg-[#4f8be6] text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/10 transition active:translate-y-[1px]"
             id="btn-add-portfolio"
           >
@@ -303,7 +210,7 @@ export default function PortfolioCrudPage() {
             </p>
             {!searchQuery && (
               <button
-                onClick={handleOpenAdd}
+                onClick={() => router.push(`/websites/${websiteId}/content/portfolio/new`)}
                 className="inline-flex items-center space-x-1 px-4 py-2 bg-[#649FF6]/10 text-[#3f6fae] border border-emerald-100 hover:bg-[#649FF6]/15 text-xs font-bold rounded-xl transition"
               >
                 <PlusCircle className="h-4 w-4" />
@@ -352,36 +259,17 @@ export default function PortfolioCrudPage() {
                   <div className="p-6 space-y-3">
                     <div className="space-y-1">
                       <h4 className="font-bold text-slate-900 text-sm leading-tight">{item.title}</h4>
-                      <p className="text-xs text-slate-500 leading-relaxed whitespace-pre-line">
-                        {item.description}
+                      <p className="text-[10px] text-slate-400 font-mono">/{item.slug}</p>
+                      <p className="text-xs text-slate-500 leading-relaxed line-clamp-3">
+                        {stripHtml(item.description)}
                       </p>
-                    </div>
-
-                    <div className="flex flex-wrap gap-y-2 gap-x-4 pt-1 text-[11px] text-slate-400 font-medium">
-                      {item.clientName && (
-                        <div className="flex items-center gap-1">
-                          <User className="h-3.5 w-3.5 text-slate-400" />
-                          <span>Klien: {item.clientName}</span>
-                        </div>
-                      )}
-                      {item.projectUrl && (
-                        <a
-                          href={item.projectUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-[#649FF6] hover:underline"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                          <span>Link Proyek</span>
-                        </a>
-                      )}
                     </div>
                   </div>
                 </div>
 
                 <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
                   <button
-                    onClick={() => handleOpenEdit(item)}
+                    onClick={() => router.push(`/websites/${websiteId}/content/portfolio/${item.id}/edit`)}
                     className="p-2 text-slate-500 hover:text-[#649FF6] hover:bg-white rounded-xl transition shadow-sm border border-transparent hover:border-slate-100"
                     title="Edit Item"
                   >
@@ -400,195 +288,36 @@ export default function PortfolioCrudPage() {
           </div>
         )}
 
-        {/* Modal Form Dialog */}
-        {isFormOpen && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl shadow-xl w-full max-w-lg border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden animate-slideUp">
-              <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                <h3 className="font-bold text-slate-800 text-base">
-                  {editingItem ? "Edit Item Portfolio" : "Tambah Item Portfolio Baru"}
-                </h3>
-                <button
-                  onClick={() => setIsFormOpen(false)}
-                  className="p-2 hover:bg-slate-50 text-slate-400 hover:text-slate-600 rounded-xl transition"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 flex-1">
-                {/* Title */}
-                <div className="space-y-1">
-                  <label htmlFor="port-title" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
-                    Nama / Judul Proyek <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    id="port-title"
-                    type="text"
-                    required
-                    placeholder="Contoh: Redesign Aplikasi Mobile Bank ABC"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
-                  />
-                </div>
-
-                {/* Category Selection */}
-                <div className="space-y-1">
-                  <label htmlFor="port-cat" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
-                    Kategori Portfolio
-                  </label>
-                  <select
-                    id="port-cat"
-                    value={formData.categoryId}
-                    onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
-                  >
-                    <option value="">Tanpa kategori</option>
-                    {categories.filter((category) => category.isActive).map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-[10px] text-slate-400">Kelola pilihan ini di menu Kategori Portfolio.</p>
-                </div>
-
-                {/* Client Name */}
-                <div className="space-y-1">
-                  <label htmlFor="port-client" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
-                    Nama Klien (Opsional)
-                  </label>
-                  <input
-                    id="port-client"
-                    type="text"
-                    placeholder="Contoh: PT Bank Tabungan Negara"
-                    value={formData.clientName}
-                    onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
-                  />
-                </div>
-
-                {/* Image URL */}
-                <div className="space-y-1">
-                  <label htmlFor="port-image" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
-                    URL Gambar Dokumentasi Kerja <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    id="port-image"
-                    type="url"
-                    required
-                    placeholder="Contoh: https://picsum.photos/seed/portfolio/800/600"
-                    value={formData.imageUrl}
-                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors font-mono"
-                  />
-                </div>
-
-                {/* Project URL */}
-                <div className="space-y-1">
-                  <label htmlFor="port-url" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
-                    URL Tautan Hasil Proyek (Opsional)
-                  </label>
-                  <input
-                    id="port-url"
-                    type="url"
-                    placeholder="Contoh: https://www.behance.net/portfolio-saya"
-                    value={formData.projectUrl}
-                    onChange={(e) => setFormData({ ...formData, projectUrl: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors font-mono"
-                  />
-                </div>
-
-                {/* Description */}
-                <div className="space-y-1">
-                  <label htmlFor="port-desc" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
-                    Detail Pekerjaan / Studi Kasus <span className="text-rose-500">*</span>
-                  </label>
-                  <EnhancedTextarea
-                    id="port-desc"
-                    required
-                    minRows={4}
-                    placeholder="Tuliskan latar belakang masalah klien, solusi yang Anda tawarkan, tantangan, dan bagaimana keberhasilan proyek ini dicapai..."
-                    value={formData.description}
-                    onChange={(value) => setFormData({ ...formData, description: value })}
-                    helperText="Tulis cerita singkat agar portfolio terasa lebih meyakinkan bagi calon client."
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-2xl bg-slate-50 p-4 border border-slate-100">
-                  <BooleanRadio
-                    id="port-featured"
-                    label="Jadikan Portfolio Unggulan?"
-                    value={formData.isFeatured}
-                    onChange={(value) => setFormData({ ...formData, isFeatured: value })}
-                    description="Pilih Ya agar portfolio ini bisa muncul di Home. Home hanya mengambil 3 portfolio unggulan teratas."
-                  />
-                  <div className="space-y-1">
-                    <label htmlFor="port-featured-order" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Urutan Unggulan</label>
-                    <input
-                      id="port-featured-order"
-                      type="number"
-                      min="0"
-                      value={formData.featuredOrder}
-                      onChange={(e) => setFormData({ ...formData, featuredOrder: Number(e.target.value) })}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
-                    />
-                    <p className="text-[10px] text-slate-400">Angka kecil tampil lebih dulu. Untuk Home, sistem hanya mengambil maksimal 3 portfolio unggulan.</p>
-                  </div>
-                </div>
-
-                {/* Status Toggle */}
-                <BooleanRadio
-                  id="port-active"
-                  label="Tampilkan Portfolio di Website?"
-                  value={formData.isActive}
-                  onChange={(value) => setFormData({ ...formData, isActive: value })}
-                  description="Pilih Ya jika portfolio ini boleh tampil di halaman publik."
-                />
-
-                {/* Actions */}
-                <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsFormOpen(false)}
-                    className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="inline-flex items-center space-x-1 px-5 py-2 bg-[#649FF6] hover:bg-[#4f8be6] disabled:bg-[#8bb8fb] text-white text-xs font-bold rounded-xl shadow-md transition"
-                  >
-                    <Save className="h-4 w-4" />
-                    <span>{saving ? (editingItem ? "Memperbarui..." : "Menyimpan...") : "Simpan Item"}</span>
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
+        {!loading && filteredItems.length > 0 && (
+          <Pagination
+            page={page}
+            totalPages={pageMeta.totalPages}
+            total={pageMeta.total}
+            pageSize={pageMeta.pageSize}
+            onPageChange={handlePageChange}
+            itemLabel="portfolio"
+          />
         )}
 
         {/* Delete Confirmation Simple Dialog */}
         {deletingItem && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-6 shadow-xl w-full max-w-sm border border-slate-100 space-y-4 animate-scaleUp">
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+            <div className="bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-xl w-full sm:max-w-sm border border-slate-100 space-y-4 animate-scaleUp">
               <h3 className="font-bold text-slate-900 text-base">Konfirmasi Hapus</h3>
               <p className="text-xs text-slate-500 leading-relaxed">
                 Apakah Anda yakin ingin menghapus item portfolio <strong>{deletingItem.title}</strong>? Tindakan ini tidak dapat dibatalkan.
               </p>
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
                 <button
                   onClick={() => setDeletingItem(null)}
-                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition"
+                  className="px-4 py-2.5 sm:py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition"
                 >
                   Batal
                 </button>
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 disabled:bg-rose-400 text-white text-xs font-bold rounded-xl transition shadow-md shadow-rose-600/10"
+                  className="px-4 py-2.5 sm:py-2 bg-rose-600 hover:bg-rose-700 disabled:bg-rose-400 text-white text-xs font-bold rounded-xl transition shadow-md shadow-rose-600/10"
                 >
                   {deleting ? "Menghapus..." : "Ya, Hapus"}
                 </button>

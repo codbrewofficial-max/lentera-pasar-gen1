@@ -188,14 +188,6 @@ export default function PageSetupPage() {
                       Public path: <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-slate-600">{page.publicPath || (isHome ? "/" : `/${page.slug}`)}</code>
                     </p>
                   </div>
-                  <button
-                    onClick={() => savePage(page)}
-                    disabled={isSaving}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#649FF6] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#4f8be6] disabled:bg-[#8bb8fb]"
-                  >
-                    {isSaving ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <Save className="h-4 w-4" />}
-                    {isSaving ? "Menyimpan..." : "Simpan Halaman"}
-                  </button>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
@@ -244,7 +236,7 @@ export default function PageSetupPage() {
                       helperText="Jelaskan fungsi halaman ini dengan bahasa yang mudah dipahami owner dan tim internal."
                     />
                   </label>
-                  <label className="space-y-1.5">
+                  <label className="space-y-1.5 md:col-span-2">
                     <span className="text-xs font-bold text-slate-600">SEO Title</span>
                     <input
                       value={page.seoTitle || ""}
@@ -252,7 +244,7 @@ export default function PageSetupPage() {
                       className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:border-[#649FF6] focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20"
                     />
                   </label>
-                  <label className="space-y-1.5">
+                  <label className="space-y-1.5 md:col-span-2">
                     <span className="text-xs font-bold text-slate-600">SEO Description</span>
                     <EnhancedTextarea
                       id={`seo-description-${page.pageKey}`}
@@ -296,6 +288,17 @@ export default function PageSetupPage() {
                     Halaman detail artikel digunakan otomatis ketika pengunjung membuka artikel tertentu, jadi tidak dimasukkan ke navbar/footer.
                   </p>
                 )}
+
+                <div className="my-5 flex justify-end">
+                  <button
+                    onClick={() => savePage(page)}
+                    disabled={isSaving}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#649FF6] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#4f8be6] disabled:bg-[#8bb8fb]"
+                  >
+                    {isSaving ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <Save className="h-4 w-4" />}
+                    {isSaving ? "Menyimpan..." : "Simpan Halaman"}
+                  </button>
+                </div>
               </div>
             );
           })}

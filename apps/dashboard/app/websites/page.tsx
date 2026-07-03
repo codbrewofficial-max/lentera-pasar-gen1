@@ -104,7 +104,7 @@ export default function WebsitesPage() {
 
       {/* Website Cards Grid */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6" id="websites-loading-grid">
+        <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-6" id="websites-loading-grid">
           {[1, 2].map((i) => (
             <div key={i} className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4 animate-pulse">
               <div className="flex items-center justify-between">
@@ -121,7 +121,7 @@ export default function WebsitesPage() {
           ))}
         </div>
       ) : filteredWebsites.length === 0 ? (
-        <div className="flex flex-col items-center justify-center text-center py-16 bg-white rounded-3xl border border-slate-200 p-8 space-y-4" id="websites-empty-state">
+        <div className="mt-5 flex flex-col items-center justify-center text-center py-16 bg-white rounded-3xl border border-slate-200 p-8 space-y-4" id="websites-empty-state">
           <div className="p-4 bg-emerald-50 rounded-2xl text-emerald-600">
             <Globe className="h-12 w-12" />
           </div>
@@ -140,7 +140,7 @@ export default function WebsitesPage() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6" id="websites-grid">
+        <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-6" id="websites-grid">
           {filteredWebsites.map((web) => (
             <div 
               key={web.id} 

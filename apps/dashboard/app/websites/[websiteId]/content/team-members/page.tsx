@@ -6,6 +6,8 @@ import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
 import EnhancedTextarea from "@/components/ui/EnhancedTextarea";
 import BooleanRadio from "@/components/ui/BooleanRadio";
+import MediaPickerInput from "@/components/ui/MediaPickerInput";
+import Pagination from "@/components/ui/Pagination";
 import {
   Users, Plus, Edit2, Trash2,
   AlertCircle, CheckCircle, Save, X, PlusCircle
@@ -30,6 +32,9 @@ export default function TeamMemberCrudPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
+  const [page, setPage] = useState(1);
+  const [pageMeta, setPageMeta] = useState({ pageSize: 12, total: 0, totalPages: 1 });
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<TeamMember | null>(null);
   const [formData, setFormData] = useState({
@@ -44,12 +49,19 @@ export default function TeamMemberCrudPage() {
   const [deletingItem, setDeletingItem] = useState<TeamMember | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const fetchItems = async () => {
+  const fetchItems = async (targetPage = page) => {
     setLoading(true);
     setErrorMsg("");
     try {
-      const res = await apiCall<TeamMember[]>("GET", `websites/${websiteId}/team-members`);
+      const res = await apiCall<TeamMember[]>("GET", `websites/${websiteId}/team-members?page=${targetPage}&pageSize=${pageMeta.pageSize}`);
       setItems(res.data || []);
+      if (res.meta?.pagination) {
+        setPageMeta({
+          pageSize: res.meta.pagination.pageSize,
+          total: res.meta.pagination.total,
+          totalPages: res.meta.pagination.totalPages
+        });
+      }
     } catch (err: any) {
       setErrorMsg(err.error?.message || "Gagal memuat data anggota tim.");
     } finally {
@@ -58,8 +70,12 @@ export default function TeamMemberCrudPage() {
   };
 
   useEffect(() => {
-    if (websiteId) fetchItems();
-  }, [websiteId]);
+    if (websiteId) fetchItems(page);
+  }, [websiteId, page]);
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
 
   const showSuccess = (msg: string) => {
     setSuccessMsg(msg);
@@ -110,7 +126,7 @@ export default function TeamMemberCrudPage() {
         showSuccess("Anggota tim berhasil ditambahkan!");
       }
       setIsFormOpen(false);
-      fetchItems();
+      fetchItems(page);
     } catch (err: any) {
       setErrorMsg(err.error?.message || "Gagal menyimpan data.");
     } finally {
@@ -125,7 +141,11 @@ export default function TeamMemberCrudPage() {
       await apiCall("DELETE", `websites/${websiteId}/team-members/${deletingItem.id}`);
       showSuccess("Anggota tim berhasil dihapus!");
       setDeletingItem(null);
-      fetchItems();
+      if (items.length === 1 && page > 1) {
+        setPage(page - 1);
+      } else {
+        fetchItems(page);
+      }
     } catch (err: any) {
       setErrorMsg(err.error?.message || "Gagal menghapus data.");
     } finally {
@@ -231,6 +251,17 @@ export default function TeamMemberCrudPage() {
           </div>
         )}
 
+        {!loading && sortedItems.length > 0 && (
+          <Pagination
+            page={page}
+            totalPages={pageMeta.totalPages}
+            total={pageMeta.total}
+            pageSize={pageMeta.pageSize}
+            onPageChange={handlePageChange}
+            itemLabel="anggota tim"
+          />
+        )}
+
         {/* Form Modal */}
         {isFormOpen && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -270,13 +301,14 @@ export default function TeamMemberCrudPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">URL Foto (Opsional)</label>
-                  <input
-                    type="url"
-                    placeholder="https://example.com/foto.jpg"
+                  <MediaPickerInput
+                    id="team-image"
+                    label="URL Foto (Opsional)"
                     value={formData.imageUrl}
-                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#649FF6]/20 focus:border-[#649FF6] transition-colors"
+                    onChange={(url) => setFormData({ ...formData, imageUrl: url })}
+                    picsumSeedPrefix="team-member"
+                    picsumSize={{ width: 400, height: 400 }}
+                    aspect="square"
                   />
                 </div>
 

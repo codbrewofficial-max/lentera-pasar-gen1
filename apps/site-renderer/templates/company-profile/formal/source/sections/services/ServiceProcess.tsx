@@ -22,7 +22,7 @@ export const ServiceProcess: React.FC<ServiceProcessProps> = ({
     <section id="services-process" className="py-16 md:py-24 bg-slate-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="secondary" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {steps.map((stepItem, idx) => (
             <div key={`${stepItem.step}-${idx}`} className="bg-white border border-slate-100 rounded-lg p-7 shadow-sm relative overflow-hidden">
               <div className="absolute top-4 right-4 text-4xl font-bold text-slate-100 font-mono">{stepItem.step}</div>
