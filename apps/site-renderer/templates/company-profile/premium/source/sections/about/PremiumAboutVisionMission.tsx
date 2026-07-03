@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Sparkles, Eye } from 'lucide-react';
+import { RichHtml } from '@/components/content/RichHtml';
 
 interface PremiumAboutVisionMissionProps {
   visionTitle?: string;
@@ -10,11 +11,14 @@ interface PremiumAboutVisionMissionProps {
   mission?: string;
 }
 
+const defaultVisionHtml = '<p>Menjadi episentrum perancangan arsitektur dan ruang dalam tropis modern papan atas di Asia Tenggara, yang dikenal karena kemurnian material, keunggulan teknis, dan harmoni lingkungan hidup.</p>';
+const defaultMissionHtml = '<ul><li>Merumuskan solusi spasial yang menggabungkan estetika taktil premium dengan analisis termal iklim mikro fungsional.</li><li>Mengangkat nilai kriya dan material lokal asli Indonesia ke panggung internasional melalui rancangan kontemporer elegan.</li><li>Menjamin transparansi mutlak dalam anggaran proyek demi membangun rasa percaya jangka panjang bersama seluruh mitra klien.</li></ul>';
+
 export function PremiumAboutVisionMission({
   visionTitle = "Visi Agung Spasial",
-  vision = "Menjadi episentrum perancangan arsitektur dan ruang dalam tropis modern papan atas di Asia Tenggara, yang dikenal karena kemurnian material, keunggulan teknis, dan harmoni lingkungan hidup.",
+  vision = defaultVisionHtml,
   missionTitle = "Misi & Langkah Nyata",
-  mission = "1. Merumuskan solusi spasial yang menggabungkan estetika taktil premium dengan analisis termal iklim mikro fungsional.\n2. Mengangkat nilai kriya dan material lokal asli Indonesia ke panggung internasional melalui rancangan kontemporer elegan.\n3. Menjamin transparansi mutlak dalam anggaran proyek demi membangun rasa percaya jangka panjang bersama seluruh mitra klien."
+  mission = defaultMissionHtml
 }: PremiumAboutVisionMissionProps) {
   return (
     <section id="premium-about-vision-mission" className="py-24 md:py-32 bg-[#FAF9F6] text-[#121212]">
@@ -28,9 +32,10 @@ export function PremiumAboutVisionMission({
               <span className="text-[10px] font-bold tracking-[0.3em] uppercase">VISI</span>
             </div>
             <h3 className="text-2xl font-serif font-light text-stone-900">{visionTitle}</h3>
-            <p className="text-stone-600 text-sm md:text-base leading-relaxed font-sans font-light whitespace-pre-line">
-              {vision}
-            </p>
+            <RichHtml
+              html={vision}
+              className="prose prose-sm max-w-none text-stone-600 text-sm md:text-base leading-relaxed font-sans font-light prose-p:my-2 prose-ul:my-2 prose-li:my-1"
+            />
           </div>
 
           {/* Mission Block */}
@@ -41,9 +46,10 @@ export function PremiumAboutVisionMission({
               <span className="text-[10px] font-bold tracking-[0.3em] uppercase">MISI</span>
             </div>
             <h3 className="text-2xl font-serif font-light text-stone-900">{missionTitle}</h3>
-            <p className="text-stone-600 text-sm md:text-base leading-relaxed font-sans font-light whitespace-pre-line">
-              {mission}
-            </p>
+            <RichHtml
+              html={mission}
+              className="prose prose-sm max-w-none text-stone-600 text-sm md:text-base leading-relaxed font-sans font-light prose-p:my-2 prose-ul:my-2 prose-li:my-1"
+            />
           </div>
         </div>
       </div>

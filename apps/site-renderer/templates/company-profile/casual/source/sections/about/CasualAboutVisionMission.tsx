@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Target, Compass, Sparkles } from 'lucide-react';
+import { Target, Compass } from 'lucide-react';
+import { RichHtml } from '@/components/content/RichHtml';
 
 export interface CasualAboutVisionMissionProps {
   visionTitle?: string;
@@ -10,16 +11,15 @@ export interface CasualAboutVisionMissionProps {
   mission?: string;
 }
 
+const defaultVisionHtml = '<p>Menjadi wadah kolaborasi kreatif nomor satu di Indonesia yang mendemokratisasikan akses branding kelas dunia untuk seluruh lapisan UMKM dan bisnis lokal.</p>';
+const defaultMissionHtml = '<ul><li>Menyediakan solusi branding dan pemasaran digital yang terjangkau, transparan, serta bebas dari jargon teknis yang membingungkan.</li><li>Melatih dan membimbing pemilik bisnis mandiri agar berdaya secara digital secara mandiri.</li><li>Menciptakan standar visual baru yang segar, ramah, dan autentik bagi lanskap UMKM lokal.</li></ul>';
+
 export function CasualAboutVisionMission({
   visionTitle = 'Visi Kami',
-  vision = 'Menjadi wadah kolaborasi kreatif nomor satu di Indonesia yang mendemokratisasikan akses branding kelas dunia untuk seluruh lapisan UMKM dan bisnis lokal.',
+  vision = defaultVisionHtml,
   missionTitle = 'Misi Kami',
-  mission = '1. Menyediakan solusi branding dan pemasaran digital yang terjangkau, transparan, serta bebas dari jargon teknis yang membingungkan.\n2. Melatih dan membimbing pemilik bisnis mandiri agar berdaya secara digital secara mandiri.\n3. Menciptakan standar visual baru yang segar, ramah, dan autentik bagi lanskap UMKM lokal.',
+  mission = defaultMissionHtml,
 }: CasualAboutVisionMissionProps) {
-  
-  // Split missions by newline if multi-line
-  const missionItems = mission.split('\n').filter(item => item.trim() !== '');
-
   return (
     <section id="CasualAboutVisionMission" className="py-20 bg-white relative overflow-hidden">
       {/* Decorative colored blobs */}
@@ -42,9 +42,10 @@ export function CasualAboutVisionMission({
                 {visionTitle}
               </h3>
 
-              <p className="font-sans text-base text-gray-700 leading-relaxed">
-                {vision}
-              </p>
+              <RichHtml
+                html={vision}
+                className="prose prose-sm max-w-none font-sans text-base text-gray-700 leading-relaxed prose-p:my-2 prose-ul:my-2 prose-li:my-1"
+              />
             </div>
             
             <div className="mt-8 pt-4 border-t border-gray-200/40 text-xs font-mono text-gray-400">
@@ -65,23 +66,10 @@ export function CasualAboutVisionMission({
                 {missionTitle}
               </h3>
 
-              {/* Missions Checklist */}
-              <div className="space-y-3">
-                {missionItems.map((item, idx) => {
-                  // Strip numbering if exists like "1. "
-                  const cleanText = item.replace(/^\d+[\.\s]*/, '');
-                  return (
-                    <div key={idx} className="flex items-start gap-2.5">
-                      <span className="w-6 h-6 rounded-full bg-[#F56B71] text-white flex items-center justify-center font-mono font-bold text-xs shrink-0 mt-0.5 shadow-sm shadow-[#F56B71]/25">
-                        {idx + 1}
-                      </span>
-                      <p className="font-sans text-sm text-gray-700 leading-relaxed">
-                        {cleanText}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
+              <RichHtml
+                html={mission}
+                className="prose prose-sm max-w-none font-sans text-base text-gray-700 leading-relaxed prose-p:my-2 prose-ul:my-2 prose-li:my-1"
+              />
             </div>
 
             <div className="mt-8 pt-4 border-t border-gray-200/40 text-xs font-mono text-gray-400">
