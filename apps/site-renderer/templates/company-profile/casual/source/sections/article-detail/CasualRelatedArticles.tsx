@@ -10,6 +10,7 @@ export interface CasualRelatedArticlesProps {
   description?: string;
   currentSlug?: string;
   articles?: ArticleItem[];
+  articlesHref?: string;
 }
 
 export function CasualRelatedArticles({
@@ -17,6 +18,7 @@ export function CasualRelatedArticles({
   description = 'Lanjutkan petualangan belajarmu dengan membaca beberapa tips penting lainnya langsung dari dapur kreativitas tim Ruang Karsa.',
   currentSlug = '5-tips-branding-umkm-kuliner',
   articles = articlesData,
+  articlesHref = '/articles',
 }: CasualRelatedArticlesProps) {
   
   // Filter out current active article and pick other articles
@@ -67,7 +69,7 @@ export function CasualRelatedArticles({
                     {art.publishedAt}
                   </span>
                   <h4 className="font-sans font-extrabold text-base text-gray-950 group-hover:text-[#F56B71] transition-colors line-clamp-2 leading-snug">
-                    <Link href={`/articles/${art.slug}`}>
+                    <Link href={`${articlesHref}/${art.slug}`}>
                       {art.title}
                     </Link>
                   </h4>
@@ -75,7 +77,7 @@ export function CasualRelatedArticles({
 
                 <Link
                   id={`related-read-${art.slug}`}
-                  href={`/articles/${art.slug}`}
+                  href={`${articlesHref}/${art.slug}`}
                   className="text-xs font-bold text-[#649FF6] hover:text-[#649FF6]/80 inline-flex items-center gap-1 group/link"
                 >
                   <span>Baca Sekarang</span>

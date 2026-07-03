@@ -9,12 +9,14 @@ export interface CasualArticlePreviewProps {
   title?: string;
   description?: string;
   articles?: ArticleItem[];
+  articlesHref?: string;
 }
 
 export function CasualArticlePreview({
   title = 'Artikel & Inspirasi Menarik Lainnya',
   description = 'Jelajahi kumpulan wawasan praktis dari studio kami. Kami membagikan tips gratis seputar fotografi produk, copywriting sosmed, dan branding secara konsisten.',
   articles = articlesData,
+  articlesHref = '/articles',
 }: CasualArticlePreviewProps) {
   
   // Show all articles in the general feed list
@@ -81,7 +83,7 @@ export function CasualArticlePreview({
                   </div>
 
                   <h3 className={`font-sans font-extrabold text-lg leading-snug text-gray-950 transition-colors ${getHoverTextColor(index)}`}>
-                    <Link href={`/articles/${art.slug}`}>
+                    <Link href={`${articlesHref}/${art.slug}`}>
                       {art.title}
                     </Link>
                   </h3>
@@ -109,7 +111,7 @@ export function CasualArticlePreview({
 
                 <Link
                   id={`read-article-${art.slug}`}
-                  href={`/articles/${art.slug}`}
+                  href={`${articlesHref}/${art.slug}`}
                   className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-[#649FF6]/10 hover:text-[#649FF6] transition-colors"
                 >
                   <ArrowRight className="w-4 h-4" />

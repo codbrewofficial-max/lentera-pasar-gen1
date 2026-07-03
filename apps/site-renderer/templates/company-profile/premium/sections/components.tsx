@@ -47,7 +47,7 @@ import { PremiumContactCta } from "../source/sections/contact/PremiumContactCta"
 
 import type { ServiceItem, PortfolioItem, ArticleItem, TeamMember, TimelineItem, FaqItem, TestimonialItem } from "../source/lib/dummy-data";
 import type { CrudItem, PublicPagePayload, PublicSection } from "@/lib/types";
-import { getSiteHref, resolveTargetHref } from "@/lib/links";
+import { getSiteHref, resolveTargetHref, getPageHrefByKey, getPortfolioDetailHref } from "@/lib/links";
 
 type PremiumSectionProps = { siteSlug: string; payload: PublicPagePayload; section: PublicSection };
 type PremiumSectionComponent = (props: PremiumSectionProps) => ReactNode;
@@ -107,9 +107,9 @@ function whatsappHref(payload: PublicPagePayload) {
   return numbers ? `https://wa.me/${numbers}` : getSiteHref(payload.website.slug, "/contact");
 }
 
-function pageHref(siteSlug: string, path: string) {
-  return getSiteHref(siteSlug, path);
-}
+// pageHref() literal sudah tidak dipakai di file ini — semua link ke halaman List dan
+// detail sekarang resolve dinamis lewat getPageHrefByKey / getPortfolioDetailHref /
+// getArticleDetailHref dari '@/lib/links'.
 
 function sectionHref(props: PremiumSectionProps, prefix: "cta" | "secondaryCta" | string, fallback: string) {
   return resolveTargetHref({
@@ -302,7 +302,7 @@ export function PremiumHomeServicePreviewSection(props: PremiumSectionProps) {
       title={text(content.title)}
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
-      ctaUrl={pageHref(props.siteSlug, "/services")}
+      ctaUrl={sectionHref(props, "cta", getPageHrefByKey(props.siteSlug, props.payload.navigation, "services", "/services"))}
       services={servicesFor(props)}
     />
   );
@@ -315,8 +315,9 @@ export function PremiumHomePortfolioPreviewSection(props: PremiumSectionProps) {
       title={text(content.title)}
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
-      ctaUrl={pageHref(props.siteSlug, "/portfolio")}
+      ctaUrl={sectionHref(props, "cta", getPageHrefByKey(props.siteSlug, props.payload.navigation, "portfolio", "/portfolio"))}
       portfolios={portfoliosFor(props)}
+      portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)}
     />
   );
 }
@@ -468,7 +469,7 @@ export function PremiumPortfolioCategorySection(props: PremiumSectionProps) {
 
 export function PremiumPortfolioGridSection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
-  return <PremiumPortfolioGrid title={text(content.title)} description={text(content.description)} portfolios={portfoliosFor(props)} />;
+  return <PremiumPortfolioGrid title={text(content.title)} description={text(content.description)} portfolios={portfoliosFor(props)} portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)} />;
 }
 
 export function PremiumPortfolioCaseHighlightSection(props: PremiumSectionProps) {
@@ -505,12 +506,12 @@ export function PremiumFeaturedArticleSection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
   const articles = articlesFor(props);
   const article = articles.find((item, index) => props.section.data?.articles?.[index]?.isFeatured) || articles[0];
-  return <PremiumFeaturedArticle title={text(content.title)} description={text(content.description)} article={article} />;
+  return <PremiumFeaturedArticle title={text(content.title)} description={text(content.description)} article={article} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} />;
 }
 
 export function PremiumArticlePreviewSection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
-  return <PremiumArticlePreview title={text(content.title)} description={text(content.description)} articles={articlesFor(props)} />;
+  return <PremiumArticlePreview title={text(content.title)} description={text(content.description)} articles={articlesFor(props)} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} />;
 }
 
 // ---- Article Detail ----
@@ -545,6 +546,7 @@ export function PremiumRelatedArticlesSection(props: PremiumSectionProps) {
       title={text(content.title)}
       description={text(content.description)}
       relatedArticles={related.length ? related : undefined}
+      articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")}
     />
   );
 }
@@ -570,6 +572,7 @@ export function PremiumPortfolioDetailHeroSection(props: PremiumSectionProps) {
       showCoverImage={boolValue(content.showCoverImage, true) ? "true" : "false"}
       badge={text(content.badge, "Studi Kasus")}
       project={currentPortfolioFor(props)}
+      backHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "portfolio", "/portfolio")}
     />
   );
 }
@@ -597,6 +600,7 @@ export function PremiumRelatedPortfoliosSection(props: PremiumSectionProps) {
       description={text(content.description, "Jelajahi rangkaian karya lain dari portofolio kami yang menonjolkan standar kualitas dan detail yang sama.")}
       currentId={current?.id}
       portfolios={related.length ? related : undefined}
+      portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)}
     />
   );
 }

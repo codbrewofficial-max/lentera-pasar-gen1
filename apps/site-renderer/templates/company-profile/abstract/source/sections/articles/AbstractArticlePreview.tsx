@@ -9,6 +9,7 @@ interface AbstractArticlePreviewProps {
   title?: string;
   description?: string;
   articles?: ArticleItem[];
+  articlesHref?: string;
 }
 
 const ACCENTS = ['#649FF6', '#F56B71', '#B283AF'];
@@ -16,7 +17,8 @@ const ACCENTS = ['#649FF6', '#F56B71', '#B283AF'];
 export function AbstractArticlePreview({
   title = "Jurnal pemikiran dan cerita desain",
   description = "Eksplorasi wawasan teori warna, eksperimen kreatif, dan cerita di balik proses kerja kami.",
-  articles = defaultArticles
+  articles = defaultArticles,
+  articlesHref = '/articles'
 }: AbstractArticlePreviewProps) {
   return (
     <section className="relative bg-[#151515] text-white py-24 px-6 overflow-hidden">
@@ -68,9 +70,11 @@ export function AbstractArticlePreview({
                     <span className="font-sans text-xs text-neutral-500">{art.publishedAt}</span>
                   </div>
 
-                  <h3 className="font-sans text-lg font-bold text-white group-hover:text-[#649FF6] transition-colors leading-snug">
-                    {art.title}
-                  </h3>
+                  <a href={`${articlesHref}/${art.id}`}>
+                    <h3 className="font-sans text-lg font-bold text-white group-hover:text-[#649FF6] transition-colors leading-snug">
+                      {art.title}
+                    </h3>
+                  </a>
 
                   <p className="text-neutral-400 font-sans text-xs leading-relaxed line-clamp-3">
                     {art.description}
@@ -87,9 +91,12 @@ export function AbstractArticlePreview({
                     <span className="font-sans text-xs font-semibold text-white">{art.author.name}</span>
                   </div>
 
-                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white group-hover:bg-white group-hover:text-neutral-900 transition-colors">
+                  <a
+                    href={`${articlesHref}/${art.id}`}
+                    className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white group-hover:bg-white group-hover:text-neutral-900 transition-colors"
+                  >
                     <ArrowUpRight className="w-4 h-4" />
-                  </div>
+                  </a>
                 </div>
               </motion.div>
             );

@@ -47,7 +47,7 @@ import { CasualPortfolioDetailCta } from "../source/sections/portfolio-detail/Ca
 
 import type { ServiceItem, PortfolioItem, ArticleItem, TeamMember, TimelineItem, FaqItem } from "../source/lib/dummy-data";
 import type { CrudItem, PublicPagePayload, PublicSection } from "@/lib/types";
-import { getSiteHref, resolveTargetHref } from "@/lib/links";
+import { getSiteHref, resolveTargetHref, getPageHrefByKey, getPortfolioDetailHref } from "@/lib/links";
 
 type CasualSectionProps = { siteSlug: string; payload: PublicPagePayload; section: PublicSection };
 type CasualSectionComponent = (props: CasualSectionProps) => ReactNode;
@@ -121,9 +121,9 @@ function whatsappHref(payload: PublicPagePayload) {
   return numbers ? `https://wa.me/${numbers}` : getSiteHref(payload.website.slug, "/contact");
 }
 
-function pageHref(siteSlug: string, path: string) {
-  return getSiteHref(siteSlug, path);
-}
+// pageHref() literal sudah tidak dipakai di file ini — semua link ke halaman List dan
+// detail sekarang resolve dinamis lewat getPageHrefByKey / getPortfolioDetailHref /
+// getArticleDetailHref dari '@/lib/links'.
 
 function sectionHref(props: CasualSectionProps, prefix: "cta" | "secondaryCta" | string, fallback: string) {
   return resolveTargetHref({
@@ -284,7 +284,7 @@ export function CasualHomeServicePreviewSection(props: CasualSectionProps) {
       title={text(content.title)}
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
-      ctaUrl={pageHref(props.siteSlug, "/services")}
+      ctaUrl={sectionHref(props, "cta", getPageHrefByKey(props.siteSlug, props.payload.navigation, "services", "/services"))}
       services={servicesFor(props)}
     />
   );
@@ -297,8 +297,9 @@ export function CasualHomePortfolioPreviewSection(props: CasualSectionProps) {
       title={text(content.title)}
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
-      ctaUrl={pageHref(props.siteSlug, "/portfolio")}
+      ctaUrl={sectionHref(props, "cta", getPageHrefByKey(props.siteSlug, props.payload.navigation, "portfolio", "/portfolio"))}
       portfolios={portfoliosFor(props)}
+      portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)}
     />
   );
 }
@@ -459,7 +460,7 @@ export function CasualPortfolioCategorySection(props: CasualSectionProps) {
 
 export function CasualPortfolioGridSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
-  return <CasualPortfolioGrid title={text(content.title)} description={text(content.description)} portfolios={portfoliosFor(props)} />;
+  return <CasualPortfolioGrid title={text(content.title)} description={text(content.description)} portfolios={portfoliosFor(props)} portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)} />;
 }
 
 export function CasualPortfolioCaseHighlightSection(props: CasualSectionProps) {
@@ -496,12 +497,12 @@ export function CasualFeaturedArticleSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
   const articles = articlesFor(props);
   const article = articles.find((item, index) => props.section.data?.articles?.[index]?.isFeatured) || articles[0];
-  return <CasualFeaturedArticle title={text(content.title)} description={text(content.description)} article={article} />;
+  return <CasualFeaturedArticle title={text(content.title)} description={text(content.description)} article={article} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} />;
 }
 
 export function CasualArticlePreviewSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
-  return <CasualArticlePreview title={text(content.title)} description={text(content.description)} articles={articlesFor(props)} />;
+  return <CasualArticlePreview title={text(content.title)} description={text(content.description)} articles={articlesFor(props)} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} />;
 }
 
 // ---- Article Detail ----
@@ -513,6 +514,7 @@ export function CasualArticleDetailHeroSection(props: CasualSectionProps) {
       showPublishedDate={boolValue(content.showPublishedDate, true) ? "true" : "false"}
       showCoverImage={boolValue(content.showCoverImage, true) ? "true" : "false"}
       article={currentArticleFor(props)}
+      backHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")}
     />
   );
 }
@@ -538,6 +540,7 @@ export function CasualRelatedArticlesSection(props: CasualSectionProps) {
       description={text(content.description)}
       currentSlug={current?.slug}
       articles={related.length ? related : undefined}
+      articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")}
     />
   );
 }
@@ -563,6 +566,7 @@ export function CasualPortfolioDetailHeroSection(props: CasualSectionProps) {
       showCoverImage={boolValue(content.showCoverImage, true) ? "true" : "false"}
       badge={text(content.badge, "Studi Kasus")}
       project={currentPortfolioFor(props)}
+      backHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "portfolio", "/portfolio")}
     />
   );
 }
@@ -590,6 +594,7 @@ export function CasualRelatedPortfoliosSection(props: CasualSectionProps) {
       description={text(content.description, "Intip beberapa kolaborasi seru kami lainnya bareng pemilik UMKM keren.")}
       currentId={current?.id}
       portfolios={related.length ? related : undefined}
+      portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)}
     />
   );
 }

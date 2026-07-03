@@ -10,6 +10,7 @@ interface AbstractPortfolioGridProps {
   title?: string;
   description?: string;
   portfolios?: PortfolioItem[];
+  portfolioDetailHref?: (id: string) => string;
 }
 
 const ACCENTS = ['#649FF6', '#F56B71', '#B283AF'];
@@ -17,7 +18,8 @@ const ACCENTS = ['#649FF6', '#F56B71', '#B283AF'];
 export function AbstractPortfolioGrid({
   title = "Seluruh karya Studio Sinestesia",
   description = "Jelajahi portfolio lengkap kami. Setiap proyek mewakili perpaduan warna berani dan fungsionalitas yang dikalibrasi secara ketat.",
-  portfolios = defaultPortfolios
+  portfolios = defaultPortfolios,
+  portfolioDetailHref
 }: AbstractPortfolioGridProps) {
   return (
     <section className="relative bg-[#151515] text-white py-24 px-6 overflow-hidden">
@@ -83,9 +85,12 @@ export function AbstractPortfolioGrid({
                     <span className="font-sans text-sm font-semibold text-white">{item.client}</span>
                   </div>
 
-                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white group-hover:bg-white group-hover:text-neutral-900 transition-colors">
+                  <a
+                    href={portfolioDetailHref ? portfolioDetailHref(item.id) : `/portfolio/${item.id}`}
+                    className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white group-hover:bg-white group-hover:text-neutral-900 transition-colors"
+                  >
                     <ArrowUpRight className="w-5 h-5" />
-                  </div>
+                  </a>
                 </div>
               </motion.div>
             );

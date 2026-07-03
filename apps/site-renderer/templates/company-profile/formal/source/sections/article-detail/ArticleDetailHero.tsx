@@ -19,7 +19,7 @@ export const ArticleDetailHero: React.FC<ArticleDetailHeroProps> = ({ article, b
         <div className="mb-6">
           <Link href={backHref} className="inline-flex items-center space-x-2 text-xs font-mono font-semibold text-[#1E3A5F] hover:underline uppercase tracking-wider">
             <ArrowLeft className="w-4 h-4" />
-            <span>Kembali ke Artikel</span>
+            <span>Kembali</span>
           </Link>
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-mono text-slate-400 mb-4">

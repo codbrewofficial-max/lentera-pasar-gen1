@@ -9,6 +9,7 @@ interface AbstractRelatedArticlesProps {
   title?: string;
   description?: string;
   articles?: ArticleItem[];
+  articlesHref?: string;
 }
 
 const ACCENTS = ['#649FF6', '#B283AF'];
@@ -16,7 +17,8 @@ const ACCENTS = ['#649FF6', '#B283AF'];
 export function AbstractRelatedArticles({
   title = "Artikel terkait lainnya",
   description = "Lanjutkan penjelajahan Anda dengan deretan naskah pilihan dari kurasi redaksi kami.",
-  articles = defaultArticles.slice(1, 3)
+  articles = defaultArticles.slice(1, 3),
+  articlesHref = '/articles'
 }: AbstractRelatedArticlesProps) {
   return (
     <section className="relative bg-[#151515] text-white py-24 px-6 overflow-hidden">
@@ -58,9 +60,11 @@ export function AbstractRelatedArticles({
                     <span className="font-sans text-xs text-neutral-500">{art.publishedAt}</span>
                   </div>
 
-                  <h3 className="font-sans text-xl font-bold text-white group-hover:text-[#649FF6] transition-colors leading-snug mb-3">
-                    {art.title}
-                  </h3>
+                  <a href={`${articlesHref}/${art.id}`}>
+                    <h3 className="font-sans text-xl font-bold text-white group-hover:text-[#649FF6] transition-colors leading-snug mb-3">
+                      {art.title}
+                    </h3>
+                  </a>
 
                   <p className="text-neutral-400 font-sans text-xs leading-relaxed line-clamp-3">
                     {art.description}
@@ -77,9 +81,12 @@ export function AbstractRelatedArticles({
                     <span className="font-sans text-xs font-semibold text-white">{art.author.name}</span>
                   </div>
 
-                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white group-hover:bg-white group-hover:text-neutral-900 transition-colors">
+                  <a
+                    href={`${articlesHref}/${art.id}`}
+                    className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white group-hover:bg-white group-hover:text-neutral-900 transition-colors"
+                  >
                     <ArrowUpRight className="w-4 h-4" />
-                  </div>
+                  </a>
                 </div>
               </motion.div>
             );

@@ -8,12 +8,14 @@ interface PremiumRelatedArticlesProps {
   title?: string;
   description?: string;
   relatedArticles?: ArticleItem[];
+  articlesHref?: string;
 }
 
 export function PremiumRelatedArticles({
   title = "Baca Artikel Terkait",
   description = "Perluas cakrawala wawasan arsitektur Anda dengan topik kurasi lainnya di bawah ini.",
-  relatedArticles = defaultArticles.slice(1) // default to next articles
+  relatedArticles = defaultArticles.slice(1), // default to next articles
+  articlesHref = '/articles'
 }: PremiumRelatedArticlesProps) {
   return (
     <section id="premium-related-articles" className="py-24 md:py-32 bg-[#0E0E0F] text-white">
@@ -50,7 +52,7 @@ export function PremiumRelatedArticles({
                     {item.category}
                   </span>
                   <h3 className="text-base font-serif font-light text-white group-hover:text-[#649FF6] transition-colors leading-snug line-clamp-2">
-                    <a href={`/articles/${item.id}`}>{item.title}</a>
+                    <a href={`${articlesHref}/${item.id}`}>{item.title}</a>
                   </h3>
                   <p className="text-stone-400 text-[11px] leading-relaxed font-sans font-light line-clamp-2">
                     {item.description}
@@ -58,7 +60,7 @@ export function PremiumRelatedArticles({
                 </div>
 
                 <a
-                  href={`/articles/${item.id}`}
+                  href={`${articlesHref}/${item.id}`}
                   className="inline-flex items-center space-x-1.5 text-[10px] font-bold tracking-wider uppercase text-stone-300 hover:text-[#649FF6] transition-colors"
                 >
                   <span>BACA</span>

@@ -9,12 +9,14 @@ export interface CasualPortfolioGridProps {
   title?: string;
   description?: string;
   portfolios?: PortfolioItem[];
+  portfolioDetailHref?: (id: string) => string;
 }
 
 export function CasualPortfolioGrid({
   title = 'Inspirasi Karya Pilihan',
   description = 'Gunakan filter di bawah ini untuk menjelajahi karya tim kreatif kami. Temukan konsep visual yang paling cocok dengan kepribadian dan nilai unik dari tokomu.',
   portfolios = portfolioData,
+  portfolioDetailHref,
 }: CasualPortfolioGridProps) {
   
   const [activeCategory, setActiveCategory] = useState<string>('Semua');
@@ -110,7 +112,7 @@ export function CasualPortfolioGrid({
                     </span>
                     <a
                       id={`portfolio-details-${item.id}`}
-                      href={`/portfolio?id=${item.id}`}
+                      href={portfolioDetailHref ? portfolioDetailHref(item.id) : `/portfolio/${item.id}`}
                       className="text-[#649FF6] hover:text-[#649FF6]/80 font-bold inline-flex items-center gap-1.5 group/link"
                     >
                       <span>Pelajari Studi Kasus</span>

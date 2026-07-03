@@ -9,12 +9,14 @@ export interface CasualFeaturedArticleProps {
   title?: string;
   description?: string;
   article?: ArticleItem;
+  articlesHref?: string;
 }
 
 export function CasualFeaturedArticle({
   title = 'Artikel Sorotan Terpopuler Pekan Ini',
   description = 'Rangkuman ide terpanas yang paling banyak didiskusikan pemilik usaha lokal saat ini. Baca selengkapnya untuk memperkaya wawasan taktik jualan tokomu.',
   article: featuredArticle,
+  articlesHref = '/articles',
 }: CasualFeaturedArticleProps) {
   
   // Showcase the first article as featured
@@ -68,7 +70,7 @@ export function CasualFeaturedArticle({
                 </div>
 
                 <h3 className="font-sans font-extrabold text-2xl sm:text-3xl text-gray-950 hover:text-[#649FF6] transition-colors leading-tight">
-                  <Link href={`/articles/${featured.slug}`}>
+                  <Link href={`${articlesHref}/${featured.slug}`}>
                     {featured.title}
                   </Link>
                 </h3>
@@ -103,7 +105,7 @@ export function CasualFeaturedArticle({
 
                 <Link
                   id="featured-article-read-btn"
-                  href={`/articles/${featured.slug}`}
+                  href={`${articlesHref}/${featured.slug}`}
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#649FF6] text-white px-6 py-3.5 rounded-full text-sm font-bold shadow-md shadow-[#649FF6]/10 hover:bg-[#649FF6]/90 hover:scale-[1.02] active:scale-[0.98] transition-all"
                 >
                   <span>Baca Selengkapnya</span>

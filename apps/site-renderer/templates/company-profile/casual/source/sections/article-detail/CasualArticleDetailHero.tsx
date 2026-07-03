@@ -20,12 +20,14 @@ export interface CasualArticleDetailHeroProps {
     };
     tags: string[];
   };
+  backHref?: string;
 }
 
 export function CasualArticleDetailHero({
   showPublishedDate = 'true',
   showCoverImage = 'true',
   article = articlesData[0],
+  backHref = '/articles',
 }: CasualArticleDetailHeroProps) {
   
   const isShowDate = showPublishedDate === 'true' || showPublishedDate === 'Boolean(true)' || showPublishedDate === 'TRUE';
@@ -39,7 +41,7 @@ export function CasualArticleDetailHero({
         <div className="mb-6">
           <Link
             id="back-to-articles-link"
-            href="/articles"
+            href={backHref}
             className="inline-flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-[#649FF6] transition-colors group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
