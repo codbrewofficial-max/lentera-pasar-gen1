@@ -54,7 +54,7 @@ export function Header({ siteSlug, getHref, businessName, taglineLabel = 'Casual
                   <Sparkles className="w-5 h-5 text-white" />
                 </div>
               )}
-              <div className="flex flex-col">
+              <div className="flex flex-col md:hidden">
                 <span className="font-sans font-bold text-lg text-gray-950 tracking-tight leading-none">
                   {businessName}
                 </span>

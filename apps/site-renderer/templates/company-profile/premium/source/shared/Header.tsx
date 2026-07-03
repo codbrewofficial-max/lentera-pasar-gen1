@@ -42,7 +42,7 @@ export function Header({ businessName = "Niskala Atelier", logoUrl, getHref, nav
               <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-[#F56B71]" />
             </div>
           )}
-          <div className="flex flex-col text-left">
+          <div className="flex flex-col text-left md:hidden">
             <span id="header-brand-name" className="font-sans font-medium text-sm tracking-[0.25em] text-white uppercase group-hover:text-[#649FF6] transition-colors">
               {businessName}
             </span>
