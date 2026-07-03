@@ -11,10 +11,12 @@ interface AbstractContactFaqProps {
   faqs?: FaqItem[];
 }
 
+const ACCENTS = ['#649FF6', '#B283AF'];
+
 export function AbstractContactFaq({
-  title = "Pertanyaan Umum Seputar Kolaborasi",
-  description = "Sebelum memulai pengerjaan, sila baca jawaban cepat atas prosedur konsultasi awal, penawaran harga, hingga draf asimetris pertama.",
-  faqs = defaultFaqs.slice(0, 2) // Slice 2 items for contact
+  title = "Pertanyaan umum seputar kolaborasi",
+  description = "Sebelum memulai pengerjaan, baca dulu jawaban cepat atas prosedur konsultasi awal, penawaran harga, hingga draf pertama.",
+  faqs = defaultFaqs.slice(0, 2)
 }: AbstractContactFaqProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
@@ -23,52 +25,46 @@ export function AbstractContactFaq({
   };
 
   return (
-    <section className="relative bg-[#111111] text-white py-24 px-6 border-b-8 border-white overflow-hidden">
+    <section className="relative bg-white text-neutral-900 py-24 px-6 overflow-hidden">
       <div className="max-w-4xl mx-auto relative z-10">
-        
-        {/* Header */}
+
         <div className="text-center space-y-4 mb-16">
-          <div className="inline-flex items-center gap-2 text-xs font-mono font-bold tracking-widest text-[#B283AF]">
-            <HelpCircle className="w-4 h-4 text-[#F56B71]" /> {"// FAQ_KOLABORASI"}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#B283AF]/10 mx-auto">
+            <HelpCircle className="w-3.5 h-3.5 text-[#B283AF]" />
+            <span className="font-mono text-xs lowercase tracking-wide text-[#B283AF]">faq kolaborasi</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-mono font-black uppercase tracking-tight text-white leading-none">
+          <h2 className="text-3xl sm:text-4xl font-sans font-extrabold tracking-tight text-neutral-900 leading-none">
             {title}
           </h2>
-          <p className="text-neutral-400 font-sans text-sm max-w-2xl mx-auto">
+          <p className="text-neutral-500 font-sans text-sm max-w-2xl mx-auto">
             {description}
           </p>
         </div>
 
-        {/* FAQs */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {faqs.map((faq, index) => {
             const isOpen = activeIndex === index;
-            const colors = ["border-[#649FF6] bg-[#649FF6]/10", "border-[#B283AF] bg-[#B283AF]/10"];
-            const activeColorStyle = colors[index % colors.length];
+            const accent = ACCENTS[index % ACCENTS.length];
 
             return (
-              <div 
-                key={faq.id}
-                className={`border-2 transition-all duration-300 ${
-                  isOpen ? `${activeColorStyle} shadow-[-6px_6px_0px_white]` : 'border-neutral-800 bg-neutral-900/40'
-                }`}
-              >
-                {/* Question Row */}
+              <div key={faq.id} className="rounded-3xl bg-neutral-50 overflow-hidden">
                 <button
                   onClick={() => toggleFaq(index)}
-                  className="w-full text-left p-6 flex items-center justify-between font-mono font-bold text-sm sm:text-base tracking-tight uppercase focus:outline-none cursor-pointer"
+                  className="w-full text-left p-6 flex items-center justify-between font-sans font-semibold text-sm sm:text-base focus:outline-none cursor-pointer"
                 >
                   <span className="pr-4">{faq.question}</span>
-                  <div className="w-8 h-8 rounded-full border border-white flex items-center justify-center bg-black shrink-0">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors"
+                    style={{ backgroundColor: isOpen ? accent : '#e5e5e5' }}
+                  >
                     {isOpen ? (
-                      <ChevronUp className="w-4 h-4 text-[#F56B71]" />
+                      <ChevronUp className="w-4 h-4 text-white" />
                     ) : (
-                      <ChevronDown className="w-4 h-4 text-[#649FF6]" />
+                      <ChevronDown className="w-4 h-4 text-neutral-600" />
                     )}
                   </div>
                 </button>
 
-                {/* Answer block */}
                 <AnimatePresence initial={false}>
                   {isOpen && (
                     <motion.div
@@ -76,9 +72,9 @@ export function AbstractContactFaq({
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.25 }}
-                      className="overflow-hidden border-t border-dashed border-neutral-700"
+                      className="overflow-hidden"
                     >
-                      <div className="p-6 md:p-8 font-sans text-sm sm:text-base text-neutral-300 leading-relaxed whitespace-pre-line bg-black/40">
+                      <div className="px-6 pb-6 font-sans text-sm sm:text-base text-neutral-500 leading-relaxed whitespace-pre-line">
                         {faq.answer}
                       </div>
                     </motion.div>

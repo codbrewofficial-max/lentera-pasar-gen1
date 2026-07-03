@@ -12,38 +12,33 @@ interface AbstractPortfolioGridProps {
   portfolios?: PortfolioItem[];
 }
 
+const ACCENTS = ['#649FF6', '#F56B71', '#B283AF'];
+
 export function AbstractPortfolioGrid({
-  title = "Seluruh Manifesto Karya Studio Sinestesia",
-  description = "Jelajahi portofolio lengkap kami. Setiap baris mewakili dekonstruksi bentuk, tabrakan warna berani, dan fungsionalitas yang dikalibrasi secara ketat.",
+  title = "Seluruh karya Studio Sinestesia",
+  description = "Jelajahi portfolio lengkap kami. Setiap proyek mewakili perpaduan warna berani dan fungsionalitas yang dikalibrasi secara ketat.",
   portfolios = defaultPortfolios
 }: AbstractPortfolioGridProps) {
   return (
-    <section className="relative bg-[#0d0d0d] text-white py-24 px-6 border-b-8 border-white overflow-hidden">
-      {/* Grid background visual */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:5rem_5rem] pointer-events-none" />
-
+    <section className="relative bg-[#151515] text-white py-24 px-6 overflow-hidden">
       <div className="max-w-7xl mx-auto relative z-10">
-        
-        {/* Header Section */}
+
         <div className="max-w-3xl mb-16 space-y-4">
-          <div className="inline-flex items-center gap-2 text-xs font-mono font-bold tracking-widest text-[#649FF6]">
-            <FolderHeart className="w-4 h-4 text-[#F56B71]" /> {"// ARSIP MANIFESTO LENGKAP"}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10">
+            <FolderHeart className="w-3.5 h-3.5 text-[#F56B71]" />
+            <span className="font-mono text-xs lowercase tracking-wide text-neutral-200">arsip karya lengkap</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-mono font-black uppercase tracking-tight leading-tight">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-sans font-extrabold tracking-tight leading-tight">
             {title}
           </h2>
-          <p className="text-neutral-400 font-sans text-sm sm:text-base leading-relaxed max-w-2xl border-l-2 border-[#B283AF] pl-4">
+          <p className="text-neutral-400 font-sans text-sm sm:text-base leading-relaxed max-w-2xl">
             {description}
           </p>
         </div>
 
-        {/* Portfolio Cards - 2x2 asymmetric or staggered masonry-like grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {portfolios.map((item, index) => {
-            // Apply unique offset color and rotation
-            const shadowColors = ["bg-[#649FF6]", "bg-[#F56B71]", "bg-[#B283AF]"];
-            const shadowColor = shadowColors[index % shadowColors.length];
-            const rotationClass = index % 2 === 0 ? "rotate-0.5" : "-rotate-0.5 md:rotate-1";
+            const accent = ACCENTS[index % ACCENTS.length];
 
             return (
               <motion.div
@@ -52,65 +47,45 @@ export function AbstractPortfolioGrid({
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className={`group relative ${rotationClass}`}
+                className="group rounded-3xl bg-white/5 p-6 flex flex-col justify-between h-full min-h-[480px] transition-colors hover:bg-white/[0.08]"
               >
-                {/* Back offset shadow block */}
-                <div className={`absolute inset-0 ${shadowColor} transform translate-x-3 translate-y-3 group-hover:translate-x-5 group-hover:translate-y-5 transition-transform duration-300 border-2 border-white`} />
-                
-                {/* Card Container */}
-                <div className="relative bg-black border-2 border-white p-6 flex flex-col justify-between h-full min-h-[500px]">
-                  
-                  {/* Photo with shifted frames */}
-                  <div className="relative w-full aspect-[16/10] border border-neutral-700 bg-neutral-900 overflow-hidden mb-6">
-                    <div className="absolute inset-0 bg-black/30 group-hover:bg-transparent transition-colors z-10 duration-300" />
-                    <img 
-                      src={item.imageUrl} 
-                      alt={item.title} 
-                      className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 scale-102 group-hover:scale-100"
-                    />
-                    
-                    {/* Floating Year Tag */}
-                    <div className="absolute top-3 left-3 z-20 bg-black border border-white text-[10px] font-mono tracking-widest px-3 py-1 text-white">
-                      [ {item.year} ]
-                    </div>
+                <div className="relative w-full aspect-[16/10] rounded-2xl bg-neutral-900 overflow-hidden mb-6">
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div
+                    className="absolute top-3 left-3 text-[11px] font-mono lowercase font-semibold px-2.5 py-1 rounded-full text-white"
+                    style={{ backgroundColor: accent }}
+                  >
+                    {item.year}
+                  </div>
+                </div>
+
+                <div className="space-y-3 flex-grow">
+                  <span className="font-mono text-[10px] lowercase tracking-wide text-neutral-500">
+                    {item.category}
+                  </span>
+
+                  <h3 className="font-sans text-2xl font-bold text-white group-hover:text-[#649FF6] transition-colors leading-snug">
+                    {item.title}
+                  </h3>
+
+                  <p className="text-neutral-400 font-sans text-sm leading-relaxed">
+                    {stripHtmlToText(item.description, 140)}
+                  </p>
+                </div>
+
+                <div className="pt-6 border-t border-white/10 flex justify-between items-center mt-8">
+                  <div>
+                    <span className="font-sans text-xs text-neutral-500 block">Klien</span>
+                    <span className="font-sans text-sm font-semibold text-white">{item.client}</span>
                   </div>
 
-                  {/* Card Info */}
-                  <div className="space-y-3 flex-grow">
-                    <div className="flex justify-between items-center">
-                      <span className="font-mono text-[10px] font-bold tracking-widest text-[#B283AF] uppercase">
-                        {"// " + item.category.toUpperCase()}
-                      </span>
-                      <span className="font-mono text-[10px] text-neutral-500">
-                        PROJ_0{index + 1}
-                      </span>
-                    </div>
-
-                    <h3 className="font-mono text-2xl font-black uppercase tracking-tight text-white group-hover:text-[#649FF6] transition-colors leading-snug">
-                      {item.title}
-                    </h3>
-
-                    <p className="text-neutral-400 font-sans text-sm leading-relaxed">
-                      {stripHtmlToText(item.description, 140)}
-                    </p>
+                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white group-hover:bg-white group-hover:text-neutral-900 transition-colors">
+                    <ArrowUpRight className="w-5 h-5" />
                   </div>
-
-                  {/* Client and CTA Link */}
-                  <div className="pt-6 border-t border-neutral-800 flex justify-between items-center mt-8">
-                    <div>
-                      <span className="font-mono text-[9px] text-neutral-500 block uppercase">
-                        Client Partner
-                      </span>
-                      <span className="font-mono text-xs font-bold text-white uppercase">
-                        {item.client}
-                      </span>
-                    </div>
-
-                    <div className="w-10 h-10 border-2 border-white flex items-center justify-center bg-neutral-900 text-white group-hover:bg-white group-hover:text-black transition-all group-hover:rotate-45">
-                      <ArrowUpRight className="w-5 h-5" />
-                    </div>
-                  </div>
-
                 </div>
               </motion.div>
             );
