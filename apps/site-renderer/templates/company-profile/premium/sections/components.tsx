@@ -29,12 +29,10 @@ import { PremiumArticlesHero } from "../source/sections/articles/PremiumArticles
 import { PremiumFeaturedArticle } from "../source/sections/articles/PremiumFeaturedArticle";
 import { PremiumArticlePreview } from "../source/sections/articles/PremiumArticlePreview";
 
-import { PremiumArticleDetailHero } from "../source/sections/article-detail/PremiumArticleDetailHero";
 import { PremiumArticleContent } from "../source/sections/article-detail/PremiumArticleContent";
 import { PremiumRelatedArticles } from "../source/sections/article-detail/PremiumRelatedArticles";
 import { PremiumArticleCta } from "../source/sections/article-detail/PremiumArticleCta";
 
-import { PremiumPortfolioDetailHero } from "../source/sections/portfolio-detail/PremiumPortfolioDetailHero";
 import { PremiumPortfolioDetailContent } from "../source/sections/portfolio-detail/PremiumPortfolioDetailContent";
 import { PremiumRelatedPortfolios } from "../source/sections/portfolio-detail/PremiumRelatedPortfolios";
 import { PremiumPortfolioDetailCta } from "../source/sections/portfolio-detail/PremiumPortfolioDetailCta";
@@ -72,6 +70,13 @@ function numberValue(value: unknown, fallback = 0) {
 
 function contentOf(section: PublicSection) {
   return section.content || {};
+}
+
+// Field "items" adalah tipe repeater (lihat schema Template Pack) — array bebas jumlah,
+// dipakai oleh value_statement/service_benefits/service_process/trust_proof.
+function itemsOf(section: PublicSection): Array<{ title?: string; value?: string }> {
+  const raw = contentOf(section).items;
+  return Array.isArray(raw) ? raw : [];
 }
 
 function businessOf(payload: PublicPagePayload) {
@@ -270,9 +275,9 @@ export function PremiumHomeHeroSection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
   return (
     <PremiumHomeHero
-      eyebrow={text(content.eyebrow)}
+      eyebrow={text(content.badge)}
       title={text(content.title)}
-      subtitle={text(content.subtitle)}
+      subtitle={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", "/contact")}
       secondaryCtaLabel={text(content.secondaryCtaLabel)}
@@ -328,12 +333,7 @@ export function PremiumHomeTrustProofSection(props: PremiumSectionProps) {
     <PremiumHomeTrustProof
       title={text(content.title)}
       description={text(content.description)}
-      metricOneLabel={text(content.metricOneLabel)}
-      metricOneValue={text(content.metricOneValue)}
-      metricTwoLabel={text(content.metricTwoLabel)}
-      metricTwoValue={text(content.metricTwoValue)}
-      metricThreeLabel={text(content.metricThreeLabel)}
-      metricThreeValue={text(content.metricThreeValue)}
+      metrics={itemsOf(props.section).map((item) => ({ value: text(item?.title as string), label: text(item?.value as string) })).filter((m) => m.label && m.value)}
       testimonials={testimonialsFor(props)}
       brands={brandsFor(props)}
     />
@@ -390,10 +390,7 @@ export function PremiumAboutValueStatementSection(props: PremiumSectionProps) {
     <PremiumAboutValueStatement
       title={text(content.title)}
       description={text(content.description)}
-      valueOne={text(content.valueOne)}
-      valueTwo={text(content.valueTwo)}
-      valueThree={text(content.valueThree)}
-      valueFour={text(content.valueFour) || undefined}
+      items={itemsOf(props.section)}
     />
   );
 }
@@ -428,10 +425,7 @@ export function PremiumServicesProcessSection(props: PremiumSectionProps) {
     <PremiumServicesProcess
       title={text(content.title)}
       description={text(content.description)}
-      stepOne={text(content.stepOne)}
-      stepTwo={text(content.stepTwo)}
-      stepThree={text(content.stepThree)}
-      stepFour={text(content.stepFour) || undefined}
+      items={itemsOf(props.section)}
     />
   );
 }
@@ -442,10 +436,7 @@ export function PremiumServicesBenefitsSection(props: PremiumSectionProps) {
     <PremiumServicesBenefits
       title={text(content.title)}
       description={text(content.description)}
-      benefitOne={text(content.benefitOne)}
-      benefitTwo={text(content.benefitTwo)}
-      benefitThree={text(content.benefitThree)}
-      benefitFour={text(content.benefitFour) || undefined}
+      items={itemsOf(props.section)}
     />
   );
 }
@@ -516,24 +507,19 @@ export function PremiumArticlePreviewSection(props: PremiumSectionProps) {
 
 // ---- Article Detail ----
 
-export function PremiumArticleDetailHeroSection(props: PremiumSectionProps) {
-  const content = contentOf(props.section);
-  return (
-    <PremiumArticleDetailHero
-      showPublishedDate={boolValue(content.showPublishedDate, true) ? "true" : "false"}
-      showCoverImage={boolValue(content.showCoverImage, true) ? "true" : "false"}
-      article={currentArticleFor(props)}
-    />
-  );
-}
-
 export function PremiumArticleContentSection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
+  const business = businessOf(props.payload);
   return (
     <PremiumArticleContent
-      contentMaxWidth={text(content.contentMaxWidth, "max-w-2xl")}
-      showShareHint={boolValue(content.showShareHint, true) ? "true" : "false"}
       article={currentArticleFor(props)}
+      backHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")}
+      businessName={text(business.name, props.payload.website.name)}
+      businessLogoUrl={text(business.logoUrl as string)}
+      contentMaxWidth={text(content.contentMaxWidth, "max-w-2xl")}
+      showAuthor={boolValue(content.showAuthor, true) ? "true" : "false"}
+      showPublishDate={boolValue(content.showPublishDate, true) ? "true" : "false"}
+      showShareLink={boolValue(content.showShareLink, true) ? "true" : "false"}
     />
   );
 }
@@ -565,25 +551,20 @@ export function PremiumArticleCtaSection(props: PremiumSectionProps) {
 
 // ---- Portfolio Detail ----
 
-export function PremiumPortfolioDetailHeroSection(props: PremiumSectionProps) {
-  const content = contentOf(props.section);
-  return (
-    <PremiumPortfolioDetailHero
-      showCoverImage={boolValue(content.showCoverImage, true) ? "true" : "false"}
-      badge={text(content.badge, "Studi Kasus")}
-      project={currentPortfolioFor(props)}
-      backHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "portfolio", "/portfolio")}
-    />
-  );
-}
-
 export function PremiumPortfolioDetailContentSection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
+  const business = businessOf(props.payload);
   return (
     <PremiumPortfolioDetailContent
-      contentMaxWidth={text(content.contentMaxWidth, "max-w-2xl")}
-      showShareHint={boolValue(content.showShareHint, true) ? "true" : "false"}
       project={currentPortfolioFor(props)}
+      badge={text(content.badge, "Studi Kasus")}
+      backHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "portfolio", "/portfolio")}
+      businessName={text(business.name, props.payload.website.name)}
+      businessLogoUrl={text(business.logoUrl as string)}
+      contentMaxWidth={text(content.contentMaxWidth, "max-w-2xl")}
+      showAuthor={boolValue(content.showAuthor, true) ? "true" : "false"}
+      showPublishDate={boolValue(content.showPublishDate, true) ? "true" : "false"}
+      showShareLink={boolValue(content.showShareLink, true) ? "true" : "false"}
     />
   );
 }
@@ -631,16 +612,16 @@ export function PremiumContactInformationSection(props: PremiumSectionProps) {
     <PremiumContactInformation
       title={text(content.title)}
       description={text(content.description)}
-      showWhatsapp={boolValue(content.showWhatsapp, true) ? "true" : "false"}
-      showEmail={boolValue(content.showEmail, true) ? "true" : "false"}
-      showAddress={boolValue(content.showAddress, true) ? "true" : "false"}
+      showWhatsapp={Boolean(text(business.whatsapp as string) || text(business.phone as string)) ? "true" : "false"}
+      showEmail={Boolean(text(business.contactEmail as string)) ? "true" : "false"}
+      showAddress={Boolean(text(business.address as string)) ? "true" : "false"}
       siteSlug={props.siteSlug}
       pageKey={props.payload.page.pageKey}
       slotKey={props.section.slotKey}
       whatsappHref={whatsappHref(props.payload)}
       whatsappLabel={text(business.whatsapp, text(business.phone)) || undefined}
-      email={text(business.email) || undefined}
-      address={text(business.address) || undefined}
+      email={text(business.contactEmail as string) || undefined}
+      address={text(business.address as string) || undefined}
     />
   );
 }
@@ -707,12 +688,10 @@ export const premiumSectionComponents: Record<string, PremiumSectionComponent> =
   PremiumFeaturedArticle: PremiumFeaturedArticleSection,
   PremiumArticlePreview: PremiumArticlePreviewSection,
 
-  PremiumArticleDetailHero: PremiumArticleDetailHeroSection,
   PremiumArticleContent: PremiumArticleContentSection,
   PremiumRelatedArticles: PremiumRelatedArticlesSection,
   PremiumArticleCta: PremiumArticleCtaSection,
 
-  PremiumPortfolioDetailHero: PremiumPortfolioDetailHeroSection,
   PremiumPortfolioDetailContent: PremiumPortfolioDetailContentSection,
   PremiumRelatedPortfolios: PremiumRelatedPortfoliosSection,
   PremiumPortfolioDetailCta: PremiumPortfolioDetailCtaSection,
