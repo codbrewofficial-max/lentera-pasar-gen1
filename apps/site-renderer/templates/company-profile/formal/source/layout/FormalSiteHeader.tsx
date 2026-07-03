@@ -74,6 +74,7 @@ export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
   };
 
   return (
+    // HEADER UTAMA (Beri z-50 agar selalu di depan panel mobile)
     <header
       className={cn(
         "fixed top-0 left-0 w-full z-50 transition-all duration-300 border-b",
@@ -82,18 +83,19 @@ export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
           : "bg-white border-slate-100 py-4"
       )}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Container Konten Utama Navbar */}
+      <div className="relative z-50 bg-white max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
           {/* Logo */}
           <Link href={homeHref} className="flex items-center space-x-2.5 group">
             {logoUrl ? (
-              <img src={logoUrl} alt={businessName} className="w-9 h-9 rounded object-cover" referrerPolicy="no-referrer" />
+              <img src={logoUrl} alt={businessName} className="w-10 h-10 rounded object-cover" referrerPolicy="no-referrer" />
             ) : (
               <div className="bg-[#649FF6] text-white p-2 rounded">
                 <Shield className="w-6 h-6" />
               </div>
             )}
-            <div className="flex flex-col">
+            <div className="flex flex-col md:hidden">
               <span className="font-semibold text-lg md:text-xl text-slate-900 leading-tight group-hover:text-[#649FF6] transition-colors">
                 {businessName}
               </span>
@@ -104,7 +106,7 @@ export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
           </Link>
 
           {/* Desktop Navigation */}
-           <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden md:flex items-center space-x-8">
             {resolvedLinks.map((link) => {
               const active = isLinkActive(link.href, link.pageKey);
               return (
@@ -141,16 +143,19 @@ export const FormalSiteHeader: React.FC<FormalSiteHeaderProps> = ({
         </div>
       </div>
 
-      {/* Mobile Navigation Panel */}
+      {/* MOBILE NAVIGATION PANEL (Beri z-30 / z-40 agar ngumpet di belakang header utama) */}
       <div
         className={cn(
-          "md:hidden fixed inset-x-0 bg-white border-b border-slate-100 shadow-lg transition-all duration-300 ease-in-out overflow-hidden z-40",
-          isOpen ? "top-[65px] max-h-[400px] opacity-100" : "top-[-400px] max-h-0 opacity-0 pointer-events-none"
+          "md:hidden fixed left-0 right-0 bg-white border-b border-slate-100 shadow-lg transition-all duration-500 ease-in-out z-30",
+          "top-0", // Set top-0 agar dia meluncur tepat dari atas/belakang navbar
+          isOpen 
+            ? "translate-y-[65px] opacity-100 visible" // Turun tepat di bawah navbar saat open
+            : "translate-y-0 opacity-0 pointer-events-none invisible" // Ngumpet di balik navbar saat close
         )}
       >
-        <div className="px-4 pt-4 pb-6 space-y-3">
+        <div className="px-4 pt-4 pb-6 space-y-3"> 
           {resolvedLinks.map((link) => {
-            const active = isLinkActive(link.href, link.pageKey); // PERBAIKAN 3: Sekarang disamakan pakai link.href
+            const active = isLinkActive(link.href, link.pageKey);
             return (
               <Link
                 key={link.path}

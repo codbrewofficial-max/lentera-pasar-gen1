@@ -87,7 +87,7 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
                 href={portfolioDetailHref ? portfolioDetailHref(project.id) : `/portfolio/${project.id}`}
                 className="inline-flex items-center text-sm font-semibold text-[#649FF6] hover:underline"
               >
-                Lihat Detail Proyek →
+                Lihat Detail →
               </Link>
             </div>
           </div>
