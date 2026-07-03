@@ -47,9 +47,9 @@ export const PAGE_SECTION_RULES = {
     services: ["service_hero", "service_grid", "service_process", "service_benefits", "service_faq"],
     portfolio: ["portfolio_hero", "portfolio_category", "portfolio_grid", "case_highlight", "portfolio_cta"],
     articles: ["article_hero", "featured_article", "article_preview"],
-    article_detail: ["article_detail_hero", "article_content", "related_articles", "article_cta"],
+    article_detail: ["article_content", "related_articles", "article_cta"],
     contact: ["contact_hero", "contact_information", "maps_location", "contact_faq", "contact_cta"],
-    portfolio_detail: ["portfolio_detail_hero", "portfolio_detail_content", "related_portfolios", "portfolio_detail_cta"]
+    portfolio_detail: ["portfolio_detail_content", "related_portfolios", "portfolio_detail_cta"]
   },
   catalog_product: {
     home: ["hero", "category_preview", "featured_products", "advantages", "testimonials", "whatsapp_cta"],
@@ -187,8 +187,7 @@ export const COMPANY_PROFILE_SECTION_SLOT_LABELS = {
   "articles.article_hero": "Pembuka Artikel",
   "articles.featured_article": "Artikel Unggulan",
   "articles.article_preview": "Daftar Artikel",
-  "article_detail.article_detail_hero": "Pembuka Detail Artikel",
-  "article_detail.article_content": "Isi Artikel",
+  "article_detail.article_content": "Isi Detail Artikel",
   "article_detail.related_articles": "Artikel Terkait",
   "article_detail.article_cta": "CTA Artikel",
   "contact.contact_hero": "Pembuka Kontak",
@@ -196,7 +195,6 @@ export const COMPANY_PROFILE_SECTION_SLOT_LABELS = {
   "contact.maps_location": "Lokasi / Maps",
   "contact.contact_faq": "FAQ Kontak",
   "contact.contact_cta": "CTA Kontak",
-  "portfolio_detail.portfolio_detail_hero": "Pembuka Detail Portfolio",
   "portfolio_detail.portfolio_detail_content": "Isi Detail Portfolio",
   "portfolio_detail.related_portfolios": "Portfolio Terkait",
   "portfolio_detail.portfolio_detail_cta": "CTA Detail Portfolio"
