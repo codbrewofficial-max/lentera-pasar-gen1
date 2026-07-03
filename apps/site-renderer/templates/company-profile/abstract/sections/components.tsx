@@ -45,7 +45,7 @@ import { AbstractMapsLocation } from "../source/sections/contact/AbstractMapsLoc
 import { AbstractContactFaq } from "../source/sections/contact/AbstractContactFaq";
 import { AbstractContactCta } from "../source/sections/contact/AbstractContactCta";
 
-import type { ServiceItem, PortfolioItem, ArticleItem, TeamMember, TimelineItem, FaqItem } from "../source/lib/dummy-data";
+import type { ServiceItem, PortfolioItem, ArticleItem, TeamMember, TimelineItem, FaqItem, TestimonialItem } from "../source/lib/dummy-data";
 import type { CrudItem, PublicPagePayload, PublicSection } from "@/lib/types";
 import { getSiteHref, resolveTargetHref } from "@/lib/links";
 
@@ -149,6 +149,24 @@ function mapTeamMember(item: CrudItem, index: number): TeamMember {
     imageUrl: imageOf(item, `https://picsum.photos/seed/abstract-team-${index + 1}/400/400`),
     signature: text(item.signature),
   };
+}
+
+function mapTestimonial(item: CrudItem, index: number): TestimonialItem {
+  return {
+    id: String(item.id || `testimonial-${index + 1}`),
+    name: text(item.name, "Klien"),
+    role: text(item.role, "Pelanggan"),
+    company: text(item.company, "Perusahaan"),
+    content: text(item.quote, "Kolaborasi dengan tim ini membantu brand kami tampil lebih berani dan berbeda dari kompetitor."),
+    imageUrl: imageOf(item, `https://picsum.photos/seed/abstract-testi-${index + 1}/100/100`),
+  };
+}
+
+function testimonialsFor(props: AbstractSectionProps): TestimonialItem[] | undefined {
+  // home.trust_proof schema cuma punya field title/description/metric, testimoni murni
+  // dari data CRUD Testimonials (sama seperti Formal & Premium).
+  const rows = props.section.data?.testimonials || [];
+  return rows.length ? rows.slice(0, 3).map(mapTestimonial) : undefined;
 }
 
 function mapTimeline(item: CrudItem, index: number): TimelineItem {
@@ -298,6 +316,7 @@ export function AbstractHomeTrustProofSection(props: AbstractSectionProps) {
       metricTwoValue={text(content.metricTwoValue)}
       metricThreeLabel={text(content.metricThreeLabel)}
       metricThreeValue={text(content.metricThreeValue)}
+      testimonials={testimonialsFor(props)}
     />
   );
 }

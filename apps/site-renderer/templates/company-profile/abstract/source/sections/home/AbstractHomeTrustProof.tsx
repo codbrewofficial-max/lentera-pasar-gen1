@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import { Trophy, Users, ShieldAlert } from 'lucide-react';
+import { Trophy, Users, ShieldAlert, Quote } from 'lucide-react';
+import type { TestimonialItem } from '../../lib/dummy-data';
 
 interface AbstractHomeTrustProofProps {
   title?: string;
@@ -13,6 +14,7 @@ interface AbstractHomeTrustProofProps {
   metricTwoValue?: string;
   metricThreeLabel?: string;
   metricThreeValue?: string;
+  testimonials?: TestimonialItem[];
 }
 
 export function AbstractHomeTrustProof({
@@ -23,8 +25,10 @@ export function AbstractHomeTrustProof({
   metricTwoLabel = "Karya Visual Terselesaikan",
   metricTwoValue = "450+",
   metricThreeLabel = "Penghargaan Eksperimen Desain",
-  metricThreeValue = "12"
+  metricThreeValue = "12",
+  testimonials
 }: AbstractHomeTrustProofProps) {
+  const testimonialColors = ["#649FF6", "#F56B71", "#B283AF"];
   return (
     <section className="relative bg-[#000000] text-white py-24 px-6 border-b-8 border-white overflow-hidden">
       {/* Background neon dots or color bursts */}
@@ -143,7 +147,57 @@ export function AbstractHomeTrustProof({
           </motion.div>
 
         </div>
-        
+
+        {/* Testimonials */}
+        {testimonials && testimonials.length > 0 && (
+          <div className="mt-20 pt-16 border-t-2 border-white/10">
+            <div className="inline-flex items-center gap-2 text-xs font-mono font-bold tracking-widest text-[#F56B71] mb-10">
+              <Quote className="w-4 h-4 text-[#649FF6]" /> {"// SUARA MITRA"}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {testimonials.map((item, index) => {
+                const accent = testimonialColors[index % testimonialColors.length];
+                return (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    className="relative"
+                  >
+                    <div
+                      className="absolute inset-0 border-2 border-white translate-x-1.5 translate-y-1.5"
+                      style={{ backgroundColor: accent, opacity: 0.15 }}
+                    />
+                    <div className="relative bg-black border-2 border-white p-6 flex flex-col h-full">
+                      <Quote className="w-5 h-5 mb-4" style={{ color: accent }} />
+                      <p className="font-sans text-sm text-neutral-300 leading-relaxed flex-1">
+                        {item.content}
+                      </p>
+                      <div className="flex items-center gap-3 mt-6 pt-4 border-t border-white/10">
+                        <img
+                          src={item.imageUrl}
+                          alt={item.name}
+                          className="w-10 h-10 rounded-full object-cover border-2 border-white shrink-0"
+                        />
+                        <div>
+                          <p className="font-mono text-xs font-bold text-white uppercase tracking-wide">
+                            {item.name}
+                          </p>
+                          <p className="font-mono text-[10px] text-neutral-500 uppercase tracking-wider">
+                            {[item.role, item.company].filter(Boolean).join(" — ")}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
       </div>
     </section>
   );
