@@ -292,6 +292,15 @@ const mergeContent = (template: any, contentJson: unknown) => ({
   ...((contentJson as Record<string, unknown> | null) || {})
 });
 
+// Slot yang isinya sepenuhnya diambil dari Business Profile (lihat applyBusinessProfileOverrides
+// di atas) — dashboard perlu tahu field mana saja yang "auto-managed" ini supaya bisa
+// menyembunyikan form manual dan mengarahkan owner ke halaman Profil Bisnis.
+const AUTO_MANAGED_SLOT_FIELDS: Record<string, string[]> = {
+  "about.vision_mission": ["vision", "mission"],
+  "contact.maps_location": ["mapEmbedUrl"],
+  "contact.contact_information": ["address", "contactEmail", "phone", "whatsapp"]
+};
+
 const sectionDetailContract = (section: any, websiteId: string, businessProfile: any = null) => ({
   id: section.id,
   slotKey: section.slotKey,
@@ -301,8 +310,9 @@ const sectionDetailContract = (section: any, websiteId: string, businessProfile:
   isVisible: section.isVisible,
   hasTemplate: Boolean(section.templateSection),
   hasContent: Boolean(section.contentJson && Object.keys(section.contentJson as Record<string, unknown>).length > 0),
-  isAutoManaged: section.slotKey === "about.vision_mission",
-  autoManagedSource: section.slotKey === "about.vision_mission" ? "business_profile" : null,
+  isAutoManaged: Boolean(AUTO_MANAGED_SLOT_FIELDS[section.slotKey]),
+  autoManagedSource: AUTO_MANAGED_SLOT_FIELDS[section.slotKey] ? "business_profile" : null,
+  autoManagedFields: AUTO_MANAGED_SLOT_FIELDS[section.slotKey] || [],
   templateSection: section.templateSection
     ? {
         ...templateSummary(section.templateSection),
