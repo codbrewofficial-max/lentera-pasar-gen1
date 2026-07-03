@@ -250,6 +250,20 @@ function testimonialsFor(props: PremiumSectionProps): TestimonialItem[] | undefi
   return rows.length ? rows.slice(0, 5).map(mapTestimonial) : undefined;
 }
 
+function mapBrand(item: CrudItem, index: number): { id: string; name: string; logoUrl?: string } {
+  return {
+    id: String(item.id || `brand-${index + 1}`),
+    name: text(item.name, `Mitra ${index + 1}`),
+    logoUrl: text(item.logoUrl, text(item.imageUrl)) || undefined,
+  };
+}
+
+function brandsFor(props: PremiumSectionProps) {
+  // home.trust_proof: brand/client logo murni dari data CRUD Brand Partners,
+  // hanya tampil kalau owner sudah isi datanya (sama seperti Formal).
+  return (props.section.data?.brands || []).map(mapBrand);
+}
+
 // ---- Home ----
 
 export function PremiumHomeHeroSection(props: PremiumSectionProps) {
@@ -320,6 +334,7 @@ export function PremiumHomeTrustProofSection(props: PremiumSectionProps) {
       metricThreeLabel={text(content.metricThreeLabel)}
       metricThreeValue={text(content.metricThreeValue)}
       testimonials={testimonialsFor(props)}
+      brands={brandsFor(props)}
     />
   );
 }
@@ -377,6 +392,7 @@ export function PremiumAboutValueStatementSection(props: PremiumSectionProps) {
       valueOne={text(content.valueOne)}
       valueTwo={text(content.valueTwo)}
       valueThree={text(content.valueThree)}
+      valueFour={text(content.valueFour) || undefined}
     />
   );
 }
@@ -414,6 +430,7 @@ export function PremiumServicesProcessSection(props: PremiumSectionProps) {
       stepOne={text(content.stepOne)}
       stepTwo={text(content.stepTwo)}
       stepThree={text(content.stepThree)}
+      stepFour={text(content.stepFour) || undefined}
     />
   );
 }
@@ -427,6 +444,7 @@ export function PremiumServicesBenefitsSection(props: PremiumSectionProps) {
       benefitOne={text(content.benefitOne)}
       benefitTwo={text(content.benefitTwo)}
       benefitThree={text(content.benefitThree)}
+      benefitFour={text(content.benefitFour) || undefined}
     />
   );
 }
@@ -615,6 +633,7 @@ export function PremiumContactInformationSection(props: PremiumSectionProps) {
       siteSlug={props.siteSlug}
       pageKey={props.payload.page.pageKey}
       slotKey={props.section.slotKey}
+      whatsappHref={whatsappHref(props.payload)}
       whatsappLabel={text(business.whatsapp, text(business.phone)) || undefined}
       email={text(business.email) || undefined}
       address={text(business.address) || undefined}

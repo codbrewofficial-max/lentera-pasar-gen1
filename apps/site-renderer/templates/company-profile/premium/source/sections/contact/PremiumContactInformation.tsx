@@ -13,6 +13,7 @@ interface PremiumContactInformationProps {
   siteSlug?: string;
   pageKey?: string;
   slotKey?: string;
+  whatsappHref?: string;
   whatsappLabel?: string;
   email?: string;
   address?: string;
@@ -27,6 +28,7 @@ export function PremiumContactInformation({
   siteSlug,
   pageKey = 'contact',
   slotKey = 'contact.contact_information',
+  whatsappHref = 'https://wa.me/628119009900',
   whatsappLabel = '+62 811 900 9900',
   email: businessEmail = 'hello@niskala-atelier.com',
   address: businessAddress = 'Jl. Wijaya II No. 42, Kebayoran Baru, Jakarta Selatan, 12160',
@@ -113,16 +115,21 @@ export function PremiumContactInformation({
           <div className="space-y-6 pt-6 border-t border-white/5">
             {/* WhatsApp Block */}
             {displayWhatsapp && (
-              <div className="flex items-start space-x-4">
+              <a
+                href={whatsappHref}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-start space-x-4 group -m-2 p-2 rounded transition-colors hover:bg-white/[0.03]"
+              >
                 <div className="p-3 bg-[#649FF6]/10 border border-white/5 shrink-0">
                   <Phone className="w-5 h-5 text-[#649FF6]" />
                 </div>
                 <div>
                   <h4 className="text-xs font-semibold tracking-wider text-stone-300 uppercase">WhatsApp / Telepon</h4>
-                  <p className="text-sm font-serif font-light text-white mt-1">{whatsappLabel}</p>
+                  <p className="text-sm font-serif font-light text-white mt-1 group-hover:text-[#649FF6] transition-colors">{whatsappLabel}</p>
                   <span className="text-[10px] text-stone-500 font-mono tracking-wider uppercase block mt-1">OPERASIONAL: 09:00 - 18:00 WIB</span>
                 </div>
-              </div>
+              </a>
             )}
 
             {/* Email Block */}

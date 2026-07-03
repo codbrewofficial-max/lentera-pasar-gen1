@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Compass, Sparkles, BookOpen } from 'lucide-react';
+import { Compass, Sparkles, BookOpen, Gem } from 'lucide-react';
 
 interface PremiumAboutValueStatementProps {
   title?: string;
@@ -9,14 +9,16 @@ interface PremiumAboutValueStatementProps {
   valueOne?: string;
   valueTwo?: string;
   valueThree?: string;
+  valueFour?: string;
 }
 
 export function PremiumAboutValueStatement({
   title = "Nilai Dasar Keberlanjutan",
-  description = "Tiga komitmen yang melandasi setiap helai kertas konsep, simulasi digital, hingga koordinasi fisik tukang kayu di lapangan.",
+  description = "Komitmen yang melandasi setiap helai kertas konsep, simulasi digital, hingga koordinasi fisik tukang kayu di lapangan.",
   valueOne = "Kejujuran Material Tanpa Lapisan Palsu",
   valueTwo = "Kemitraan Komunitas & Pengrajin Lokal",
-  valueThree = "Efisiensi Energi Pasif Alami"
+  valueThree = "Efisiensi Energi Pasif Alami",
+  valueFour
 }: PremiumAboutValueStatementProps) {
   return (
     <section id="premium-about-value-statement" className="py-24 md:py-32 bg-[#0E0E0F] text-white">
@@ -30,8 +32,8 @@ export function PremiumAboutValueStatement({
           </p>
         </div>
 
-        {/* 3 Values Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* Values Grid: 3 atau 4 kolom tergantung apakah valueFour diisi */}
+        <div className={`grid grid-cols-1 md:grid-cols-2 ${valueFour ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-8`}>
           {/* Card 1 */}
           <div className="border border-white/5 bg-[#121214] p-8 space-y-6 hover:border-[#649FF6]/40 transition-all duration-300">
             <div className="p-3 bg-[#649FF6]/10 w-fit">
@@ -64,6 +66,19 @@ export function PremiumAboutValueStatement({
               Kami mendesain bangunan dengan sirkulasi udara pasif untuk meredam pemakaian pendingin ruangan buatan. Kami memastikan setiap ruang mendapatkan pencahayaan tidak langsung alami yang mendinginkan suhu batin.
             </p>
           </div>
+
+          {/* Card 4 (opsional) */}
+          {valueFour && (
+            <div className="border border-white/5 bg-[#121214] p-8 space-y-6 hover:border-[#649FF6]/40 transition-all duration-300">
+              <div className="p-3 bg-[#649FF6]/10 w-fit">
+                <Gem className="w-5 h-5 text-[#649FF6]" />
+              </div>
+              <h3 className="text-lg font-serif font-light text-white">{valueFour}</h3>
+              <p className="text-xs text-stone-400 leading-relaxed font-light font-sans">
+                Komitmen keempat kami dalam menjaga kualitas dan konsistensi setiap hasil kerja yang diserahkan kepada klien.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </section>

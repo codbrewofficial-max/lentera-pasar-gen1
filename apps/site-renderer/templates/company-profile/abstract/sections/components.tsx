@@ -45,7 +45,7 @@ import { AbstractMapsLocation } from "../source/sections/contact/AbstractMapsLoc
 import { AbstractContactFaq } from "../source/sections/contact/AbstractContactFaq";
 import { AbstractContactCta } from "../source/sections/contact/AbstractContactCta";
 
-import type { ServiceItem, PortfolioItem, ArticleItem, TeamMember, TimelineItem, FaqItem } from "../source/lib/dummy-data";
+import type { ServiceItem, PortfolioItem, ArticleItem, TeamMember, TimelineItem, FaqItem, TestimonialItem } from "../source/lib/dummy-data";
 import type { CrudItem, PublicPagePayload, PublicSection } from "@/lib/types";
 import { getSiteHref, resolveTargetHref } from "@/lib/links";
 
@@ -149,6 +149,38 @@ function mapTeamMember(item: CrudItem, index: number): TeamMember {
     imageUrl: imageOf(item, `https://picsum.photos/seed/abstract-team-${index + 1}/400/400`),
     signature: text(item.signature),
   };
+}
+
+function mapTestimonial(item: CrudItem, index: number): TestimonialItem {
+  return {
+    id: String(item.id || `testimonial-${index + 1}`),
+    name: text(item.name, "Klien"),
+    role: text(item.role, "Pelanggan"),
+    company: text(item.company, "Perusahaan"),
+    content: text(item.quote, "Kolaborasi dengan tim ini membantu brand kami tampil lebih berani dan berbeda dari kompetitor."),
+    imageUrl: imageOf(item, `https://picsum.photos/seed/abstract-testi-${index + 1}/100/100`),
+  };
+}
+
+function testimonialsFor(props: AbstractSectionProps): TestimonialItem[] | undefined {
+  // home.trust_proof schema cuma punya field title/description/metric, testimoni murni
+  // dari data CRUD Testimonials (sama seperti Formal & Premium).
+  const rows = props.section.data?.testimonials || [];
+  return rows.length ? rows.slice(0, 3).map(mapTestimonial) : undefined;
+}
+
+function mapBrand(item: CrudItem, index: number): { id: string; name: string; logoUrl?: string } {
+  return {
+    id: String(item.id || `brand-${index + 1}`),
+    name: text(item.name, `Mitra ${index + 1}`),
+    logoUrl: text(item.logoUrl, text(item.imageUrl)) || undefined,
+  };
+}
+
+function brandsFor(props: AbstractSectionProps) {
+  // home.trust_proof: brand/client logo murni dari data CRUD Brand Partners,
+  // hanya tampil kalau owner sudah isi datanya (sama seperti Formal).
+  return (props.section.data?.brands || []).map(mapBrand);
 }
 
 function mapTimeline(item: CrudItem, index: number): TimelineItem {
@@ -298,6 +330,8 @@ export function AbstractHomeTrustProofSection(props: AbstractSectionProps) {
       metricTwoValue={text(content.metricTwoValue)}
       metricThreeLabel={text(content.metricThreeLabel)}
       metricThreeValue={text(content.metricThreeValue)}
+      testimonials={testimonialsFor(props)}
+      brands={brandsFor(props)}
     />
   );
 }
@@ -355,6 +389,7 @@ export function AbstractAboutValueStatementSection(props: AbstractSectionProps) 
       valueOne={text(content.valueOne)}
       valueTwo={text(content.valueTwo)}
       valueThree={text(content.valueThree)}
+      valueFour={text(content.valueFour) || undefined}
     />
   );
 }
@@ -392,6 +427,7 @@ export function AbstractServicesProcessSection(props: AbstractSectionProps) {
       stepOne={text(content.stepOne)}
       stepTwo={text(content.stepTwo)}
       stepThree={text(content.stepThree)}
+      stepFour={text(content.stepFour) || undefined}
     />
   );
 }
@@ -405,6 +441,7 @@ export function AbstractServicesBenefitsSection(props: AbstractSectionProps) {
       benefitOne={text(content.benefitOne)}
       benefitTwo={text(content.benefitTwo)}
       benefitThree={text(content.benefitThree)}
+      benefitFour={text(content.benefitFour) || undefined}
     />
   );
 }
