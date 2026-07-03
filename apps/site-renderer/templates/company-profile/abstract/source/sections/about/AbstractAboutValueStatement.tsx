@@ -10,14 +10,16 @@ interface AbstractAboutValueStatementProps {
   valueOne?: string;
   valueTwo?: string;
   valueThree?: string;
+  valueFour?: string;
 }
 
 export function AbstractAboutValueStatement({
   title = "Pilar Keyakinan yang Menggerakkan Studio Kami",
-  description = "Kami tidak bekerja berdasarkan tren musiman. Kami berpegang teguh pada tiga kredo visual yang memastikan karya kami abadi dan berdampak.",
+  description = "Kami tidak bekerja berdasarkan tren musiman. Kami berpegang teguh pada kredo visual yang memastikan karya kami abadi dan berdampak.",
   valueOne = "Dekonstruksi Tanpa Takut: Menentang bentuk-bentuk simetris yang membosankan demi melepaskan potensi emosi murni sebuah karya seni.",
   valueTwo = "Kemanunggalan Kode & Estetika: Memastikan visual avant-garde berjalan selaras dengan performa responsif, ramah seluler, dan aksesibilitas tinggi.",
-  valueThree = "Semiotika Dampak Bisnis: Menyalurkan keliaran artistik untuk menggerakkan indikator konversi bisnis secara positif dan terukur."
+  valueThree = "Semiotika Dampak Bisnis: Menyalurkan keliaran artistik untuk menggerakkan indikator konversi bisnis secara positif dan terukur.",
+  valueFour
 }: AbstractAboutValueStatementProps) {
   return (
     <section className="relative bg-[#0d0d0d] text-white py-24 px-6 border-b-8 border-white overflow-hidden">
@@ -40,8 +42,8 @@ export function AbstractAboutValueStatement({
           </p>
         </div>
 
-        {/* Pillars Layout (3 columns of offset text cards) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* Pillars Layout: 3 atau 4 kolom tergantung apakah valueFour diisi */}
+        <div className={`grid grid-cols-1 md:grid-cols-2 ${valueFour ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-8`}>
           
           {/* Pillar 1 */}
           <motion.div 
@@ -108,6 +110,30 @@ export function AbstractAboutValueStatement({
               </div>
             </div>
           </motion.div>
+
+          {/* Pillar 4 (opsional) */}
+          {valueFour && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="relative"
+            >
+              <div className="absolute inset-0 bg-[#F56B71] transform -rotate-1 -translate-x-2 translate-y-2 border-2 border-white" />
+              <div className="relative bg-black border-2 border-white p-8 flex flex-col justify-between min-h-[280px]">
+                <span className="font-mono text-5xl font-black text-[#F56B71] block mb-6">04/</span>
+                <div>
+                  <h3 className="font-mono text-lg font-black uppercase tracking-tight text-white mb-3">
+                    {valueFour.split(":")[0]}
+                  </h3>
+                  <p className="text-neutral-400 font-sans text-xs leading-relaxed">
+                    {valueFour.split(":").slice(1).join(":") || valueFour}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
         </div>
 

@@ -392,6 +392,7 @@ export function PremiumAboutValueStatementSection(props: PremiumSectionProps) {
       valueOne={text(content.valueOne)}
       valueTwo={text(content.valueTwo)}
       valueThree={text(content.valueThree)}
+      valueFour={text(content.valueFour) || undefined}
     />
   );
 }
@@ -429,6 +430,7 @@ export function PremiumServicesProcessSection(props: PremiumSectionProps) {
       stepOne={text(content.stepOne)}
       stepTwo={text(content.stepTwo)}
       stepThree={text(content.stepThree)}
+      stepFour={text(content.stepFour) || undefined}
     />
   );
 }
@@ -442,6 +444,7 @@ export function PremiumServicesBenefitsSection(props: PremiumSectionProps) {
       benefitOne={text(content.benefitOne)}
       benefitTwo={text(content.benefitTwo)}
       benefitThree={text(content.benefitThree)}
+      benefitFour={text(content.benefitFour) || undefined}
     />
   );
 }

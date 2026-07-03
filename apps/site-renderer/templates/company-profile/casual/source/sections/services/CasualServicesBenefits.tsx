@@ -9,14 +9,16 @@ export interface CasualServicesBenefitsProps {
   benefitOne?: string;
   benefitTwo?: string;
   benefitThree?: string;
+  benefitFour?: string;
 }
 
 export function CasualServicesBenefits({
   title = 'Mengapa Mempercayakan Visual Brand Pada Kami?',
-  description = 'Bekerja sama dengan Ruang Karsa berarti kamu menghemat waktu dan tenaga berharga, sekaligus mendapatkan kualitas terbaik yang didukung oleh 3 pilar manfaat utama.',
+  description = 'Bekerja sama dengan Ruang Karsa berarti kamu menghemat waktu dan tenaga berharga, sekaligus mendapatkan kualitas terbaik yang didukung oleh pilar-pilar manfaat utama.',
   benefitOne = 'Tanpa Jargon Teknis — Komunikasi yang membumi, bersahabat, dan gampang dimengerti oleh pemula sekalipun.',
   benefitTwo = 'Bimbingan Sesi Diskusi — Kamu dilibatkan penuh dalam proses penentuan konsep, bukan sekadar terima jadi.',
   benefitThree = 'Aset Hak Milik Penuh — Seluruh file master kami serahkan utuh tanpa ada biaya tambahan lisensi di kemudian hari.',
+  benefitFour,
 }: CasualServicesBenefitsProps) {
   
   const parseBenefit = (benefit: string) => {
@@ -30,6 +32,7 @@ export function CasualServicesBenefits({
   const b1 = parseBenefit(benefitOne);
   const b2 = parseBenefit(benefitTwo);
   const b3 = parseBenefit(benefitThree);
+  const b4 = benefitFour ? parseBenefit(benefitFour) : null;
 
   return (
     <section id="CasualServicesBenefits" className="py-20 bg-gray-50 relative overflow-hidden">
@@ -51,8 +54,8 @@ export function CasualServicesBenefits({
           </p>
         </div>
 
-        {/* 3 Playful columns of benefits */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        {/* Playful columns of benefits: 3 atau 4 tergantung apakah benefitFour diisi */}
+        <div className={`grid grid-cols-1 md:grid-cols-2 ${b4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-8 max-w-5xl mx-auto`}>
           
           {/* Benefit One */}
           <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-sm hover:shadow-md transition-shadow relative">
@@ -98,6 +101,23 @@ export function CasualServicesBenefits({
               </p>
             )}
           </div>
+
+          {/* Benefit Four (opsional) */}
+          {b4 && (
+            <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-sm hover:shadow-md transition-shadow relative">
+              <div className="w-12 h-12 rounded-2xl bg-[#649FF6]/10 flex items-center justify-center text-[#649FF6] mb-6">
+                <FileCode className="w-6 h-6" />
+              </div>
+              <h3 className="font-sans font-extrabold text-lg text-gray-950 mb-3">
+                {b4.headline}
+              </h3>
+              {b4.body && (
+                <p className="font-sans text-xs sm:text-sm text-gray-600 leading-relaxed">
+                  {b4.body}
+                </p>
+              )}
+            </div>
+          )}
 
         </div>
 

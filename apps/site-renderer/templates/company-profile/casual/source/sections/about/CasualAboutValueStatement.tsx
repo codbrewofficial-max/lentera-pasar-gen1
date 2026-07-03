@@ -9,14 +9,16 @@ export interface CasualAboutValueStatementProps {
   valueOne?: string;
   valueTwo?: string;
   valueThree?: string;
+  valueFour?: string;
 }
 
 export function CasualAboutValueStatement({
   title = 'Prinsip Utama yang Kami Pegang Teguh',
-  description = 'Dalam bekerja, ada 3 nilai mendasar yang selalu menjadi acuan kami untuk memastikan setiap karya yang dihasilkan tidak hanya indah dilihat, tetapi juga membawa dampak nyata dan disukai pelanggan.',
+  description = 'Dalam bekerja, ada beberapa nilai mendasar yang selalu menjadi acuan kami untuk memastikan setiap karya yang dihasilkan tidak hanya indah dilihat, tetapi juga membawa dampak nyata dan disukai pelanggan.',
   valueOne = 'Keterbukaan Tanpa Batas — Berkomunikasi ramah layaknya sahabat karib',
   valueTwo = 'Autentisitas Sejati — Mendesain sesuai esensi unik brand jualanmu',
   valueThree = 'Dampak yang Terukur — Fokus mendongkrak omset & keterlibatan pembeli',
+  valueFour,
 }: CasualAboutValueStatementProps) {
   
   // Parse the values to split label and explanation if separated by " — "
@@ -31,6 +33,7 @@ export function CasualAboutValueStatement({
   const v1 = parseVal(valueOne);
   const v2 = parseVal(valueTwo);
   const v3 = parseVal(valueThree);
+  const v4 = valueFour ? parseVal(valueFour) : null;
 
   return (
     <section id="CasualAboutValueStatement" className="py-20 bg-gray-50 relative overflow-hidden">
@@ -52,8 +55,8 @@ export function CasualAboutValueStatement({
           </p>
         </div>
 
-        {/* 3 Large Playful Bento Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        {/* Playful Bento Cards: 3 atau 4 tergantung apakah valueFour diisi */}
+        <div className={`grid grid-cols-1 md:grid-cols-2 ${v4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-8 max-w-6xl mx-auto`}>
           
           {/* Value One Card */}
           <div className="bg-white rounded-[36px] p-8 border-2 border-[#649FF6]/20 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 relative overflow-hidden flex flex-col justify-between">
@@ -117,6 +120,29 @@ export function CasualAboutValueStatement({
               PRINSIP 03 • IMPACTFUL
             </div>
           </div>
+
+          {/* Value Four Card (opsional) */}
+          {v4 && (
+            <div className="bg-white rounded-[36px] p-8 border-2 border-[#649FF6]/20 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 relative overflow-hidden flex flex-col justify-between">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-[#649FF6]/10 rounded-bl-[100px] pointer-events-none" />
+              <div className="space-y-4">
+                <div className="w-12 h-12 rounded-2xl bg-[#649FF6] flex items-center justify-center text-white shadow-md shadow-[#649FF6]/20">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <h3 className="font-sans font-extrabold text-xl text-gray-950">
+                  {v4.main}
+                </h3>
+                {v4.sub && (
+                  <p className="font-sans text-xs sm:text-sm text-gray-600 leading-relaxed">
+                    {v4.sub}
+                  </p>
+                )}
+              </div>
+              <div className="pt-6 font-mono text-[10px] font-extrabold text-[#649FF6] tracking-wider uppercase">
+                PRINSIP 04 • CONSISTENT
+              </div>
+            </div>
+          )}
 
         </div>
 

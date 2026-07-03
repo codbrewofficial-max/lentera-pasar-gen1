@@ -10,14 +10,16 @@ interface AbstractServicesProcessProps {
   stepOne?: string;
   stepTwo?: string;
   stepThree?: string;
+  stepFour?: string;
 }
 
 export function AbstractServicesProcess({
   title = "Alur Kerja Kreatif Non-Linear Kami",
-  description = "Kami meyakini kebebasan berpikir tapi tetap menjaga kedisiplinan eksekusi. Berikut tiga tahapan terstruktur bagaimana kami mewujudkan mahakarya Anda.",
+  description = "Kami meyakini kebebasan berpikir tapi tetap menjaga kedisiplinan eksekusi. Berikut tahapan terstruktur bagaimana kami mewujudkan mahakarya Anda.",
   stepOne = "Tahap Dekonstruksi & Riset Semiotika: Kami membedah visi brand Anda, mempelajari medan kompetitor, lalu meluncurkan draf konsep asimetris eksperimental pertama.",
   stepTwo = "Tahap Rekayasa Visual & Coding Berkinerja Tinggi: Tim desainer dan developer kami bekerja sinkron untuk mematangkan visual layout berani serta mengoptimasi performa situs web.",
-  stepThree = "Tahap Kalibrasi & Peluncuran Pasar: Kami melakukan uji performa, penyesuaian detail tipografi, dan menyerahkan kendali penuh situs web kepada Anda."
+  stepThree = "Tahap Kalibrasi & Peluncuran Pasar: Kami melakukan uji performa, penyesuaian detail tipografi, dan menyerahkan kendali penuh situs web kepada Anda.",
+  stepFour
 }: AbstractServicesProcessProps) {
   return (
     <section className="relative bg-[#111111] text-white py-24 px-6 border-b-8 border-white overflow-hidden">
@@ -40,8 +42,8 @@ export function AbstractServicesProcess({
           </p>
         </div>
 
-        {/* Steps Layout (3 cards stacked or row with line connection) */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 relative">
+        {/* Steps Layout: 3 atau 4 kolom tergantung apakah stepFour diisi */}
+        <div className={`grid grid-cols-1 md:grid-cols-2 ${stepFour ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-12 relative`}>
           
           {/* Connecting line */}
           <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-neutral-800 hidden lg:block -z-10 transform -translate-y-1/2" />
@@ -141,6 +143,40 @@ export function AbstractServicesProcess({
               </div>
             </div>
           </motion.div>
+
+          {/* Step 4 (opsional) */}
+          {stepFour && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="relative group"
+            >
+              {/* Background block offset */}
+              <div className="absolute inset-0 bg-[#F56B71] transform skew-y-1 translate-x-2 translate-y-2 border-2 border-white transition-transform group-hover:translate-x-3 group-hover:translate-y-3" />
+              
+              <div className="relative bg-black border-2 border-white p-8 min-h-[320px] flex flex-col justify-between">
+                <div className="flex justify-between items-center mb-6">
+                  <div className="w-10 h-10 bg-[#F56B71] text-black font-mono font-black text-sm flex items-center justify-center border border-white">
+                    04
+                  </div>
+                  <span className="font-mono text-[9px] text-neutral-500 uppercase">
+                    {"// HANDOVER"}
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className="font-mono text-lg font-black uppercase tracking-tight text-white mb-3 group-hover:text-[#F56B71] transition-colors">
+                    {stepFour.split(":")[0]}
+                  </h3>
+                  <p className="text-neutral-400 font-sans text-xs leading-relaxed">
+                    {stepFour.split(":").slice(1).join(":") || stepFour}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
         </div>
 
