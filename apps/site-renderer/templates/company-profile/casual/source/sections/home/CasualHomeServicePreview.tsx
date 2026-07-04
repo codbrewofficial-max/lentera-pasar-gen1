@@ -8,17 +8,21 @@ import { servicesData, ServiceItem } from '../../lib/dummy-data';
 export interface CasualHomeServicePreviewProps {
   title?: string;
   description?: string;
+  badge?: string;
   ctaLabel?: string;
   ctaUrl?: string;
   services?: ServiceItem[];
+  imageUrl?: string;
 }
 
 export function CasualHomeServicePreview({
   title = 'Layanan Seru untuk Majuin Bisnismu',
   description = 'Pilih paket layanan yang paling sesuai dengan kebutuhan tokomu saat ini. Mulai dari bikin identitas brand dari nol, rapihin sosmed, sampai bangun website jualan.',
+  badge = 'APA YANG KAMI BISA',
   ctaLabel = 'Lihat Semua Layanan',
   ctaUrl = '/services',
   services = servicesData,
+  imageUrl,
 }: CasualHomeServicePreviewProps) {
   
   // Mapping of icons dynamically
@@ -53,24 +57,46 @@ export function CasualHomeServicePreview({
   };
 
   return (
-    <section id="CasualHomeServicePreview" className="py-20 bg-gray-50 relative overflow-hidden">
-      {/* Decorative ambient bubble */}
-      <div className="absolute top-0 right-10 w-96 h-96 rounded-full bg-[#649FF6]/5 blur-3xl pointer-events-none" />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        
-        {/* Section Heading */}
-        <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
-          <span className="text-sm font-bold text-[#B283AF] uppercase tracking-widest block font-mono">
-            APA YANG KAMI BISA
-          </span>
-          <h2 className="font-sans font-extrabold text-3xl sm:text-4xl text-gray-950 tracking-tight">
-            {title}
-          </h2>
-          <p className="font-sans text-base text-gray-600 leading-relaxed">
-            {description}
-          </p>
+    <section id="CasualHomeServicePreview" className="bg-gray-50 relative overflow-hidden">
+      {imageUrl ? (
+        <div className="relative py-16 md:py-20 mb-4 overflow-hidden text-white">
+          <div className="absolute inset-0">
+            <img src={imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            <div className="absolute inset-0 bg-gray-950/70" />
+          </div>
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center space-y-4">
+            <span className="text-sm font-bold text-white/80 uppercase tracking-widest block font-mono">{badge}</span>
+            <h2 className="font-sans font-extrabold text-3xl sm:text-4xl tracking-tight">{title}</h2>
+            <p className="font-sans text-base text-gray-200 leading-relaxed">{description}</p>
+            {ctaLabel && (
+              <div className="pt-2">
+                <Link id="service-preview-all-cta" href={ctaUrl} className="inline-flex items-center gap-2 bg-white text-gray-900 px-7 py-3.5 rounded-full text-sm font-bold shadow-md hover:bg-gray-100 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                  <span>{ctaLabel}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
+      ) : (
+        <div className="absolute top-0 right-10 w-96 h-96 rounded-full bg-[#649FF6]/5 blur-3xl pointer-events-none" />
+      )}
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 py-12 md:py-16">
+        {!imageUrl && (
+          /* Section Heading */
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
+            <span className="text-sm font-bold text-[#B283AF] uppercase tracking-widest block font-mono">
+              {badge}
+            </span>
+            <h2 className="font-sans font-extrabold text-3xl sm:text-4xl text-gray-950 tracking-tight">
+              {title}
+            </h2>
+            <p className="font-sans text-base text-gray-600 leading-relaxed">
+              {description}
+            </p>
+          </div>
+        )}
 
         {/* Services Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
@@ -106,17 +132,19 @@ export function CasualHomeServicePreview({
           ))}
         </div>
 
-        {/* CTA Link */}
-        <div className="text-center">
-          <Link
-            id="service-preview-all-cta"
-            href={ctaUrl}
-            className="inline-flex items-center gap-2 bg-[#B283AF] text-white px-7 py-3.5 rounded-full text-sm font-bold shadow-md shadow-[#B283AF]/10 hover:bg-[#B283AF]/90 hover:scale-[1.02] active:scale-[0.98] transition-all"
-          >
-            <span>{ctaLabel}</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
+        {!imageUrl && ctaLabel && (
+          /* CTA Link */
+          <div className="text-center">
+            <Link
+              id="service-preview-all-cta"
+              href={ctaUrl}
+              className="inline-flex items-center gap-2 bg-[#B283AF] text-white px-7 py-3.5 rounded-full text-sm font-bold shadow-md shadow-[#B283AF]/10 hover:bg-[#B283AF]/90 hover:scale-[1.02] active:scale-[0.98] transition-all"
+            >
+              <span>{ctaLabel}</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        )}
 
       </div>
     </section>

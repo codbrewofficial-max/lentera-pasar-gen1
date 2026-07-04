@@ -1,102 +1,102 @@
 'use client';
 
 import React from 'react';
-import { Sparkles, Palette, Instagram, Laptop, Camera, Heart } from 'lucide-react';
+import Link from 'next/link';
+import { Palette, Instagram, Laptop, Camera, ArrowRight } from 'lucide-react';
 
 export interface CasualPortfolioCategoryProps {
   title?: string;
   description?: string;
+  badge?: string;
+  categories?: string[];
+  imageUrl?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
 }
+
+const ICONS = [Palette, Instagram, Laptop, Camera];
+const ACCENTS = ['#649FF6', '#F56B71', '#B283AF', '#649FF6'];
 
 export function CasualPortfolioCategory({
   title = 'Kategori Portofolio Kreatif',
   description = 'Kami membagi portofolio kami menjadi beberapa bidang keahlian utama untuk memudahkan kamu menemukan inspirasi visual yang cocok untuk bidang jualan tokomu.',
+  badge = 'BIDANG SPESIALISASI',
+  categories = [],
+  imageUrl,
+  ctaLabel,
+  ctaHref = '/contact',
 }: CasualPortfolioCategoryProps) {
-  
-  const categories = [
-    {
-      name: 'Branding & Kemasan',
-      desc: 'Desain logo, maskot, serta stiker & box kemasan produk jualan.',
-      icon: <Palette className="w-5 h-5 text-[#649FF6]" />,
-      color: '#649FF6',
-      bg: 'bg-[#649FF6]/10',
-      count: '42 Project selesai'
-    },
-    {
-      name: 'Sosial Media',
-      desc: 'Desain konten Instagram, video pendek TikTok, & copywriting asyik.',
-      icon: <Instagram className="w-5 h-5 text-[#F56B71]" />,
-      color: '#F56B71',
-      bg: 'bg-[#F56B71]/10',
-      count: '88 Akun tumbuh'
-    },
-    {
-      name: 'Website Desain',
-      desc: 'Landing page interaktif untuk jualan online, portofolio, dsb.',
-      icon: <Laptop className="w-5 h-5 text-[#B283AF]" />,
-      color: '#B283AF',
-      bg: 'bg-[#B283AF]/10',
-      count: '24 Situs meluncur'
-    },
-    {
-      name: 'Foto & Video Produk',
-      desc: 'Sesi dokumentasi produk dengan props estetik dan pencahayaan alami.',
-      icon: <Camera className="w-5 h-5 text-[#649FF6]" />,
-      color: '#649FF6',
-      bg: 'bg-[#649FF6]/10',
-      count: '54 Sesi foto ceria'
-    }
-  ];
+  // Kategori sekarang murni dari data Kategori Portfolio asli yang owner input di
+  // dashboard (bukan lagi 4 kartu contoh dengan angka fiktif seperti "42 Project selesai").
+  if (categories.length === 0) return null;
 
   return (
-    <section id="CasualPortfolioCategory" className="py-16 bg-gray-50 relative overflow-hidden">
-      {/* Decorative blobs */}
-      <div className="absolute top-0 right-10 w-72 h-72 bg-[#649FF6]/5 blur-3xl pointer-events-none" />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        
-        {/* Section Heading */}
-        <div className="text-center max-w-3xl mx-auto space-y-4 mb-12">
-          <span className="text-sm font-bold text-[#B283AF] uppercase tracking-widest block font-mono">
-            BIDANG SPESIALISASI
-          </span>
-          <h2 className="font-sans font-extrabold text-3xl sm:text-4xl text-gray-950 tracking-tight">
-            {title}
-          </h2>
-          <p className="font-sans text-base text-gray-600 leading-relaxed">
-            {description}
-          </p>
-        </div>
-
-        {/* 4 Category Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-          {categories.map((cat, index) => (
-            <div
-              key={cat.name}
-              className="bg-white rounded-[32px] p-6 border border-gray-100 shadow-sm hover:shadow-md hover:scale-[1.02] transition-all duration-300 flex flex-col justify-between"
-            >
-              <div className="space-y-4">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${cat.bg}`}>
-                  {cat.icon}
-                </div>
-                <div>
-                  <h4 className="font-sans font-extrabold text-base text-gray-950">
-                    {cat.name}
-                  </h4>
-                  <p className="font-sans text-xs text-gray-500 mt-1.5 leading-relaxed">
-                    {cat.desc}
-                  </p>
-                </div>
+    <section id="CasualPortfolioCategory" className="bg-gray-50 relative overflow-hidden">
+      {imageUrl ? (
+        <div className="relative py-16 md:py-20 mb-4 overflow-hidden text-white text-center">
+          <div className="absolute inset-0">
+            <img src={imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            <div className="absolute inset-0 bg-gray-950/70" />
+          </div>
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-4">
+            <span className="text-sm font-bold text-white/80 uppercase tracking-widest block font-mono">{badge}</span>
+            <h2 className="font-sans font-extrabold text-3xl sm:text-4xl tracking-tight">{title}</h2>
+            <p className="font-sans text-base text-gray-200 leading-relaxed">{description}</p>
+            {ctaLabel && (
+              <div className="pt-2">
+                <Link href={ctaHref} className="inline-flex items-center gap-2 bg-white text-gray-900 px-6 py-3 rounded-full text-sm font-bold hover:bg-gray-100 transition-all">
+                  <span>{ctaLabel}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
               </div>
-
-              <div className="mt-6 pt-3 border-t border-gray-50 flex items-center justify-between text-[10px] font-mono text-gray-400 font-bold uppercase tracking-wider">
-                <span>{cat.count}</span>
-                <Heart className="w-3.5 h-3.5 text-[#F56B71]/40 hover:text-[#F56B71] cursor-pointer" />
-              </div>
-            </div>
-          ))}
+            )}
+          </div>
         </div>
+      ) : (
+        <div className="absolute top-0 right-10 w-72 h-72 bg-[#649FF6]/5 blur-3xl pointer-events-none" />
+      )}
 
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 py-12 md:py-16">
+        {!imageUrl && (
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-12">
+            <span className="text-sm font-bold text-[#B283AF] uppercase tracking-widest block font-mono">
+              {badge}
+            </span>
+            <h2 className="font-sans font-extrabold text-3xl sm:text-4xl text-gray-950 tracking-tight">
+              {title}
+            </h2>
+            <p className="font-sans text-base text-gray-600 leading-relaxed">
+              {description}
+            </p>
+            {ctaLabel && (
+              <div className="pt-2">
+                <Link href={ctaHref} className="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-800 px-6 py-3 rounded-full text-sm font-bold transition-all">
+                  <span>{ctaLabel}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Category Cards */}
+        <div className="flex flex-wrap justify-center gap-4 max-w-5xl mx-auto">
+          {categories.map((category, index) => {
+            const Icon = ICONS[index % ICONS.length];
+            const accent = ACCENTS[index % ACCENTS.length];
+            return (
+              <div
+                key={`${category}-${index}`}
+                className="bg-white rounded-full pl-3 pr-5 py-2.5 border border-gray-100 shadow-sm hover:shadow-md hover:scale-[1.02] transition-all duration-300 flex items-center gap-3"
+              >
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: `${accent}1a` }}>
+                  <Icon className="w-4 h-4" style={{ color: accent }} />
+                </div>
+                <span className="font-sans font-bold text-sm text-gray-800">{category}</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </section>
   );

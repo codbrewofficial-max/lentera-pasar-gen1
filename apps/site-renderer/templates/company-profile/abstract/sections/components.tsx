@@ -656,6 +656,49 @@ export function AbstractContactCtaSection(props: AbstractSectionProps) {
 // Abstract — komponen hasil porting Google AI Studio untuk Website Type Company Profile.
 // Namespace "Abstract<Slot>" mengikuti konvensi yang sama dengan tema Formal, Casual, dan
 // Premium, supaya gabungan ke registry global (SectionRegistry.tsx) tidak bentrok nama.
+// ---- Global Chrome (Navbar & Footer) ----
+import { Header as AbstractSiteHeader } from "../source/shared/Header";
+import { Footer as AbstractSiteFooter } from "../source/shared/Footer";
+
+export function AbstractGlobalNavbar(props: AbstractSectionProps) {
+  const business = businessOf(props.payload);
+  const navbarItems = props.payload.navigation?.navbar?.items || [];
+  const cta = props.payload.navigation?.navbar?.cta;
+  const getHref = (path: string) => getSiteHref(props.siteSlug, path);
+  return (
+    <AbstractSiteHeader
+      siteSlug={props.siteSlug}
+      getHref={getHref}
+      businessName={text(business.name, props.payload.website.name)}
+      taglineLabel={text(business.tagline as string)}
+      logoUrl={text(business.logoUrl as string) || undefined}
+      navItems={navbarItems.length > 0 ? navbarItems : undefined}
+      ctaLabel={cta?.label || "Hubungi Kami"}
+      ctaPath={cta?.path || "/contact"}
+    />
+  );
+}
+
+export function AbstractGlobalFooter(props: AbstractSectionProps) {
+  const business = businessOf(props.payload);
+  const footerItems = props.payload.navigation?.footer?.items || [];
+  const getHref = (path: string) => getSiteHref(props.siteSlug, path);
+  return (
+    <AbstractSiteFooter
+      getHref={getHref}
+      businessName={text(business.name, props.payload.website.name)}
+      description={text(business.description as string, text(business.tagline as string))}
+      address={text(business.address as string)}
+      phone={text(business.phone as string)}
+      email={text(business.contactEmail as string)}
+      instagramUrl={text(business.instagramUrl as string) || undefined}
+      linkedinUrl={text(business.linkedinUrl as string) || undefined}
+      twitterUrl={text(business.twitterUrl as string) || undefined}
+      navItems={footerItems.length > 0 ? footerItems : undefined}
+    />
+  );
+}
+
 export const abstractSectionComponents: Record<string, AbstractSectionComponent> = {
   AbstractHomeHero: AbstractHomeHeroSection,
   AbstractHomeProfileSummary: AbstractHomeProfileSummarySection,
@@ -698,5 +741,7 @@ export const abstractSectionComponents: Record<string, AbstractSectionComponent>
   AbstractContactInformation: AbstractContactInformationSection,
   AbstractMapsLocation: AbstractMapsLocationSection,
   AbstractContactFaq: AbstractContactFaqSection,
-  AbstractContactCta: AbstractContactCtaSection
+  AbstractContactCta: AbstractContactCtaSection,
+  AbstractGlobalNavbar,
+  AbstractGlobalFooter
 };

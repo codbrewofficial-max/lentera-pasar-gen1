@@ -42,6 +42,8 @@ export const formalCompanyProfileTemplate = {
     "portfolio_detail.portfolio_detail_content": "FormalPortfolioDetailContent",
     "portfolio_detail.related_portfolios": "FormalRelatedPortfolios",
     "portfolio_detail.portfolio_detail_cta": "FormalPortfolioDetailCta",
+    "global.navbar": "FormalGlobalNavbar",
+    "global.footer": "FormalGlobalFooter",
 
     "contact.contact_hero": "FormalContactHero",
     "contact.contact_information": "FormalContactInformation",

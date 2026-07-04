@@ -8,40 +8,75 @@ import { ArrowRight, Bookmark, Calendar, User } from 'lucide-react';
 export interface CasualFeaturedArticleProps {
   title?: string;
   description?: string;
+  badge?: string;
   article?: ArticleItem;
   articlesHref?: string;
+  imageUrl?: string;
+  ctaLabel?: string;
 }
 
 export function CasualFeaturedArticle({
   title = 'Artikel Sorotan Terpopuler Pekan Ini',
   description = 'Rangkuman ide terpanas yang paling banyak didiskusikan pemilik usaha lokal saat ini. Baca selengkapnya untuk memperkaya wawasan taktik jualan tokomu.',
+  badge = 'SOROTAN REDAKSI',
   article: featuredArticle,
   articlesHref = '/articles',
+  imageUrl,
+  ctaLabel,
 }: CasualFeaturedArticleProps) {
   
   // Showcase the first article as featured
   const featured = featuredArticle || articlesData[0];
 
   return (
-    <section id="CasualFeaturedArticle" className="py-16 bg-white relative overflow-hidden">
-      
-      {/* Decorative blobs */}
-      <div className="absolute top-1/4 left-10 w-80 h-80 rounded-full bg-[#B283AF]/5 blur-3xl pointer-events-none" />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        
-        {/* Section Heading */}
-        <div className="text-center max-w-3xl mx-auto space-y-4 mb-12">
-          <span className="text-sm font-bold text-[#F56B71] uppercase tracking-widest block font-mono">
-            SOROTAN REDAKSI
-          </span>
-          <h2 className="font-sans font-extrabold text-3xl sm:text-4xl text-gray-950 tracking-tight">
-            {title}
-          </h2>
-          <p className="font-sans text-base text-gray-600 leading-relaxed">
-            {description}
-          </p>
+    <section id="CasualFeaturedArticle" className="bg-white relative overflow-hidden">
+      {imageUrl ? (
+        <div className="relative py-16 md:py-20 mb-4 overflow-hidden text-white text-center">
+          <div className="absolute inset-0">
+            <img src={imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            <div className="absolute inset-0 bg-gray-950/70" />
+          </div>
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-4">
+            <span className="text-sm font-bold text-white/80 uppercase tracking-widest block font-mono">{badge}</span>
+            <h2 className="font-sans font-extrabold text-3xl sm:text-4xl tracking-tight">{title}</h2>
+            <p className="font-sans text-base text-gray-200 leading-relaxed">{description}</p>
+            {ctaLabel && (
+              <div className="pt-2">
+                <Link href={articlesHref} className="inline-flex items-center gap-2 bg-white text-gray-900 px-6 py-3 rounded-full text-sm font-bold hover:bg-gray-100 transition-all">
+                  <span>{ctaLabel}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
+      ) : (
+        <div className="absolute top-1/4 left-10 w-80 h-80 rounded-full bg-[#B283AF]/5 blur-3xl pointer-events-none" />
+      )}
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 py-12 md:py-16">
+        {!imageUrl && (
+          /* Section Heading */
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-12">
+            <span className="text-sm font-bold text-[#F56B71] uppercase tracking-widest block font-mono">
+              {badge}
+            </span>
+            <h2 className="font-sans font-extrabold text-3xl sm:text-4xl text-gray-950 tracking-tight">
+              {title}
+            </h2>
+            <p className="font-sans text-base text-gray-600 leading-relaxed">
+              {description}
+            </p>
+            {ctaLabel && (
+              <div className="pt-2">
+                <Link href={articlesHref} className="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-800 px-6 py-3 rounded-full text-sm font-bold transition-all">
+                  <span>{ctaLabel}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Featured Wide Card */}
         {featured ? (

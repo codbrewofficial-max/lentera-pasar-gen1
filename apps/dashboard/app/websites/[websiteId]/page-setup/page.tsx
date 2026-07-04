@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
 import BooleanRadio from "@/components/ui/BooleanRadio";
 import EnhancedTextarea from "@/components/ui/EnhancedTextarea";
-import { AlertCircle, CheckCircle, ExternalLink, Info, Save } from "lucide-react";
+import { AlertCircle, CheckCircle, ExternalLink, Info, Save, LayoutTemplate, PanelBottom, Sparkles } from "lucide-react";
 
 type PageSetupItem = {
   id: string;
@@ -28,10 +28,21 @@ type PageSetupItem = {
   oldSlugsCount?: number;
 };
 
+type ChromeInfo = { theme: string | null; component: string | null };
+
 type PageSetupResponse = {
   pages: PageSetupItem[];
   navbarItems: Array<{ pageKey: string; label: string; path: string }>;
   footerItems: Array<{ pageKey: string; label: string; path: string }>;
+  navbarChrome?: ChromeInfo;
+  footerChrome?: ChromeInfo;
+};
+
+const THEME_LABELS: Record<string, string> = {
+  formal: "Formal",
+  casual: "Casual",
+  premium: "Premium",
+  abstract: "Abstract"
 };
 
 const normalizeSlug = (value: string) =>
@@ -43,11 +54,14 @@ const normalizeSlug = (value: string) =>
 
 export default function PageSetupPage() {
   const params = useParams();
+  const router = useRouter();
   const websiteId = params?.websiteId as string;
 
   const [pages, setPages] = useState<PageSetupItem[]>([]);
   const [navbarCount, setNavbarCount] = useState(0);
   const [footerCount, setFooterCount] = useState(0);
+  const [navbarChrome, setNavbarChrome] = useState<ChromeInfo | null>(null);
+  const [footerChrome, setFooterChrome] = useState<ChromeInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
@@ -61,6 +75,8 @@ export default function PageSetupPage() {
       setPages(res.data.pages || []);
       setNavbarCount(res.data.navbarItems?.length || 0);
       setFooterCount(res.data.footerItems?.length || 0);
+      setNavbarChrome(res.data.navbarChrome || null);
+      setFooterChrome(res.data.footerChrome || null);
     } catch (err: any) {
       setErrorMsg(err.error?.message || "Gagal memuat pengaturan halaman dan menu.");
     } finally {
@@ -165,6 +181,58 @@ export default function PageSetupPage() {
             <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Total Halaman Internal</p>
             <p className="mt-1 text-2xl font-black text-slate-900">{pages.length}</p>
             <p className="mt-1 text-xs text-slate-500">Termasuk template detail artikel.</p>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-4 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-[#649FF6]" />
+            <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">Tampilan Navbar & Footer</h2>
+          </div>
+          <p className="mb-5 text-xs text-slate-500 leading-relaxed">
+            Navbar dan Footer bisa dipilih tampilannya secara bebas — bahkan boleh beda tema satu sama lain (misal Navbar
+            gaya Formal dipasangkan dengan Footer gaya Casual). Isi menu, urutan, dan label tetap diatur di daftar halaman
+            di bawah; di sini kamu cuma memilih gaya visualnya.
+          </p>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#649FF6] shadow-sm">
+                  <LayoutTemplate className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-800">Navbar</p>
+                  <p className="text-xs text-slate-500">
+                    {navbarChrome?.theme ? `Tampilan saat ini: ${THEME_LABELS[navbarChrome.theme] || navbarChrome.theme}` : "Belum dipilih — memakai tampilan bawaan"}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => router.push(`/websites/${websiteId}/sections/global.navbar/choose`)}
+                className="shrink-0 rounded-xl bg-[#649FF6] px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[#4f8be6]"
+              >
+                Pilih Tampilan
+              </button>
+            </div>
+            <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#B283AF] shadow-sm">
+                  <PanelBottom className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-800">Footer</p>
+                  <p className="text-xs text-slate-500">
+                    {footerChrome?.theme ? `Tampilan saat ini: ${THEME_LABELS[footerChrome.theme] || footerChrome.theme}` : "Belum dipilih — memakai tampilan bawaan"}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => router.push(`/websites/${websiteId}/sections/global.footer/choose`)}
+                className="shrink-0 rounded-xl bg-[#B283AF] px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[#9d6f98]"
+              >
+                Pilih Tampilan
+              </button>
+            </div>
           </div>
         </div>
 

@@ -8,45 +8,84 @@ import { stripHtmlToText } from '@/components/content/RichHtml';
 export interface CasualPortfolioGridProps {
   title?: string;
   description?: string;
+  badge?: string;
   portfolios?: PortfolioItem[];
   portfolioDetailHref?: (id: string) => string;
+  imageUrl?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
 }
 
 export function CasualPortfolioGrid({
   title = 'Inspirasi Karya Pilihan',
   description = 'Gunakan filter di bawah ini untuk menjelajahi karya tim kreatif kami. Temukan konsep visual yang paling cocok dengan kepribadian dan nilai unik dari tokomu.',
+  badge = 'GALERI HASIL KARYA',
   portfolios = portfolioData,
   portfolioDetailHref,
+  imageUrl,
+  ctaLabel,
+  ctaHref = '/contact',
 }: CasualPortfolioGridProps) {
   
   const [activeCategory, setActiveCategory] = useState<string>('Semua');
 
-  const categories = ['Semua', 'Branding & Kemasan', 'Sosial Media', 'Website Desain', 'Kampanye Foto'];
+  // Daftar filter kategori sekarang murni dari kategori yang benar-benar dipakai di
+  // data Portfolio asli (bukan lagi 5 nama kategori contoh yang di-hardcode).
+  const categories = ['Semua', ...Array.from(new Set(portfolios.map((item) => item.category).filter(Boolean)))];
 
   const filteredPortfolios = activeCategory === 'Semua'
     ? portfolios
     : portfolios.filter(item => item.category === activeCategory);
 
   return (
-    <section id="CasualPortfolioGrid" className="py-20 bg-white relative overflow-hidden">
-      
-      {/* Decorative Blob */}
-      <div className="absolute top-1/3 left-0 -translate-x-1/4 w-80 h-80 rounded-full bg-[#649FF6]/5 blur-3xl pointer-events-none" />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        
-        {/* Section Heading */}
-        <div className="text-center max-w-3xl mx-auto space-y-4 mb-12">
-          <span className="text-sm font-bold text-[#649FF6] uppercase tracking-widest block font-mono">
-            GALERI HASIL KARYA
-          </span>
-          <h2 className="font-sans font-extrabold text-3xl sm:text-4xl text-gray-950 tracking-tight">
-            {title}
-          </h2>
-          <p className="font-sans text-base text-gray-600 leading-relaxed">
-            {description}
-          </p>
+    <section id="CasualPortfolioGrid" className="bg-white relative overflow-hidden">
+      {imageUrl ? (
+        <div className="relative py-16 md:py-20 mb-4 overflow-hidden text-white text-center">
+          <div className="absolute inset-0">
+            <img src={imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            <div className="absolute inset-0 bg-gray-950/70" />
+          </div>
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-4">
+            <span className="text-sm font-bold text-white/80 uppercase tracking-widest block font-mono">{badge}</span>
+            <h2 className="font-sans font-extrabold text-3xl sm:text-4xl tracking-tight">{title}</h2>
+            <p className="font-sans text-base text-gray-200 leading-relaxed">{description}</p>
+            {ctaLabel && (
+              <div className="pt-2">
+                <a href={ctaHref} className="inline-flex items-center gap-2 bg-white text-gray-900 px-6 py-3 rounded-full text-sm font-bold hover:bg-gray-100 transition-all">
+                  <span>{ctaLabel}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+              </div>
+            )}
+          </div>
         </div>
+      ) : (
+        <div className="absolute top-1/3 left-0 -translate-x-1/4 w-80 h-80 rounded-full bg-[#649FF6]/5 blur-3xl pointer-events-none" />
+      )}
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 py-12 md:py-16">
+        {!imageUrl && (
+          /* Section Heading */
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-12">
+            <span className="text-sm font-bold text-[#649FF6] uppercase tracking-widest block font-mono">
+              {badge}
+            </span>
+            <h2 className="font-sans font-extrabold text-3xl sm:text-4xl text-gray-950 tracking-tight">
+              {title}
+            </h2>
+            <p className="font-sans text-base text-gray-600 leading-relaxed">
+              {description}
+            </p>
+            {ctaLabel && (
+              <div className="pt-2">
+                <a href={ctaHref} className="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-800 px-6 py-3 rounded-full text-sm font-bold transition-all">
+                  <span>{ctaLabel}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Categories Interactive Pill Filter */}
         <div className="flex flex-wrap justify-center items-center gap-2 mb-12 max-w-4xl mx-auto">

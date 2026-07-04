@@ -7,6 +7,7 @@ interface PortfolioDetailCtaProps {
   description?: string;
   ctaLabel?: string;
   ctaHref?: string;
+  imageUrl?: string;
 }
 
 export const PortfolioDetailCta: React.FC<PortfolioDetailCtaProps> = ({
@@ -14,8 +15,15 @@ export const PortfolioDetailCta: React.FC<PortfolioDetailCtaProps> = ({
   description = "Diskusikan kebutuhan Anda bersama tim kami untuk mendapatkan solusi yang tepat.",
   ctaLabel = "Hubungi Kami",
   ctaHref = "/contact",
+  imageUrl,
 }) => (
   <section id="portfolio-detail-cta" className="py-16 bg-slate-900 text-white relative overflow-hidden">
+    {imageUrl && (
+      <div className="absolute inset-0">
+        <img src={imageUrl} alt="" className="w-full h-full object-cover opacity-25" referrerPolicy="no-referrer" />
+        <div className="absolute inset-0 bg-slate-950/80" />
+      </div>
+    )}
     <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#1E3A5F_1px,transparent_1px)] [background-size:24px_24px]" />
     <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
       <h2 className="text-2xl md:text-3xl font-semibold tracking-tight mb-3 text-white">{title}</h2>

@@ -8,16 +8,28 @@ interface PremiumHomeCtaContactProps {
   description?: string;
   ctaLabel?: string;
   ctaUrl?: string;
+  imageUrl?: string;
+  email?: string;
+  whatsapp?: string;
 }
 
 export function PremiumHomeCtaContact({
   title = "Mari Diskusikan Mahakarya Anda",
   description = "Kami mengundang Anda untuk berkunjung ke studio kami di Kebayoran Baru atau menjadwalkan panggilan pribadi jarak jauh bersama Principal Architect kami.",
   ctaLabel = "JADWALKAN KONSULTASI PRIVAT",
-  ctaUrl = "/contact"
+  ctaUrl = "/contact",
+  imageUrl,
+  email,
+  whatsapp,
 }: PremiumHomeCtaContactProps) {
   return (
     <section id="premium-home-cta-contact" className="py-24 md:py-32 bg-[#FAF9F6] text-[#121212] relative overflow-hidden">
+      {imageUrl && (
+        <div className="absolute inset-0">
+          <img src={imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+          <div className="absolute inset-0 bg-stone-950/80" />
+        </div>
+      )}
       {/* Delicate line decorations */}
       <div className="absolute top-0 left-10 w-[1px] h-full bg-stone-200/50" />
       <div className="absolute top-0 right-10 w-[1px] h-full bg-stone-200/50" />
@@ -28,11 +40,11 @@ export function PremiumHomeCtaContact({
           <span className="text-[10px] font-bold tracking-[0.3em] text-[#B283AF] uppercase">MULAI DIALOG</span>
         </div>
 
-        <h2 className="text-3xl md:text-5xl font-serif font-light tracking-tight text-stone-900 leading-tight">
+        <h2 className={`text-3xl md:text-5xl font-serif font-light tracking-tight ${imageUrl ? 'text-white' : 'text-stone-900'} leading-tight`}>
           {title}
         </h2>
 
-        <p className="text-stone-600 text-sm md:text-base leading-relaxed max-w-2xl mx-auto font-sans font-light">
+        <p className={`text-sm md:text-base leading-relaxed max-w-2xl mx-auto font-sans font-light ${imageUrl ? "text-stone-200" : "text-stone-600"}`}>
           {description}
         </p>
 
@@ -47,11 +59,13 @@ export function PremiumHomeCtaContact({
           </a>
         </div>
 
-        <div className="pt-8 flex items-center justify-center space-x-6 text-[10px] tracking-widest text-stone-400 uppercase font-mono">
-          <span>EMAIL: HELLO@NISKALA-ATELIER.COM</span>
-          <span>•</span>
-          <span>WHATSAPP: +62 811 900 9900</span>
-        </div>
+        {(email || whatsapp) && (
+          <div className="pt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[10px] tracking-widest text-stone-400 uppercase font-mono">
+            {email && <span>EMAIL: {email}</span>}
+            {email && whatsapp && <span>•</span>}
+            {whatsapp && <span>WHATSAPP: {whatsapp}</span>}
+          </div>
+        )}
       </div>
     </section>
   );

@@ -9,6 +9,7 @@ export interface CasualHomeCtaContactProps {
   description?: string;
   ctaLabel?: string;
   ctaUrl?: string;
+  imageUrl?: string;
 }
 
 export function CasualHomeCtaContact({
@@ -16,6 +17,7 @@ export function CasualHomeCtaContact({
   description = 'Punya ide gila tapi bingung visualisasinya? Atau mau curhat soal sosmed jualanmu yang sepi? Tenang, tim kreatif kami siap dengerin curhatanmu gratis.',
   ctaLabel = 'Hubungi Lewat WhatsApp',
   ctaUrl = 'https://wa.me/628123456789',
+  imageUrl,
 }: CasualHomeCtaContactProps) {
   return (
     <section id="CasualHomeCtaContact" className="py-16 md:py-20 bg-white relative overflow-hidden">
@@ -29,7 +31,21 @@ export function CasualHomeCtaContact({
         {/* Playful container card with border dash / organic feel */}
         <div className="bg-gradient-to-tr from-[#649FF6]/20 via-[#B283AF]/10 to-[#F56B71]/10 rounded-[48px] p-8 md:p-14 text-center border-2 border-white/50 shadow-xl relative overflow-hidden">
           
-          {/* Fun elements inside card */}
+                    
+          {imageUrl && (
+          
+            <div className="absolute inset-0">
+          
+              <img src={imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+          
+              <div className="absolute inset-0 bg-gray-950/70" />
+          
+            </div>
+          
+          )}
+          
+          <div className="relative z-10">
+{/* Fun elements inside card */}
           <div className="absolute top-6 left-8 text-2xl select-none rotate-[-15deg] hidden sm:block">☕</div>
           <div className="absolute bottom-8 right-8 text-2xl select-none rotate-[15deg] hidden sm:block">💡</div>
 
@@ -75,6 +91,8 @@ export function CasualHomeCtaContact({
               *Diskusi bisa tatap muka di Bandung atau online via Google Meet/Zoom
             </p>
           </div>
+
+        </div>
 
         </div>
 

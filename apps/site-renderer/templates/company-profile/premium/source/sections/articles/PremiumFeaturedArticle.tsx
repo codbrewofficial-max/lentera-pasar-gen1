@@ -7,31 +7,59 @@ import { defaultArticles, ArticleItem } from '../../lib/dummy-data';
 interface PremiumFeaturedArticleProps {
   title?: string;
   description?: string;
+  badge?: string;
   article?: ArticleItem;
   articlesHref?: string;
+  imageUrl?: string;
+  ctaLabel?: string;
 }
 
 export function PremiumFeaturedArticle({
   title = "Sorotan Redaksi Jurnal",
   description = "Artikel terpilih bulan ini mengupas pergeseran arti kemewahan spasial dalam arsitektur tropis kontemporer.",
+  badge = "UNGGULAN UTAMA",
   article = defaultArticles[0],
-  articlesHref = '/articles'
+  articlesHref = '/articles',
+  imageUrl,
+  ctaLabel,
 }: PremiumFeaturedArticleProps) {
   if (!article) return null;
 
   return (
-    <section id="premium-featured-article" className="py-24 md:py-32 bg-[#FAF9F6] text-[#121212] border-t border-stone-200/50">
-      <div className="max-w-7xl mx-auto px-6">
-        {/* Section Title */}
-        <div className="mb-12 flex items-center justify-between border-b border-stone-200 pb-4">
-          <div className="space-y-1">
-            <span className="text-[10px] font-bold tracking-[0.3em] text-[#F56B71] uppercase block">UNGGULAN UTAMA</span>
-            <h2 className="text-xl font-serif text-stone-900">{title}</h2>
+    <section id="premium-featured-article" className="bg-[#FAF9F6] text-[#121212] border-t border-stone-200/50 relative overflow-hidden">
+      {imageUrl ? (
+        <div className="relative py-16 md:py-20 mb-4 overflow-hidden text-white text-center">
+          <div className="absolute inset-0">
+            <img src={imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            <div className="absolute inset-0 bg-stone-950/75" />
           </div>
-          <span className="text-xs text-stone-400 font-sans font-light hidden sm:block">
-            {description}
-          </span>
+          <div className="max-w-3xl mx-auto px-6 relative z-10 space-y-4">
+            <span className="text-[10px] font-bold tracking-[0.3em] text-[#F56B71] uppercase block">{badge}</span>
+            <h2 className="text-2xl md:text-4xl font-serif font-light tracking-tight">{title}</h2>
+            <p className="text-stone-200 text-sm font-sans font-light">{description}</p>
+            {ctaLabel && (
+              <div className="pt-2">
+                <a href={articlesHref} className="inline-flex items-center gap-2 text-xs font-semibold tracking-[0.25em] text-white hover:text-[#649FF6] transition-colors py-2.5 border-b border-white/30 hover:border-[#649FF6]">
+                  {ctaLabel}
+                </a>
+              </div>
+            )}
+          </div>
         </div>
+      ) : null}
+      <div className="max-w-7xl mx-auto px-6 relative z-10 py-24 md:py-32">
+        {!imageUrl && (
+          /* Section Title */
+          <div className="mb-12 flex items-center justify-between border-b border-stone-200 pb-4">
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold tracking-[0.3em] text-[#F56B71] uppercase block">{badge}</span>
+              <h2 className="text-xl font-serif text-stone-900">{title}</h2>
+            </div>
+            <span className="text-xs text-stone-400 font-sans font-light hidden sm:block">
+              {description}
+            </span>
+          </div>
+        )}
 
         {/* Feature Layout Card */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">

@@ -8,6 +8,7 @@ export interface CasualContactCtaProps {
   description?: string;
   ctaLabel?: string;
   ctaUrl?: string;
+  imageUrl?: string;
 }
 
 export function CasualContactCta({
@@ -15,6 +16,7 @@ export function CasualContactCta({
   description = 'Mumpung slot project kreatif bulan depan masih tersedia beberapa, yuk sapa kami sekarang juga sebelum kehabisan antrean! Tim kreatif desainer kami siap menyambutmu.',
   ctaLabel = 'Hubungi WhatsApp Sekarang',
   ctaUrl = 'https://wa.me/628123456789',
+  imageUrl,
 }: CasualContactCtaProps) {
   return (
     <section id="CasualContactCta" className="py-20 bg-white relative overflow-hidden">
@@ -27,7 +29,21 @@ export function CasualContactCta({
         {/* Playful Box Card */}
         <div className="bg-gradient-to-tr from-[#649FF6]/10 via-[#B283AF]/15 to-[#F56B71]/10 rounded-[48px] p-8 md:p-14 text-center border-2 border-white shadow-xl relative overflow-hidden">
           
-          <div className="max-w-2xl mx-auto space-y-6">
+                    
+          {imageUrl && (
+          
+            <div className="absolute inset-0">
+          
+              <img src={imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+          
+              <div className="absolute inset-0 bg-gray-950/70" />
+          
+            </div>
+          
+          )}
+          
+          <div className="relative z-10">
+<div className="max-w-2xl mx-auto space-y-6">
             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white text-gray-800 text-xs font-bold shadow-sm font-sans">
               <Sparkles className="w-3.5 h-3.5 text-[#F56B71] fill-[#F56B71]" />
               <span>MARI AMBIL SLOT-MU</span>
@@ -58,6 +74,8 @@ export function CasualContactCta({
               *TIDAK ADA BIAYA TERSEMBUNYI • DISKUSI GRATIS • KHUSUS UMKM LOKAL
             </span>
           </div>
+
+        </div>
 
         </div>
 

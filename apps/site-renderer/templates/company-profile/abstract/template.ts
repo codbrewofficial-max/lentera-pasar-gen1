@@ -47,6 +47,8 @@ export const abstractCompanyProfileTemplate = {
     "contact.contact_information": "AbstractContactInformation",
     "contact.maps_location": "AbstractMapsLocation",
     "contact.contact_faq": "AbstractContactFaq",
-    "contact.contact_cta": "AbstractContactCta"
+    "contact.contact_cta": "AbstractContactCta",
+    "global.navbar": "AbstractGlobalNavbar",
+    "global.footer": "AbstractGlobalFooter"
   }
 } satisfies CompanyProfileTemplateDefinition;

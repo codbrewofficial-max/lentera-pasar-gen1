@@ -373,10 +373,27 @@ const pageDashboardSummary = (page: any) => {
 };
 
 const buildNavigationContract = async (websiteId: string) => {
-  const [pages, businessProfile] = await Promise.all([
+  const [pages, businessProfile, chromeSections] = await Promise.all([
     prisma.websitePage.findMany({ where: { websiteId }, orderBy: { sortOrder: "asc" } }),
-    prisma.businessProfile.findUnique({ where: { websiteId } })
+    prisma.businessProfile.findUnique({ where: { websiteId } }),
+    // Navbar & Footer sekarang section tersendiri (slot "global.navbar" / "global.footer")
+    // yang bisa dipilih bebas lintas tema, sama seperti section lain — lihat catatan di
+    // ensureCompanyProfileStructure / COMPANY_PROFILE_SECTION_SLOTS.
+    prisma.pageSection.findMany({
+      where: { websiteId, slotKey: { in: ["global.navbar", "global.footer"] } },
+      include: { templateSection: { include: { templatePack: true } } }
+    })
   ]);
+
+  const navbarSection = chromeSections.find((section: any) => section.slotKey === "global.navbar");
+  const footerSection = chromeSections.find((section: any) => section.slotKey === "global.footer");
+  // Kalau owner belum pernah memilih tampilan Navbar/Footer, tetap null — site-renderer
+  // fallback ke tema section konten (perilaku lama) supaya website lama tidak "hilang"
+  // header/footer-nya sebelum di-migrasi.
+  const navbarTheme = navbarSection?.templateSection?.templatePack?.theme || null;
+  const footerTheme = footerSection?.templateSection?.templatePack?.theme || null;
+  const navbarComponent = navbarSection?.templateSection?.component || null;
+  const footerComponent = footerSection?.templateSection?.component || null;
 
   const publishedPages = pages.filter((page: any) => (page.isPublished ?? page.isActive) && !isDynamicDetailPage(page.pageKey));
   const navbarItems = publishedPages
@@ -420,6 +437,8 @@ const buildNavigationContract = async (websiteId: string) => {
     navbar: {
       maxItems: 6,
       items: navbarItems,
+      theme: navbarTheme,
+      component: navbarComponent,
       cta: {
         label: "Hubungi Kami",
         targetType: "page",
@@ -427,7 +446,7 @@ const buildNavigationContract = async (websiteId: string) => {
         path: publishedPages.find((page: any) => page.pageKey === "contact") ? pagePublicPath(publishedPages.find((page: any) => page.pageKey === "contact")) : "/contact"
       }
     },
-    footer: { items: footerItems },
+    footer: { items: footerItems, theme: footerTheme, component: footerComponent },
     availableTargets
   };
 };
@@ -1664,7 +1683,7 @@ const registerWebsiteRoutes = () => {
   app.get("/api/v1/websites/:websiteId/page-setup", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
     const pages = await prisma.websitePage.findMany({
-      where: { websiteId: website.id },
+      where: { websiteId: website.id, pageKey: { not: "global" } },
       include: { sections: true, _count: { select: { slugHistories: true } } },
       orderBy: { sortOrder: "asc" }
     });
@@ -1673,7 +1692,9 @@ const registerWebsiteRoutes = () => {
       pages: pages.map(pageDashboardSummary),
       navbarItems: navigation.navbar.items,
       footerItems: navigation.footer.items,
-      availableTargets: navigation.availableTargets
+      availableTargets: navigation.availableTargets,
+      navbarChrome: { theme: navigation.navbar.theme, component: navigation.navbar.component },
+      footerChrome: { theme: navigation.footer.theme, component: navigation.footer.component }
     }, "Page setup loaded");
   });
 
@@ -1771,7 +1792,7 @@ const registerWebsiteRoutes = () => {
   app.get("/api/v1/websites/:websiteId/pages", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
     const pages = await prisma.websitePage.findMany({
-      where: { websiteId: website.id },
+      where: { websiteId: website.id, pageKey: { not: "global" } },
       include: { sections: true, _count: { select: { slugHistories: true } } },
       orderBy: { sortOrder: "asc" }
     });

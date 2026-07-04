@@ -435,6 +435,7 @@ export function FormalHomeServicePreview(props: FormalSectionProps) {
       services={services}
       allServicesHref={sectionHref(props, "cta", getPageHrefByKey(props.siteSlug, props.payload.navigation, "services", "/services"))}
       allServicesLabel={text(content.ctaLabel)}
+      imageUrl={contentImage(content)}
     />
   );
 }
@@ -452,6 +453,7 @@ export function FormalHomePortfolioPreview(props: FormalSectionProps) {
       allPortfolioHref={sectionHref(props, "cta", getPageHrefByKey(props.siteSlug, props.payload.navigation, "portfolio", "/portfolio"))}
       allPortfolioLabel={text(content.ctaLabel)}
       portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)}
+      imageUrl={contentImage(content)}
     />
   );
 }
@@ -477,6 +479,9 @@ export function FormalHomeTrustProof(props: FormalSectionProps) {
       testimonials={testimonials}
       metrics={metrics}
       brands={brands}
+      imageUrl={contentImage(content)}
+      ctaLabel={text(content.ctaLabel)}
+      ctaHref={sectionHref(props, "cta", "/contact")}
     />
   );
 }
@@ -490,6 +495,7 @@ export function FormalHomeCtaContact(props: FormalSectionProps) {
       description={text(content.description)}
       primaryCtaLabel={text(content.ctaLabel)}
       primaryCtaHref={sectionHref(props, "cta", "/contact")}
+      imageUrl={contentImage(content)}
     />
   );
 }
@@ -517,6 +523,9 @@ export function FormalAboutHistoryTimeline(props: FormalSectionProps) {
       subtitle={text(content.description)}
       badge={text(content.badge)}
       items={timelineFor(props.section)}
+      imageUrl={contentImage(content)}
+      ctaLabel={text(content.ctaLabel)}
+      ctaHref={sectionHref(props, "cta", "/contact")}
     />
   );
 }
@@ -535,6 +544,9 @@ export function FormalAboutVisionMission(props: FormalSectionProps) {
       missionTitle={text(content.missionTitle)}
       vision={text(content.vision, company.vision)}
       mission={text(content.mission, missionFallback)}
+      imageUrl={contentImage(content)}
+      ctaLabel={text(content.ctaLabel)}
+      ctaHref={sectionHref(props, "cta", "/contact")}
     />
   );
 }
@@ -547,6 +559,9 @@ export function FormalAboutValueStatement(props: FormalSectionProps) {
       subtitle={text(content.description)}
       badge={text(content.badge)}
       values={valuesFor(props.section)}
+      imageUrl={contentImage(content)}
+      ctaLabel={text(content.ctaLabel)}
+      ctaHref={sectionHref(props, "cta", "/contact")}
     />
   );
 }
@@ -566,12 +581,12 @@ export function FormalAboutTeamHighlight(props: FormalSectionProps) {
 
 export function FormalServicesHero(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiServicesHero title={text(content.title)} subtitle={text(content.description)} badge={text(content.badge)} />;
+  return <AiServicesHero title={text(content.title)} subtitle={text(content.description)} badge={text(content.badge)} imageUrl={contentImage(content)}/>;
 }
 
 export function FormalServicesGrid(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiServicesGrid title={text(content.title)} subtitle={text(content.description)} badge={text(content.badge)} services={(props.section.data?.services || []).map(mapService)} />;
+  return <AiServicesGrid title={text(content.title)} subtitle={text(content.description)} badge={text(content.badge)} services={(props.section.data?.services || []).map(mapService)} imageUrl={contentImage(content)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} />;
 }
 
 export function FormalServicesProcess(props: FormalSectionProps) {
@@ -586,24 +601,24 @@ export function FormalServicesBenefits(props: FormalSectionProps) {
 
 export function FormalServicesFaq(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiServicesFaq title={text(content.title)} subtitle={text(content.description)} badge={text(content.badge)} faqs={faqsForPage(props, ["services", "service", "general", "umum"]).length > 0 ? faqsForPage(props, ["services", "service", "general", "umum"]) : faqsFor(props.section)} />;
+  return <AiServicesFaq title={text(content.title)} subtitle={text(content.description)} badge={text(content.badge)} faqs={faqsForPage(props, ["services", "service", "general", "umum"]).length > 0 ? faqsForPage(props, ["services", "service", "general", "umum"]) : faqsFor(props.section)} imageUrl={contentImage(content)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} />;
 }
 
 export function FormalPortfolioHero(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiPortfolioHero title={text(content.title)} subtitle={text(content.description)} badge={text(content.badge)} />;
+  return <AiPortfolioHero title={text(content.title)} subtitle={text(content.description)} badge={text(content.badge)} imageUrl={contentImage(content)}/>;
 }
 
 export function FormalPortfolioCategory(props: FormalSectionProps) {
   const content = contentOf(props.section);
   const categories = [...new Set((props.section.data?.portfolioCategories || []).map((item) => titleOf(item)))];
   if (categories.length === 0) return null;
-  return <AiPortfolioCategory categories={categories} title={text(content.title)} subtitle={text(content.description)} />;
+  return <AiPortfolioCategory categories={categories} title={text(content.title)} subtitle={text(content.description)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} />;
 }
 
 export function FormalPortfolioGrid(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiPortfolioGrid portfolios={(props.section.data?.portfolios || []).map(mapPortfolio)} activeCategory="Semua" title={text(content.title)} subtitle={text(content.description)} portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)} />;
+  return <AiPortfolioGrid portfolios={(props.section.data?.portfolios || []).map(mapPortfolio)} activeCategory="Semua" title={text(content.title)} subtitle={text(content.description)} portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)} imageUrl={contentImage(content)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} />;
 }
 
 export function FormalPortfolioCaseHighlight(props: FormalSectionProps) {
@@ -615,12 +630,12 @@ export function FormalPortfolioCaseHighlight(props: FormalSectionProps) {
 
 export function FormalPortfolioCta(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiPortfolioCta title={text(content.title)} description={text(content.description)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} />;
+  return <AiPortfolioCta title={text(content.title)} description={text(content.description)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} imageUrl={contentImage(content)} />;
 }
 
 export function FormalArticlesHero(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiArticlesHero title={text(content.title)} subtitle={text(content.description)} badge={text(content.badge)} />;
+  return <AiArticlesHero title={text(content.title)} subtitle={text(content.description)} badge={text(content.badge)} imageUrl={contentImage(content)}/>;
 }
 
 export function FormalFeaturedArticle(props: FormalSectionProps) {
@@ -628,12 +643,12 @@ export function FormalFeaturedArticle(props: FormalSectionProps) {
   const articles = articlesFor(props);
   const article = articles.find((item, index) => props.section.data?.articles?.[index]?.isFeatured) || articles[0];
   const business = businessOf(props.payload);
-  return article ? <AiFeaturedArticle article={article} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} title={text(content.title)} subtitle={text(content.description)} businessLogoUrl={text(business.logoUrl)} /> : null;
+  return article ? <AiFeaturedArticle article={article} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} title={text(content.title)} subtitle={text(content.description)} businessLogoUrl={text(business.logoUrl)} imageUrl={contentImage(content)} ctaLabel={text(content.ctaLabel)} /> : null;
 }
 
 export function FormalArticlePreview(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiArticlePreview articles={articlesFor(props)} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} title={text(content.title)} subtitle={text(content.description)} />;
+  return <AiArticlePreview articles={articlesFor(props)} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} title={text(content.title)} subtitle={text(content.description)} imageUrl={contentImage(content)} ctaLabel={text(content.ctaLabel)} />;
 }
 
 export function FormalArticleContent(props: FormalSectionProps) {
@@ -662,12 +677,12 @@ export function FormalRelatedArticles(props: FormalSectionProps) {
 
 export function FormalArticleCta(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiArticleCta title={text(content.title)} description={text(content.description)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} />;
+  return <AiArticleCta title={text(content.title)} description={text(content.description)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} imageUrl={contentImage(content)} />;
 }
 
 export function FormalContactHero(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiContactHero title={text(content.title)} subtitle={text(content.description)} badge={text(content.badge)} />;
+  return <AiContactHero title={text(content.title)} subtitle={text(content.description)} badge={text(content.badge)} imageUrl={contentImage(content)}/>;
 }
 
 export function FormalContactInformation(props: FormalSectionProps) {
@@ -704,12 +719,12 @@ export function FormalMapsLocation(props: FormalSectionProps) {
 
 export function FormalContactFaq(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiContactFaq title={text(content.title)} subtitle={text(content.description)} faqs={faqsFor(props.section)} siteSlug={props.siteSlug} pageKey={props.payload.page.pageKey} slotKey={props.section.slotKey} />;
+  return <AiContactFaq title={text(content.title)} subtitle={text(content.description)} faqs={faqsFor(props.section)} siteSlug={props.siteSlug} pageKey={props.payload.page.pageKey} slotKey={props.section.slotKey} imageUrl={contentImage(content)} />;
 }
 
 export function FormalContactCta(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiContactCta title={text(content.title)} description={text(content.description)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} />;
+  return <AiContactCta title={text(content.title)} description={text(content.description)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} imageUrl={contentImage(content)} />;
 }
 
 
@@ -743,7 +758,7 @@ export function FormalPortfolioDetailContent(props: FormalSectionProps) {
 
 export function FormalPortfolioDetailCta(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiPortfolioDetailCta title={text(content.title)} description={text(content.description)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} />;
+  return <AiPortfolioDetailCta title={text(content.title)} description={text(content.description)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} imageUrl={contentImage(content)} />;
 }
 
 export function FormalRelatedPortfolios(props: FormalSectionProps) {
@@ -759,6 +774,61 @@ export function FormalRelatedPortfolios(props: FormalSectionProps) {
       title={text(content.title)}
       subtitle={text(content.description)}
       portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)}
+    />
+  );
+}
+
+// ---- Global Chrome (Navbar & Footer) ----
+// Slot "global.navbar" / "global.footer" — dibuat sebagai section biasa (bukan hardcode
+// di SiteShell) supaya bisa dipilih & di-preview lewat mekanisme "Pilih Tampilan Section"
+// yang sama seperti section lain, termasuk lintas tema. Tidak ada field owner-editable
+// (schema-nya kosong) karena isinya (nav items, logo, kontak) sudah otomatis dari
+// Halaman & Menu + Business Profile.
+import { FormalSiteHeader } from "../source/layout/FormalSiteHeader";
+import { FormalSiteFooter } from "../source/layout/FormalSiteFooter";
+
+export function FormalGlobalNavbar(props: FormalSectionProps) {
+  const business = businessOf(props.payload);
+  const navbarItems = props.payload.navigation?.navbar?.items || [];
+  const cta = props.payload.navigation?.navbar?.cta;
+  const getHref = (path: string) => getSiteHref(props.siteSlug, path);
+  return (
+    <FormalSiteHeader
+      siteSlug={props.siteSlug}
+      getHref={getHref}
+      businessName={text(business.name, props.payload.website.name)}
+      taglineLabel={text(business.tagline as string)}
+      logoUrl={text(business.logoUrl as string) || undefined}
+      navItems={navbarItems.length > 0 ? navbarItems : undefined}
+      ctaLabel={cta?.label || "Hubungi Kami"}
+      ctaPath={cta?.path || "/contact"}
+    />
+  );
+}
+
+export function FormalGlobalFooter(props: FormalSectionProps) {
+  const business = businessOf(props.payload);
+  const footerItems = props.payload.navigation?.footer?.items || [];
+  const getHref = (path: string) => getSiteHref(props.siteSlug, path);
+  return (
+    <FormalSiteFooter
+      getHref={getHref}
+      businessName={text(business.name, props.payload.website.name)}
+      taglineLabel={text(business.tagline as string) || "Company Profile"}
+      logoUrl={text(business.logoUrl as string) || undefined}
+      description={text(business.description as string, "Website company profile yang menampilkan profil, layanan, portofolio, artikel, dan kontak bisnis.")}
+      establishedYear={text(business.establishedYear as string) || undefined}
+      founderName={text(business.founderName as string) || undefined}
+      address={text(business.address as string)}
+      email={text(business.contactEmail as string)}
+      phone={text(business.phone as string)}
+      workingHours={text(business.workingHours as string, text(business.operationalHours as string))}
+      instagramUrl={text(business.instagramUrl as string) || undefined}
+      facebookUrl={text(business.facebookUrl as string) || undefined}
+      linkedinUrl={text(business.linkedinUrl as string) || undefined}
+      twitterUrl={text(business.twitterUrl as string) || undefined}
+      websiteUrl={text(business.websiteUrl as string) || undefined}
+      navItems={footerItems.length > 0 ? footerItems : undefined}
     />
   );
 }
@@ -800,4 +870,7 @@ export const formalSectionComponents: Record<string, FormalSectionComponent> = {
   FormalPortfolioDetailContent,
   FormalRelatedPortfolios,
   FormalPortfolioDetailCta,
+
+  FormalGlobalNavbar,
+  FormalGlobalFooter,
 };

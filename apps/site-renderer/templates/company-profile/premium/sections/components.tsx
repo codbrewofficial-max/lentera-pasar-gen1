@@ -306,9 +306,11 @@ export function PremiumHomeServicePreviewSection(props: PremiumSectionProps) {
     <PremiumHomeServicePreview
       title={text(content.title)}
       description={text(content.description)}
+      badge={text(content.badge)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", getPageHrefByKey(props.siteSlug, props.payload.navigation, "services", "/services"))}
       services={servicesFor(props)}
+      imageUrl={contentImage(content)}
     />
   );
 }
@@ -319,10 +321,12 @@ export function PremiumHomePortfolioPreviewSection(props: PremiumSectionProps) {
     <PremiumHomePortfolioPreview
       title={text(content.title)}
       description={text(content.description)}
+      badge={text(content.badge)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", getPageHrefByKey(props.siteSlug, props.payload.navigation, "portfolio", "/portfolio"))}
       portfolios={portfoliosFor(props)}
       portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)}
+      imageUrl={contentImage(content)}
     />
   );
 }
@@ -342,12 +346,16 @@ export function PremiumHomeTrustProofSection(props: PremiumSectionProps) {
 
 export function PremiumHomeCtaContactSection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
+  const business = businessOf(props.payload);
   return (
     <PremiumHomeCtaContact
       title={text(content.title)}
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", "/contact")}
+      imageUrl={contentImage(content)}
+      email={text(business.contactEmail as string)}
+      whatsapp={text(business.whatsapp as string, text(business.phone as string))}
     />
   );
 }
@@ -411,12 +419,12 @@ export function PremiumAboutTeamHighlightSection(props: PremiumSectionProps) {
 
 export function PremiumServicesHeroSection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
-  return <PremiumServicesHero title={text(content.title)} description={text(content.description)} />;
+  return <PremiumServicesHero title={text(content.title)} description={text(content.description)} badge={text(content.badge)} imageUrl={contentImage(content)} />;
 }
 
 export function PremiumServicesGridSection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
-  return <PremiumServicesGrid title={text(content.title)} description={text(content.description)} services={servicesFor(props)} />;
+  return <PremiumServicesGrid title={text(content.title)} description={text(content.description)} badge={text(content.badge)} services={servicesFor(props)} imageUrl={contentImage(content)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} />;
 }
 
 export function PremiumServicesProcessSection(props: PremiumSectionProps) {
@@ -450,17 +458,28 @@ export function PremiumServicesFaqSection(props: PremiumSectionProps) {
 
 export function PremiumPortfolioHeroSection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
-  return <PremiumPortfolioHero title={text(content.title)} description={text(content.description)} />;
+  return <PremiumPortfolioHero title={text(content.title)} description={text(content.description)} badge={text(content.badge)} imageUrl={contentImage(content)} />;
 }
 
 export function PremiumPortfolioCategorySection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
-  return <PremiumPortfolioCategory title={text(content.title)} description={text(content.description)} />;
+  const categories = [...new Set((props.section.data?.portfolioCategories || []).map((item) => titleOf(item)))];
+  return (
+    <PremiumPortfolioCategory
+      title={text(content.title)}
+      description={text(content.description)}
+      badge={text(content.badge)}
+      categories={categories}
+      imageUrl={contentImage(content)}
+      ctaLabel={text(content.ctaLabel)}
+      ctaHref={sectionHref(props, "cta", "/contact")}
+    />
+  );
 }
 
 export function PremiumPortfolioGridSection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
-  return <PremiumPortfolioGrid title={text(content.title)} description={text(content.description)} portfolios={portfoliosFor(props)} portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)} />;
+  return <PremiumPortfolioGrid title={text(content.title)} description={text(content.description)} badge={text(content.badge)} portfolios={portfoliosFor(props)} portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)} imageUrl={contentImage(content)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} />;
 }
 
 export function PremiumPortfolioCaseHighlightSection(props: PremiumSectionProps) {
@@ -482,6 +501,7 @@ export function PremiumPortfolioCtaSection(props: PremiumSectionProps) {
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", "/contact")}
+      imageUrl={contentImage(content)}
     />
   );
 }
@@ -490,19 +510,19 @@ export function PremiumPortfolioCtaSection(props: PremiumSectionProps) {
 
 export function PremiumArticlesHeroSection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
-  return <PremiumArticlesHero title={text(content.title)} description={text(content.description)} />;
+  return <PremiumArticlesHero title={text(content.title)} description={text(content.description)} badge={text(content.badge)} imageUrl={contentImage(content)} />;
 }
 
 export function PremiumFeaturedArticleSection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
   const articles = articlesFor(props);
   const article = articles.find((item, index) => props.section.data?.articles?.[index]?.isFeatured) || articles[0];
-  return <PremiumFeaturedArticle title={text(content.title)} description={text(content.description)} article={article} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} />;
+  return <PremiumFeaturedArticle title={text(content.title)} description={text(content.description)} badge={text(content.badge)} article={article} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} imageUrl={contentImage(content)} ctaLabel={text(content.ctaLabel)} />;
 }
 
 export function PremiumArticlePreviewSection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
-  return <PremiumArticlePreview title={text(content.title)} description={text(content.description)} articles={articlesFor(props)} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} />;
+  return <PremiumArticlePreview title={text(content.title)} description={text(content.description)} badge={text(content.badge)} articles={articlesFor(props)} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} imageUrl={contentImage(content)} ctaLabel={text(content.ctaLabel)} />;
 }
 
 // ---- Article Detail ----
@@ -545,6 +565,7 @@ export function PremiumArticleCtaSection(props: PremiumSectionProps) {
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", "/contact")}
+      imageUrl={contentImage(content)}
     />
   );
 }
@@ -594,6 +615,7 @@ export function PremiumPortfolioDetailCtaSection(props: PremiumSectionProps) {
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", "/contact")}
+      imageUrl={contentImage(content)}
     />
   );
 }
@@ -602,7 +624,7 @@ export function PremiumPortfolioDetailCtaSection(props: PremiumSectionProps) {
 
 export function PremiumContactHeroSection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
-  return <PremiumContactHero title={text(content.title)} description={text(content.description)} />;
+  return <PremiumContactHero title={text(content.title)} description={text(content.description)} badge={text(content.badge)} imageUrl={contentImage(content)} />;
 }
 
 export function PremiumContactInformationSection(props: PremiumSectionProps) {
@@ -651,6 +673,7 @@ export function PremiumContactCtaSection(props: PremiumSectionProps) {
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", "/contact")}
+      imageUrl={contentImage(content)}
     />
   );
 }
@@ -658,6 +681,47 @@ export function PremiumContactCtaSection(props: PremiumSectionProps) {
 // Premium — komponen hasil porting Google AI Studio untuk Website Type Company Profile.
 // Namespace "Premium<Slot>" mengikuti konvensi yang sama dengan tema Formal dan Casual,
 // supaya gabungan ke registry global (SectionRegistry.tsx) tidak bentrok nama.
+// ---- Global Chrome (Navbar & Footer) ----
+import { Header as PremiumSiteHeader } from "../source/shared/Header";
+import { Footer as PremiumSiteFooter } from "../source/shared/Footer";
+
+export function PremiumGlobalNavbar(props: PremiumSectionProps) {
+  const business = businessOf(props.payload);
+  const navbarItems = props.payload.navigation?.navbar?.items || [];
+  const cta = props.payload.navigation?.navbar?.cta;
+  const getHref = (path: string) => getSiteHref(props.siteSlug, path);
+  return (
+    <PremiumSiteHeader
+      businessName={text(business.name, props.payload.website.name)}
+      logoUrl={text(business.logoUrl as string) || undefined}
+      getHref={getHref}
+      navItems={navbarItems.length > 0 ? navbarItems : undefined}
+      ctaLabel={cta?.label || "Konsultasi"}
+      ctaPath={cta?.path || "/contact"}
+    />
+  );
+}
+
+export function PremiumGlobalFooter(props: PremiumSectionProps) {
+  const business = businessOf(props.payload);
+  const footerItems = props.payload.navigation?.footer?.items || [];
+  const getHref = (path: string) => getSiteHref(props.siteSlug, path);
+  return (
+    <PremiumSiteFooter
+      getHref={getHref}
+      businessName={text(business.name, props.payload.website.name)}
+      description={text(business.description as string, text(business.tagline as string))}
+      address={text(business.address as string)}
+      phone={text(business.phone as string)}
+      email={text(business.contactEmail as string)}
+      logoUrl={text(business.logoUrl as string) || undefined}
+      instagramUrl={text(business.instagramUrl as string) || undefined}
+      linkedinUrl={text(business.linkedinUrl as string) || undefined}
+      navItems={footerItems.length > 0 ? footerItems : undefined}
+    />
+  );
+}
+
 export const premiumSectionComponents: Record<string, PremiumSectionComponent> = {
   PremiumHomeHero: PremiumHomeHeroSection,
   PremiumHomeProfileSummary: PremiumHomeProfileSummarySection,
@@ -700,5 +764,7 @@ export const premiumSectionComponents: Record<string, PremiumSectionComponent> =
   PremiumContactInformation: PremiumContactInformationSection,
   PremiumMapsLocation: PremiumMapsLocationSection,
   PremiumContactFaq: PremiumContactFaqSection,
-  PremiumContactCta: PremiumContactCtaSection
+  PremiumContactCta: PremiumContactCtaSection,
+  PremiumGlobalNavbar,
+  PremiumGlobalFooter
 };

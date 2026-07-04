@@ -13,6 +13,8 @@ interface FeaturedArticleProps {
   subtitle?: string;
   badge?: string;
   businessLogoUrl?: string;
+  imageUrl?: string;
+  ctaLabel?: string;
 }
 
 export const FeaturedArticle: React.FC<FeaturedArticleProps> = ({
@@ -22,11 +24,37 @@ export const FeaturedArticle: React.FC<FeaturedArticleProps> = ({
   subtitle,
   badge,
   businessLogoUrl,
+  imageUrl,
+  ctaLabel,
 }) => {
   return (
-    <section id="articles-featured" className="py-14 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="accent" />
+    <section id="articles-featured" className="bg-white">
+      {imageUrl ? (
+        <div className="relative py-16 md:py-20 mb-10 bg-slate-900 text-white overflow-hidden">
+          <div className="absolute inset-0">
+            <img src={imageUrl} alt="" className="w-full h-full object-cover opacity-30" referrerPolicy="no-referrer" />
+            <div className="absolute inset-0 bg-gradient-to-b from-slate-950/85 via-slate-950/75 to-slate-950/90" />
+          </div>
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="accent" dark />
+            {ctaLabel && (
+              <div className="text-center -mt-6">
+                <Button href={articlesHref} variant="secondary">{ctaLabel}</Button>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14">
+          <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="accent" />
+          {ctaLabel && (
+            <div className="text-center -mt-6 mb-6">
+              <Button href={articlesHref} variant="outline">{ctaLabel}</Button>
+            </div>
+          )}
+        </div>
+      )}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-14">
         {/* Featured Card: full-width horizontal, image takes 40% */}
         <Link href={`${articlesHref}/${article.slug}`} className="group block">
           <div className="border border-slate-100 rounded-none overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow grid grid-cols-1 lg:grid-cols-5">

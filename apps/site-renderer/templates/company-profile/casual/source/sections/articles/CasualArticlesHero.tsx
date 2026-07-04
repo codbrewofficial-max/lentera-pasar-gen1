@@ -6,13 +6,38 @@ import { Sparkles, Newspaper } from 'lucide-react';
 export interface CasualArticlesHeroProps {
   title?: string;
   description?: string;
+  badge?: string;
+  imageUrl?: string;
 }
 
 export function CasualArticlesHero({
   title = 'Inspirasi & Tips Bisnis Kreatif',
   description = 'Temukan puluhan artikel ringan, tips jualan praktis, strategi sosial media, dan panduan branding yang ramah pemula, khusus kami siapkan untuk membantu kemandirian UMKM Indonesia.',
+  badge,
+  imageUrl,
 }: CasualArticlesHeroProps) {
-  return (
+  return imageUrl ? (
+    <section id="CasualArticlesHero" className="relative py-16 md:py-24 overflow-hidden text-center text-white">
+      <div className="absolute inset-0">
+        <img src={imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+        <div className="absolute inset-0 bg-gradient-to-b from-gray-950/80 via-gray-950/70 to-gray-950/90" />
+      </div>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-6">
+        <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white/10 text-white text-xs font-bold tracking-wide uppercase backdrop-blur-sm">
+          <Sparkles className="w-4 h-4" style={{ color: '#649FF6' }} />
+          <span>{badge || 'KABAR & WAWASAN STUDIO'}</span>
+        </div>
+
+        <h1 className="font-sans font-extrabold text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-tight">
+          {title}
+        </h1>
+
+        <p className="font-sans text-base sm:text-lg text-gray-200 leading-relaxed max-w-3xl mx-auto">
+          {description}
+        </p>
+      </div>
+    </section>
+  ) : (
     <section id="CasualArticlesHero" className="relative py-16 md:py-24 bg-gradient-to-b from-[#649FF6]/10 via-[#B283AF]/5 to-white overflow-hidden text-center">
       {/* Decorative floating assets */}
       <div className="absolute top-10 left-10 text-2xl select-none rotate-12">📚</div>

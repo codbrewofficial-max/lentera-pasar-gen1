@@ -47,6 +47,8 @@ export const premiumCompanyProfileTemplate = {
     "contact.contact_information": "PremiumContactInformation",
     "contact.maps_location": "PremiumMapsLocation",
     "contact.contact_faq": "PremiumContactFaq",
-    "contact.contact_cta": "PremiumContactCta"
+    "contact.contact_cta": "PremiumContactCta",
+    "global.navbar": "PremiumGlobalNavbar",
+    "global.footer": "PremiumGlobalFooter"
   }
 } satisfies CompanyProfileTemplateDefinition;

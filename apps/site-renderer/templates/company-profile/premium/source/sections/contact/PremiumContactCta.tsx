@@ -8,16 +8,24 @@ interface PremiumContactCtaProps {
   description?: string;
   ctaLabel?: string;
   ctaUrl?: string;
+  imageUrl?: string;
 }
 
 export function PremiumContactCta({
   title = "Mari Memulai Langkah Pertama",
   description = "Tinggalkan keraguan Anda. Dedikasi kami adalah memastikan setiap goresan konsep bertransformasi menjadi karya seni fisik yang fungsional dan bernilai investasi tinggi.",
   ctaLabel = "MULAI CHAT WHATSAPP SEKARANG",
-  ctaUrl = "https://wa.me/628119009900"
+  ctaUrl = "https://wa.me/628119009900",
+  imageUrl
 }: PremiumContactCtaProps) {
   return (
     <section id="premium-contact-cta" className="py-24 md:py-32 bg-[#0E0E0F] text-white relative overflow-hidden">
+      {imageUrl && (
+        <div className="absolute inset-0">
+          <img src={imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+          <div className="absolute inset-0 bg-stone-950/80" />
+        </div>
+      )}
       {/* Delicate background blur shapes */}
       <div className="absolute top-1/2 left-1/4 w-[400px] h-[400px] rounded-full bg-[#F56B71]/5 blur-[120px] pointer-events-none" />
 

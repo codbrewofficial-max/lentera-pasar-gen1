@@ -16,6 +16,7 @@ export interface HomePortfolioPreviewProps {
   allPortfolioHref?: string;
   allPortfolioLabel?: string;
   portfolioDetailHref?: (id: string) => string;
+  imageUrl?: string;
 }
 
 export const PortfolioPreview: React.FC<HomePortfolioPreviewProps> = ({
@@ -25,22 +26,38 @@ export const PortfolioPreview: React.FC<HomePortfolioPreviewProps> = ({
   portfolios = portfolioData,
   allPortfolioHref = "/portfolio",
   allPortfolioLabel = "Eksplorasi Semua Kasus Klien",
-  portfolioDetailHref
+  portfolioDetailHref,
+  imageUrl,
 }) => {
   // Show only 3 items on Home preview
   const previewPortfolios = portfolios.slice(0, 3);
 
   return (
-    <section id="home-portfolio-preview" className="py-16 md:py-24 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="home-portfolio-preview" className="bg-white">
+      {imageUrl ? (
+        <div className="relative py-16 md:py-20 bg-slate-900 text-white overflow-hidden">
+          <div className="absolute inset-0">
+            <img src={imageUrl} alt="" className="w-full h-full object-cover opacity-30" referrerPolicy="no-referrer" />
+            <div className="absolute inset-0 bg-gradient-to-b from-slate-950/85 via-slate-950/75 to-slate-950/90" />
+          </div>
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="accent" dark />
+            {allPortfolioLabel && (
+              <div className="text-center -mt-6">
+                <Button href={allPortfolioHref} variant="secondary">
+                  {allPortfolioLabel}
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 md:pt-24">
+          <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="accent" />
+        </div>
+      )}
 
-        <SectionHeading
-          title={title}
-          subtitle={subtitle}
-          badge={badge}
-          badgeVariant="accent"
-        />
-
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         {/* 3 Portfolios Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           {previewPortfolios.map((project) => (
@@ -84,13 +101,13 @@ export const PortfolioPreview: React.FC<HomePortfolioPreviewProps> = ({
           ))}
         </div>
 
-        {/* Bottom Central Action */}
-        <div className="text-center">
-          <Button href={allPortfolioHref} variant="primary">
-            {allPortfolioLabel}
-          </Button>
-        </div>
-
+        {!imageUrl && allPortfolioLabel && (
+          <div className="text-center">
+            <Button href={allPortfolioHref} variant="primary">
+              {allPortfolioLabel}
+            </Button>
+          </div>
+        )}
       </div>
     </section>
   );

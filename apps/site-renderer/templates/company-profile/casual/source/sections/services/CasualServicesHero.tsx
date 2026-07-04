@@ -6,13 +6,38 @@ import { Sparkles, Stars } from 'lucide-react';
 export interface CasualServicesHeroProps {
   title?: string;
   description?: string;
+  badge?: string;
+  imageUrl?: string;
 }
 
 export function CasualServicesHero({
   title = 'Layanan Desain & Konten Tanpa Ribet!',
   description = 'Kami hadir untuk membantu mencerahkan visual bisnis lokal Indonesia. Pilih paket solusi yang kamu butuhkan, mulai dari identitas brand yang memikat, optimasi sosial media, foto katalog estetik, hingga pembuatan website jualan yang gercep.',
+  badge,
+  imageUrl,
 }: CasualServicesHeroProps) {
-  return (
+  return imageUrl ? (
+    <section id="CasualServicesHero" className="relative py-16 md:py-24 overflow-hidden text-center text-white">
+      <div className="absolute inset-0">
+        <img src={imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+        <div className="absolute inset-0 bg-gradient-to-b from-gray-950/80 via-gray-950/70 to-gray-950/90" />
+      </div>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-6">
+        <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white/10 text-white text-xs font-bold tracking-wide uppercase backdrop-blur-sm">
+          <Sparkles className="w-4 h-4" style={{ color: '#B283AF' }} />
+          <span>{badge || 'SOLUSI KREATIF UMKM'}</span>
+        </div>
+
+        <h1 className="font-sans font-extrabold text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-tight">
+          {title}
+        </h1>
+
+        <p className="font-sans text-base sm:text-lg text-gray-200 leading-relaxed max-w-3xl mx-auto">
+          {description}
+        </p>
+      </div>
+    </section>
+  ) : (
     <section id="CasualServicesHero" className="relative py-16 md:py-24 bg-gradient-to-b from-[#B283AF]/10 via-[#649FF6]/5 to-white overflow-hidden text-center">
       {/* Playful elements floating */}
       <div className="absolute top-12 left-12 text-3xl select-none rotate-[10deg] animate-pulse">✨</div>

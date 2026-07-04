@@ -47,6 +47,8 @@ export const casualCompanyProfileTemplate = {
     "contact.contact_information": "CasualContactInformation",
     "contact.maps_location": "CasualMapsLocation",
     "contact.contact_faq": "CasualContactFaq",
-    "contact.contact_cta": "CasualContactCta"
+    "contact.contact_cta": "CasualContactCta",
+    "global.navbar": "CasualGlobalNavbar",
+    "global.footer": "CasualGlobalFooter"
   }
 } satisfies CompanyProfileTemplateDefinition;

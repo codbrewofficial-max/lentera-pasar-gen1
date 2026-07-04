@@ -29,12 +29,17 @@ export const PAGES = {
   gallery: "Gallery",
   booking: "Booking / Inquiry",
   events: "Events",
-  join: "Join Community"
+  join: "Join Community",
+  // "global" BUKAN halaman sungguhan — ini kontainer teknis tempat nempel section
+  // Navbar & Footer supaya bisa dipilih/preview lewat mekanisme "Pilih Tampilan Section"
+  // yang sama seperti section biasa. Tidak pernah punya rute publik sendiri, dan selalu
+  // difilter keluar dari daftar "Halaman Website" / "Halaman & Menu" di dashboard.
+  global: "Navbar & Footer (Global)"
 } as const;
 
 export const WEBSITE_TYPE_PAGES = {
   landing_page: ["home"],
-  company_profile: ["home", "about", "services", "portfolio", "articles", "article_detail", "contact", "portfolio_detail"],
+  company_profile: ["home", "about", "services", "portfolio", "articles", "article_detail", "contact", "portfolio_detail", "global"],
   catalog_product: ["home", "products", "product_detail", "articles", "article_detail", "contact"],
   booking_inquiry: ["home", "packages", "gallery", "booking", "articles", "contact"],
   community_website: ["home", "events", "gallery", "articles", "join"]
@@ -49,7 +54,8 @@ export const PAGE_SECTION_RULES = {
     articles: ["article_hero", "featured_article", "article_preview"],
     article_detail: ["article_content", "related_articles", "article_cta"],
     contact: ["contact_hero", "contact_information", "maps_location", "contact_faq", "contact_cta"],
-    portfolio_detail: ["portfolio_detail_content", "related_portfolios", "portfolio_detail_cta"]
+    portfolio_detail: ["portfolio_detail_content", "related_portfolios", "portfolio_detail_cta"],
+    global: ["navbar", "footer"]
   },
   catalog_product: {
     home: ["hero", "category_preview", "featured_products", "advantages", "testimonials", "whatsapp_cta"],
@@ -115,9 +121,13 @@ export const WEBSITE_TYPES = [
 export const COMPANY_PROFILE_PAGES = WEBSITE_TYPE_PAGES.company_profile.map((pageKey, index) => ({
   pageKey,
   title: PAGES[pageKey],
-  slug: pageKey === "home" ? "" : pageKey === "article_detail" ? "article-detail" : pageKey === "portfolio_detail" ? "portfolio-detail" : pageKey,
+  slug: pageKey === "home" ? "" : pageKey === "article_detail" ? "article-detail" : pageKey === "portfolio_detail" ? "portfolio-detail" : pageKey === "global" ? "__global__" : pageKey,
   sortOrder: index + 1,
-  isDynamicDetailPage: pageKey === "article_detail" || pageKey === "portfolio_detail"
+  isDynamicDetailPage: pageKey === "article_detail" || pageKey === "portfolio_detail",
+  // Halaman kontainer teknis untuk Navbar & Footer — tidak pernah dirutekan publik,
+  // tidak pernah tampil di navbar/footer, dan selalu difilter keluar dari daftar
+  // "Halaman Website" / "Halaman & Menu" di dashboard.
+  isGlobalChromePage: pageKey === "global"
 }));
 
 export const COMPANY_PROFILE_SECTION_SLOTS = Object.entries(PAGE_SECTION_RULES.company_profile).flatMap(
@@ -144,7 +154,8 @@ export const COMPANY_PROFILE_PAGE_PURPOSES = {
   articles: "Halaman untuk artikel, edukasi, dan konten SEO agar bisnis lebih mudah ditemukan dari pencarian.",
   article_detail: "Template halaman detail artikel. Halaman ini tidak tampil di navbar karena digunakan otomatis saat pengunjung membuka artikel tertentu.",
   contact: "Halaman untuk informasi kontak, lokasi, dan cara calon client menghubungi bisnis.",
-  portfolio_detail: "Template halaman detail portfolio. Halaman ini tidak tampil di navbar karena digunakan otomatis saat pengunjung membuka detail proyek tertentu."
+  portfolio_detail: "Template halaman detail portfolio. Halaman ini tidak tampil di navbar karena digunakan otomatis saat pengunjung membuka detail proyek tertentu.",
+  global: "Kontainer teknis tempat menyimpan pilihan tampilan Navbar & Footer. Tidak pernah tampil sebagai halaman publik."
 } as const;
 
 export const COMPANY_PROFILE_DEFAULT_NAV_LABELS = {
@@ -197,7 +208,9 @@ export const COMPANY_PROFILE_SECTION_SLOT_LABELS = {
   "contact.contact_cta": "CTA Kontak",
   "portfolio_detail.portfolio_detail_content": "Isi Detail Portfolio",
   "portfolio_detail.related_portfolios": "Portfolio Terkait",
-  "portfolio_detail.portfolio_detail_cta": "CTA Detail Portfolio"
+  "portfolio_detail.portfolio_detail_cta": "CTA Detail Portfolio",
+  "global.navbar": "Navbar (Menu Atas)",
+  "global.footer": "Footer (Bagian Bawah)"
 } as const;
 
 export const COMPANY_PROFILE_SECTION_SLOT_DESCRIPTIONS = Object.fromEntries(

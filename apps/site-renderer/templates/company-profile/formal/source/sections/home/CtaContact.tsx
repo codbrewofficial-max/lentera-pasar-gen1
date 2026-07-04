@@ -7,6 +7,7 @@ export interface HomeCtaContactProps {
   description?: string;
   primaryCtaLabel?: string;
   primaryCtaHref?: string;
+  imageUrl?: string;
 }
 
 export const CtaContact: React.FC<HomeCtaContactProps> = ({
@@ -14,12 +15,19 @@ export const CtaContact: React.FC<HomeCtaContactProps> = ({
   description = "Hubungi dewan penasihat senior kami hari ini untuk menjadwalkan sesi diskusi awal yang sepenuhnya rahasia (NDA-secured).",
   primaryCtaLabel = "Konsultasi Sekarang",
   primaryCtaHref = "/contact",
+  imageUrl,
 }) => {
   return (
     <section 
       id="home-cta-contact" 
       className="py-16 md:py-20 bg-slate-900 text-white relative overflow-hidden"
     >
+      {imageUrl && (
+        <div className="absolute inset-0">
+          <img src={imageUrl} alt="" className="w-full h-full object-cover opacity-25" referrerPolicy="no-referrer" />
+          <div className="absolute inset-0 bg-slate-950/80" />
+        </div>
+      )}
       {/* Subtle patterns */}
       <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#8A6D3B_1px,transparent_1px)] [background-size:20px_20px]" />
       <div className="absolute bottom-0 right-0 w-80 h-80 bg-[#1E3A5F] rounded-none filter blur-[120px] opacity-10" />

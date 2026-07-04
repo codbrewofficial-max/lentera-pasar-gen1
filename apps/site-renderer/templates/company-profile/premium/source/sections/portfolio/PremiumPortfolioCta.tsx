@@ -8,16 +8,24 @@ interface PremiumPortfolioCtaProps {
   description?: string;
   ctaLabel?: string;
   ctaUrl?: string;
+  imageUrl?: string;
 }
 
 export function PremiumPortfolioCta({
   title = "Ingin Melihat Cetak Biru Lengkap?",
   description = "Kami mengundang calon klien terhormat untuk berkunjung ke studio kami demi mempelajari portofolio teknis mendalam, contoh material taktil, dan studi maket fisik proyek kami.",
   ctaLabel = "MINTA SALINAN PORTOFOLIO CETAK",
-  ctaUrl = "/contact"
+  ctaUrl = "/contact",
+  imageUrl
 }: PremiumPortfolioCtaProps) {
   return (
     <section id="premium-portfolio-cta" className="py-24 md:py-32 bg-[#0E0E0F] text-white relative overflow-hidden">
+      {imageUrl && (
+        <div className="absolute inset-0">
+          <img src={imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+          <div className="absolute inset-0 bg-stone-950/80" />
+        </div>
+      )}
       {/* Absolute colored accent glows */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-[#649FF6]/5 blur-[120px] pointer-events-none" />
 

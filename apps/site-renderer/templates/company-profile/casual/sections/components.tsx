@@ -288,9 +288,11 @@ export function CasualHomeServicePreviewSection(props: CasualSectionProps) {
     <CasualHomeServicePreview
       title={text(content.title)}
       description={text(content.description)}
+      badge={text(content.badge)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", getPageHrefByKey(props.siteSlug, props.payload.navigation, "services", "/services"))}
       services={servicesFor(props)}
+      imageUrl={contentImage(content)}
     />
   );
 }
@@ -301,10 +303,12 @@ export function CasualHomePortfolioPreviewSection(props: CasualSectionProps) {
     <CasualHomePortfolioPreview
       title={text(content.title)}
       description={text(content.description)}
+      badge={text(content.badge)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", getPageHrefByKey(props.siteSlug, props.payload.navigation, "portfolio", "/portfolio"))}
       portfolios={portfoliosFor(props)}
       portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)}
+      imageUrl={contentImage(content)}
     />
   );
 }
@@ -324,9 +328,13 @@ export function CasualHomeTrustProofSection(props: CasualSectionProps) {
     <CasualHomeTrustProof
       title={text(content.title)}
       description={text(content.description)}
+      badge={text(content.badge)}
       metrics={itemsOf(props.section).map((item) => ({ label: text(item?.value as string), value: text(item?.title as string) })).filter((m) => m.label && m.value)}
       testimonials={testimonials}
       brands={brandsFor(props)}
+      imageUrl={contentImage(content)}
+      ctaLabel={text(content.ctaLabel)}
+      ctaHref={sectionHref(props, "cta", "/contact")}
     />
   );
 }
@@ -339,6 +347,7 @@ export function CasualHomeCtaContactSection(props: CasualSectionProps) {
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", "/contact")}
+      imageUrl={contentImage(content)}
     />
   );
 }
@@ -359,7 +368,7 @@ export function CasualAboutOrganizationProfileSection(props: CasualSectionProps)
 
 export function CasualAboutHistoryTimelineSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
-  return <CasualAboutHistoryTimeline title={text(content.title)} description={text(content.description)} items={timelineFor(props)} />;
+  return <CasualAboutHistoryTimeline title={text(content.title)} description={text(content.description)} badge={text(content.badge)} items={timelineFor(props)} imageUrl={contentImage(content)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} />;
 }
 
 export function CasualAboutVisionMissionSection(props: CasualSectionProps) {
@@ -367,10 +376,16 @@ export function CasualAboutVisionMissionSection(props: CasualSectionProps) {
   const business = businessOf(props.payload);
   return (
     <CasualAboutVisionMission
+      title={text(content.title)}
+      description={text(content.description)}
+      badge={text(content.badge)}
       visionTitle={text(content.visionTitle)}
       vision={text(content.vision, text(business.vision))}
       missionTitle={text(content.missionTitle)}
       mission={text(content.mission, text(business.mission))}
+      imageUrl={contentImage(content)}
+      ctaLabel={text(content.ctaLabel)}
+      ctaHref={sectionHref(props, "cta", "/contact")}
     />
   );
 }
@@ -381,7 +396,11 @@ export function CasualAboutValueStatementSection(props: CasualSectionProps) {
     <CasualAboutValueStatement
       title={text(content.title)}
       description={text(content.description)}
+      badge={text(content.badge)}
       items={itemsOf(props.section)}
+      imageUrl={contentImage(content)}
+      ctaLabel={text(content.ctaLabel)}
+      ctaHref={sectionHref(props, "cta", "/contact")}
     />
   );
 }
@@ -402,12 +421,12 @@ export function CasualAboutTeamHighlightSection(props: CasualSectionProps) {
 
 export function CasualServicesHeroSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
-  return <CasualServicesHero title={text(content.title)} description={text(content.description)} />;
+  return <CasualServicesHero title={text(content.title)} description={text(content.description)} badge={text(content.badge)} imageUrl={contentImage(content)} />;
 }
 
 export function CasualServicesGridSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
-  return <CasualServicesGrid title={text(content.title)} description={text(content.description)} services={servicesFor(props)} />;
+  return <CasualServicesGrid title={text(content.title)} description={text(content.description)} badge={text(content.badge)} services={servicesFor(props)} imageUrl={contentImage(content)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} />;
 }
 
 export function CasualServicesProcessSection(props: CasualSectionProps) {
@@ -434,24 +453,46 @@ export function CasualServicesBenefitsSection(props: CasualSectionProps) {
 
 export function CasualServicesFaqSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
-  return <CasualServicesFaq title={text(content.title)} description={text(content.description)} faqs={faqsFor(props)} />;
+  return <CasualServicesFaq title={text(content.title)} description={text(content.description)} badge={text(content.badge)} faqs={faqsFor(props)} imageUrl={contentImage(content)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} />;
 }
 
 // ---- Portfolio ----
 
 export function CasualPortfolioHeroSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
-  return <CasualPortfolioHero title={text(content.title)} description={text(content.description)} />;
+  return <CasualPortfolioHero title={text(content.title)} description={text(content.description)} badge={text(content.badge)} imageUrl={contentImage(content)} />;
 }
 
 export function CasualPortfolioCategorySection(props: CasualSectionProps) {
   const content = contentOf(props.section);
-  return <CasualPortfolioCategory title={text(content.title)} description={text(content.description)} />;
+  const categories = [...new Set((props.section.data?.portfolioCategories || []).map((item) => titleOf(item)))];
+  return (
+    <CasualPortfolioCategory
+      title={text(content.title)}
+      description={text(content.description)}
+      badge={text(content.badge)}
+      categories={categories}
+      imageUrl={contentImage(content)}
+      ctaLabel={text(content.ctaLabel)}
+      ctaHref={sectionHref(props, "cta", "/contact")}
+    />
+  );
 }
 
 export function CasualPortfolioGridSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
-  return <CasualPortfolioGrid title={text(content.title)} description={text(content.description)} portfolios={portfoliosFor(props)} portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)} />;
+  return (
+    <CasualPortfolioGrid
+      title={text(content.title)}
+      description={text(content.description)}
+      badge={text(content.badge)}
+      portfolios={portfoliosFor(props)}
+      portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)}
+      imageUrl={contentImage(content)}
+      ctaLabel={text(content.ctaLabel)}
+      ctaHref={sectionHref(props, "cta", "/contact")}
+    />
+  );
 }
 
 export function CasualPortfolioCaseHighlightSection(props: CasualSectionProps) {
@@ -473,6 +514,7 @@ export function CasualPortfolioCtaSection(props: CasualSectionProps) {
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", "/contact")}
+      imageUrl={contentImage(content)}
     />
   );
 }
@@ -481,19 +523,19 @@ export function CasualPortfolioCtaSection(props: CasualSectionProps) {
 
 export function CasualArticlesHeroSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
-  return <CasualArticlesHero title={text(content.title)} description={text(content.description)} />;
+  return <CasualArticlesHero title={text(content.title)} description={text(content.description)} badge={text(content.badge)} imageUrl={contentImage(content)} />;
 }
 
 export function CasualFeaturedArticleSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
   const articles = articlesFor(props);
   const article = articles.find((item, index) => props.section.data?.articles?.[index]?.isFeatured) || articles[0];
-  return <CasualFeaturedArticle title={text(content.title)} description={text(content.description)} article={article} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} />;
+  return <CasualFeaturedArticle title={text(content.title)} description={text(content.description)} badge={text(content.badge)} article={article} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} imageUrl={contentImage(content)} ctaLabel={text(content.ctaLabel)} />;
 }
 
 export function CasualArticlePreviewSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
-  return <CasualArticlePreview title={text(content.title)} description={text(content.description)} articles={articlesFor(props)} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} />;
+  return <CasualArticlePreview title={text(content.title)} description={text(content.description)} badge={text(content.badge)} articles={articlesFor(props)} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} imageUrl={contentImage(content)} ctaLabel={text(content.ctaLabel)} />;
 }
 
 // ---- Article Detail ----
@@ -538,6 +580,7 @@ export function CasualArticleCtaSection(props: CasualSectionProps) {
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", "/contact")}
+      imageUrl={contentImage(content)}
     />
   );
 }
@@ -587,6 +630,7 @@ export function CasualPortfolioDetailCtaSection(props: CasualSectionProps) {
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", "/contact")}
+      imageUrl={contentImage(content)}
     />
   );
 }
@@ -595,7 +639,7 @@ export function CasualPortfolioDetailCtaSection(props: CasualSectionProps) {
 
 export function CasualContactHeroSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
-  return <CasualContactHero title={text(content.title)} description={text(content.description)} />;
+  return <CasualContactHero title={text(content.title)} description={text(content.description)} badge={text(content.badge)} imageUrl={contentImage(content)} />;
 }
 
 export function CasualContactInformationSection(props: CasualSectionProps) {
@@ -634,7 +678,7 @@ export function CasualMapsLocationSection(props: CasualSectionProps) {
 
 export function CasualContactFaqSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
-  return <CasualContactFaq title={text(content.title)} description={text(content.description)} faqs={faqsFor(props)} />;
+  return <CasualContactFaq title={text(content.title)} description={text(content.description)} badge={text(content.badge)} faqs={faqsFor(props)} imageUrl={contentImage(content)} />;
 }
 
 export function CasualContactCtaSection(props: CasualSectionProps) {
@@ -645,6 +689,7 @@ export function CasualContactCtaSection(props: CasualSectionProps) {
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", "/contact")}
+      imageUrl={contentImage(content)}
     />
   );
 }
@@ -652,6 +697,58 @@ export function CasualContactCtaSection(props: CasualSectionProps) {
 // Casual — komponen hasil porting Google AI Studio untuk Website Type Company Profile.
 // Namespace "Casual<Slot>" mengikuti konvensi yang sama dengan tema Formal, supaya
 // gabungan ke registry global (SectionRegistry.tsx) tidak bentrok nama.
+// ---- Global Chrome (Navbar & Footer) ----
+// Slot "global.navbar" / "global.footer" — section biasa supaya bisa dipilih & di-preview
+// lintas tema lewat mekanisme "Pilih Tampilan Section" yang sama seperti section lain.
+import { Header as CasualSiteHeader } from "../source/shared/Header";
+import { Footer as CasualSiteFooter } from "../source/shared/Footer";
+
+export function CasualGlobalNavbar(props: CasualSectionProps) {
+  const business = businessOf(props.payload);
+  const navbarItems = props.payload.navigation?.navbar?.items || [];
+  const cta = props.payload.navigation?.navbar?.cta;
+  const getHref = (path: string) => getSiteHref(props.siteSlug, path);
+  return (
+    <CasualSiteHeader
+      siteSlug={props.siteSlug}
+      getHref={getHref}
+      businessName={text(business.name, props.payload.website.name)}
+      taglineLabel={text(business.tagline as string)}
+      logoUrl={text(business.logoUrl as string) || undefined}
+      navItems={navbarItems.length > 0 ? navbarItems : undefined}
+      ctaLabel={cta?.label || "Hubungi Kami"}
+      ctaPath={cta?.path || "/contact"}
+    />
+  );
+}
+
+export function CasualGlobalFooter(props: CasualSectionProps) {
+  const business = businessOf(props.payload);
+  const footerItems = props.payload.navigation?.footer?.items || [];
+  const getHref = (path: string) => getSiteHref(props.siteSlug, path);
+  return (
+    <CasualSiteFooter
+      getHref={getHref}
+      businessName={text(business.name, props.payload.website.name)}
+      taglineLabel={text(business.tagline as string) || "Company Profile"}
+      logoUrl={text(business.logoUrl as string) || undefined}
+      description={text(business.description as string, "Website company profile yang menampilkan profil, layanan, portofolio, artikel, dan kontak bisnis.")}
+      establishedYear={text(business.establishedYear as string) || undefined}
+      founderName={text(business.founderName as string) || undefined}
+      address={text(business.address as string)}
+      email={text(business.contactEmail as string)}
+      phone={text(business.phone as string)}
+      workingHours={text(business.workingHours as string, text(business.operationalHours as string))}
+      instagramUrl={text(business.instagramUrl as string) || undefined}
+      facebookUrl={text(business.facebookUrl as string) || undefined}
+      linkedinUrl={text(business.linkedinUrl as string) || undefined}
+      twitterUrl={text(business.twitterUrl as string) || undefined}
+      websiteUrl={text(business.websiteUrl as string) || undefined}
+      navItems={footerItems.length > 0 ? footerItems : undefined}
+    />
+  );
+}
+
 export const casualSectionComponents: Record<string, CasualSectionComponent> = {
   CasualHomeHero: CasualHomeHeroSection,
   CasualHomeProfileSummary: CasualHomeProfileSummarySection,
@@ -694,5 +791,7 @@ export const casualSectionComponents: Record<string, CasualSectionComponent> = {
   CasualContactInformation: CasualContactInformationSection,
   CasualMapsLocation: CasualMapsLocationSection,
   CasualContactFaq: CasualContactFaqSection,
-  CasualContactCta: CasualContactCtaSection
+  CasualContactCta: CasualContactCtaSection,
+  CasualGlobalNavbar,
+  CasualGlobalFooter
 };

@@ -5,23 +5,30 @@ import React, { useState } from 'react';
 interface PremiumPortfolioCategoryProps {
   title?: string;
   description?: string;
+  badge?: string;
+  categories?: string[];
   onSelectCategory?: (category: string) => void;
+  imageUrl?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
 }
 
 export function PremiumPortfolioCategory({
   title = "Kategori Proyek",
   description = "Filter karya kami berdasarkan tipologi bangunan untuk mempermudah penelusuran portofolio Anda.",
-  onSelectCategory
+  badge,
+  categories = [],
+  onSelectCategory,
+  imageUrl,
+  ctaLabel,
+  ctaHref = "/contact",
 }: PremiumPortfolioCategoryProps) {
   const [activeCategory, setActiveCategory] = useState("Semua");
 
-  const categories = [
-    "Semua",
-    "Residensi Privat",
-    "Restorasi Sejarah",
-    "Ruang Komersial",
-    "Paviliun & Lanskap"
-  ];
+  // Kategori sekarang murni dari data Kategori Portfolio asli yang owner input di
+  // dashboard (bukan lagi 4 nama kategori contoh yang di-hardcode).
+  const allCategories = categories.length ? ["Semua", ...categories] : [];
+  if (allCategories.length === 0) return null;
 
   const handleCategorySelect = (category: string) => {
     setActiveCategory(category);
@@ -31,8 +38,17 @@ export function PremiumPortfolioCategory({
   };
 
   return (
-    <section id="premium-portfolio-category" className="py-12 bg-[#FAF9F6] text-[#121212] border-b border-stone-200/50">
-      <div className="max-w-7xl mx-auto px-6">
+    <section id="premium-portfolio-category" className="bg-[#FAF9F6] text-[#121212] border-b border-stone-200/50 relative overflow-hidden">
+      {imageUrl && (
+        <div className="absolute inset-0">
+          <img src={imageUrl} alt="" className="w-full h-full object-cover opacity-15" referrerPolicy="no-referrer" />
+          <div className="absolute inset-0 bg-[#FAF9F6]/85" />
+        </div>
+      )}
+      <div className="max-w-7xl mx-auto px-6 relative z-10 py-12">
+        {badge && (
+          <span className="block text-[10px] font-bold tracking-[0.3em] text-[#B283AF] uppercase mb-4">{badge}</span>
+        )}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           {/* Left info label */}
           <div className="space-y-1">
@@ -40,11 +56,16 @@ export function PremiumPortfolioCategory({
             <p className="text-stone-500 text-xs font-sans font-light max-w-sm">
               {description}
             </p>
+            {ctaLabel && (
+              <a href={ctaHref} className="inline-flex text-[10px] font-bold tracking-widest uppercase text-stone-700 hover:text-[#649FF6] transition-colors pt-2">
+                {ctaLabel} →
+              </a>
+            )}
           </div>
 
           {/* Interactive Categories Bar */}
           <div className="flex flex-wrap gap-2.5">
-            {categories.map((category) => {
+            {allCategories.map((category) => {
               const isActive = activeCategory === category;
               return (
                 <button

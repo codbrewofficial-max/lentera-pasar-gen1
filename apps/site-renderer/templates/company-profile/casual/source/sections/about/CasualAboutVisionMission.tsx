@@ -5,28 +5,69 @@ import { Target, Compass } from 'lucide-react';
 import { RichHtml } from '@/components/content/RichHtml';
 
 export interface CasualAboutVisionMissionProps {
+  title?: string;
+  description?: string;
+  badge?: string;
   visionTitle?: string;
   vision?: string;
   missionTitle?: string;
   mission?: string;
+  imageUrl?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
 }
 
 const defaultVisionHtml = '<p>Menjadi wadah kolaborasi kreatif nomor satu di Indonesia yang mendemokratisasikan akses branding kelas dunia untuk seluruh lapisan UMKM dan bisnis lokal.</p>';
 const defaultMissionHtml = '<ul><li>Menyediakan solusi branding dan pemasaran digital yang terjangkau, transparan, serta bebas dari jargon teknis yang membingungkan.</li><li>Melatih dan membimbing pemilik bisnis mandiri agar berdaya secara digital secara mandiri.</li><li>Menciptakan standar visual baru yang segar, ramah, dan autentik bagi lanskap UMKM lokal.</li></ul>';
 
 export function CasualAboutVisionMission({
+  title,
+  description,
+  badge,
   visionTitle = 'Visi Kami',
   vision = defaultVisionHtml,
   missionTitle = 'Misi Kami',
   mission = defaultMissionHtml,
+  imageUrl,
+  ctaLabel,
+  ctaHref = '/contact',
 }: CasualAboutVisionMissionProps) {
   return (
-    <section id="CasualAboutVisionMission" className="py-20 bg-white relative overflow-hidden">
-      {/* Decorative colored blobs */}
-      <div className="absolute top-0 left-10 w-64 h-64 rounded-full bg-[#649FF6]/5 blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 right-10 w-64 h-64 rounded-full bg-[#F56B71]/5 blur-3xl pointer-events-none" />
+    <section id="CasualAboutVisionMission" className="bg-white relative overflow-hidden">
+      {imageUrl ? (
+        <div className="relative py-16 md:py-20 mb-4 overflow-hidden text-white text-center">
+          <div className="absolute inset-0">
+            <img src={imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            <div className="absolute inset-0 bg-gray-950/70" />
+          </div>
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-4">
+            {badge && <span className="text-sm font-bold text-white/80 uppercase tracking-widest block font-mono">{badge}</span>}
+            {title && <h2 className="font-sans font-extrabold text-3xl sm:text-4xl tracking-tight">{title}</h2>}
+            {description && <p className="font-sans text-base text-gray-200 leading-relaxed">{description}</p>}
+            {ctaLabel && (
+              <div className="pt-2">
+                <a href={ctaHref} className="inline-flex items-center gap-2 bg-white text-gray-900 px-6 py-3 rounded-full text-sm font-bold hover:bg-gray-100 transition-all">
+                  {ctaLabel}
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="absolute top-0 left-10 w-64 h-64 rounded-full bg-[#649FF6]/5 blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 right-10 w-64 h-64 rounded-full bg-[#F56B71]/5 blur-3xl pointer-events-none" />
+        </>
+      )}
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 py-12 md:py-16">
+        {!imageUrl && (title || description || badge) && (
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-12">
+            {badge && <span className="text-sm font-bold text-[#B283AF] uppercase tracking-widest block font-mono">{badge}</span>}
+            {title && <h2 className="font-sans font-extrabold text-3xl sm:text-4xl text-gray-950 tracking-tight">{title}</h2>}
+            {description && <p className="font-sans text-base text-gray-600 leading-relaxed">{description}</p>}
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
           
           {/* Vision Card - Sky Blue Accented */}

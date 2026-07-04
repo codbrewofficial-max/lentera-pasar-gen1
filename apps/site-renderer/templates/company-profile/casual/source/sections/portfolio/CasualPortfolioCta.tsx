@@ -9,6 +9,7 @@ export interface CasualPortfolioCtaProps {
   description?: string;
   ctaLabel?: string;
   ctaUrl?: string;
+  imageUrl?: string;
 }
 
 export function CasualPortfolioCta({
@@ -16,6 +17,7 @@ export function CasualPortfolioCta({
   description = 'Tidak usah minder karena merasa usahamu masih kecil atau rumahan. Kami mendesain khusus untuk menaikkan kelas UMKM lokal dengan budget bersahabat. Yuk, ambil langkah pertamamu hari ini!',
   ctaLabel = 'Mulai Sesi Curhat (Gratis)',
   ctaUrl = 'https://wa.me/628123456789',
+  imageUrl,
 }: CasualPortfolioCtaProps) {
   return (
     <section id="CasualPortfolioCta" className="py-20 bg-gray-50 relative overflow-hidden">
@@ -28,7 +30,21 @@ export function CasualPortfolioCta({
         {/* Container box */}
         <div className="bg-gradient-to-tr from-[#649FF6] via-[#B283AF] to-[#F56B71] rounded-[48px] p-8 md:p-14 text-center text-white shadow-xl relative overflow-hidden">
           
-          {/* Sparkly overlay */}
+                    
+          {imageUrl && (
+          
+            <div className="absolute inset-0">
+          
+              <img src={imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+          
+              <div className="absolute inset-0 bg-gray-950/70" />
+          
+            </div>
+          
+          )}
+          
+          <div className="relative z-10">
+{/* Sparkly overlay */}
           <div className="absolute top-4 left-6 text-2xl select-none rotate-12">✨</div>
           <div className="absolute bottom-4 right-6 text-2xl select-none -rotate-12">☕</div>
 
@@ -72,6 +88,8 @@ export function CasualPortfolioCta({
               SUDAH SELESAI? HUBUNGI SEKARANG UNTUK BOOKING SESI JULI-AGUSTUS 2026
             </span>
           </div>
+
+        </div>
 
         </div>
 

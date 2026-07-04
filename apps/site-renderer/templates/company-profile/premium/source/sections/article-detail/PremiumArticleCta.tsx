@@ -8,16 +8,24 @@ interface PremiumArticleCtaProps {
   description?: string;
   ctaLabel?: string;
   ctaUrl?: string;
+  imageUrl?: string;
 }
 
 export function PremiumArticleCta({
   title = "Terinspirasi oleh Tulisan Kami?",
   description = "Tinggalkan coretan konsep mentah Anda atau jadwalkan janji pertemuan langsung di studio kami untuk menuangkan gagasan tersebut ke dalam rancangan arsitektural matang.",
   ctaLabel = "MULAI PROYEK KONSEPTUAL ANDA",
-  ctaUrl = "/contact"
+  ctaUrl = "/contact",
+  imageUrl
 }: PremiumArticleCtaProps) {
   return (
     <section id="premium-article-cta" className="py-24 md:py-32 bg-[#FAF9F6] text-[#121212] relative overflow-hidden border-t border-stone-200">
+      {imageUrl && (
+        <div className="absolute inset-0">
+          <img src={imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+          <div className="absolute inset-0 bg-stone-950/80" />
+        </div>
+      )}
       {/* Editorial aesthetic lines */}
       <div className="absolute top-0 left-20 w-[1px] h-full bg-stone-200/50" />
       <div className="absolute top-0 right-20 w-[1px] h-full bg-stone-200/50" />
@@ -28,11 +36,11 @@ export function PremiumArticleCta({
           <span className="text-[10px] font-bold tracking-[0.3em] text-[#B283AF] uppercase">KOLABORASI IDE</span>
         </div>
 
-        <h2 className="text-3xl md:text-5xl font-serif font-light tracking-tight text-stone-900 leading-tight">
+        <h2 className={`text-3xl md:text-5xl font-serif font-light tracking-tight ${imageUrl ? 'text-white' : 'text-stone-900'} leading-tight`}>
           {title}
         </h2>
 
-        <p className="text-stone-600 text-sm md:text-base leading-relaxed max-w-2xl mx-auto font-sans font-light">
+        <p className={`text-sm md:text-base leading-relaxed max-w-2xl mx-auto font-sans font-light ${imageUrl ? "text-stone-200" : "text-stone-600"}`}>
           {description}
         </p>
 

@@ -160,6 +160,10 @@ export default function ChooseTemplatePage() {
   const currentPageKey = slotKey?.includes(".")
     ? slotKey.split(".")[0]
     : "home";
+  // Slot "global.navbar" / "global.footer" bukan bagian dari halaman sungguhan (lihat
+  // catatan isGlobalChromePage di shared/website-structure.ts) — arahkan balik ke
+  // "Halaman & Menu" (page-setup), bukan ke /pages/global yang tidak ada.
+  const backDestination = currentPageKey === "global" ? `/websites/${websiteId}/page-setup` : `/websites/${websiteId}/pages/${currentPageKey}`;
 
   const fetchTemplates = async () => {
     setLoading(true);
@@ -193,7 +197,7 @@ export default function ChooseTemplatePage() {
       );
       setSuccessMsg("Tampilan section berhasil disimpan!");
       setTimeout(() => {
-        router.push(`/websites/${websiteId}/pages/${currentPageKey}`);
+        router.push(backDestination);
       }, 800);
     } catch (err: any) {
       setErrorMsg(err.error?.message || "Gagal menyimpan pilihan tampilan.");
@@ -209,7 +213,7 @@ export default function ChooseTemplatePage() {
       title="Pilih Tampilan Section"
       subtitle={`Bagian: ${getSlotLabel()} · ${templates.length} pilihan tersedia`}
       showBackButton={true}
-      backUrl={`/websites/${websiteId}/pages/${currentPageKey}`}
+      backUrl={backDestination}
     >
       <div className="space-y-5" id="choose-container">
         {/* Alerts */}
