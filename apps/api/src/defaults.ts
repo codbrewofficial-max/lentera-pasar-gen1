@@ -16,10 +16,13 @@ export const defaultPageNavLabel = (pageKey: string) =>
 export const isDynamicDetailPage = (pageKey: string) =>
   COMPANY_PROFILE_PAGES.find((page) => page.pageKey === pageKey)?.isDynamicDetailPage || false;
 
+export const isGlobalChromePage = (pageKey: string) =>
+  COMPANY_PROFILE_PAGES.find((page) => page.pageKey === pageKey)?.isGlobalChromePage || false;
+
 export const defaultPageVisibility = (pageKey: string) => ({
-  isPublished: true,
-  isVisibleInNavbar: !isDynamicDetailPage(pageKey),
-  isVisibleInFooter: !isDynamicDetailPage(pageKey)
+  isPublished: !isGlobalChromePage(pageKey),
+  isVisibleInNavbar: !isDynamicDetailPage(pageKey) && !isGlobalChromePage(pageKey),
+  isVisibleInFooter: !isDynamicDetailPage(pageKey) && !isGlobalChromePage(pageKey)
 });
 
 export const createCompanyProfileDefaults = async (
@@ -74,8 +77,8 @@ export const ensureCompanyProfileStructure = async (
           footerLabel: existing.footerLabel || label,
           purpose: existing.purpose || pagePurpose(page.pageKey),
           isPublished: existing.isPublished ?? visibility.isPublished,
-          isVisibleInNavbar: isDynamicDetailPage(page.pageKey) ? false : existing.isVisibleInNavbar ?? visibility.isVisibleInNavbar,
-          isVisibleInFooter: isDynamicDetailPage(page.pageKey) ? false : existing.isVisibleInFooter ?? visibility.isVisibleInFooter
+          isVisibleInNavbar: isDynamicDetailPage(page.pageKey) || isGlobalChromePage(page.pageKey) ? false : existing.isVisibleInNavbar ?? visibility.isVisibleInNavbar,
+          isVisibleInFooter: isDynamicDetailPage(page.pageKey) || isGlobalChromePage(page.pageKey) ? false : existing.isVisibleInFooter ?? visibility.isVisibleInFooter
         },
         select: { id: true, pageKey: true }
       });
