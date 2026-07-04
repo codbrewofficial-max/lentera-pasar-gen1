@@ -1,4 +1,8 @@
 import {
+  CATALOG_PRODUCT_DEFAULT_NAV_LABELS,
+  CATALOG_PRODUCT_PAGE_PURPOSES,
+  CATALOG_PRODUCT_PAGES,
+  CATALOG_PRODUCT_SECTION_SLOTS,
   COMPANY_PROFILE_DEFAULT_NAV_LABELS,
   COMPANY_PROFILE_PAGE_PURPOSES,
   COMPANY_PROFILE_PAGES,
@@ -7,30 +11,60 @@ import {
 } from "@lentera-pasar/shared";
 import type { Prisma } from "@prisma/client";
 
-export const pagePurpose = (pageKey: string) =>
-  (COMPANY_PROFILE_PAGE_PURPOSES as Record<string, string>)[pageKey] || "";
+// Struktur halaman & section per Website Type. Company Profile dan Katalog Produk
+// sudah lengkap. Website Type lain (booking_inquiry, community_website, landing_page)
+// belum punya CATALOG/BOOKING/COMMUNITY_* constants sendiri di shared package (belum
+// digarap), jadi untuk sementara fallback ke struktur Company Profile supaya tidak
+// crash — toh belum ada UI/CRUD khusus buat tipe-tipe itu juga.
+const WEBSITE_TYPE_STRUCTURE = {
+  company_profile: {
+    pages: COMPANY_PROFILE_PAGES,
+    sectionSlots: COMPANY_PROFILE_SECTION_SLOTS,
+    pagePurposes: COMPANY_PROFILE_PAGE_PURPOSES as Record<string, string>,
+    defaultNavLabels: COMPANY_PROFILE_DEFAULT_NAV_LABELS as Record<string, string>
+  },
+  catalog_product: {
+    pages: CATALOG_PRODUCT_PAGES,
+    sectionSlots: CATALOG_PRODUCT_SECTION_SLOTS,
+    pagePurposes: CATALOG_PRODUCT_PAGE_PURPOSES as Record<string, string>,
+    defaultNavLabels: CATALOG_PRODUCT_DEFAULT_NAV_LABELS as Record<string, string>
+  }
+} as const;
 
-export const defaultPageNavLabel = (pageKey: string) =>
-  (COMPANY_PROFILE_DEFAULT_NAV_LABELS as Record<string, string>)[pageKey] || pageKey;
+type SupportedWebsiteType = keyof typeof WEBSITE_TYPE_STRUCTURE;
 
-export const isDynamicDetailPage = (pageKey: string) =>
-  COMPANY_PROFILE_PAGES.find((page) => page.pageKey === pageKey)?.isDynamicDetailPage || false;
+const resolveStructure = (websiteType: string) =>
+  WEBSITE_TYPE_STRUCTURE[websiteType as SupportedWebsiteType] || WEBSITE_TYPE_STRUCTURE.company_profile;
 
-export const isGlobalChromePage = (pageKey: string) =>
-  COMPANY_PROFILE_PAGES.find((page) => page.pageKey === pageKey)?.isGlobalChromePage || false;
+export const pagesFor = (websiteType: string) => resolveStructure(websiteType).pages;
 
-export const defaultPageVisibility = (pageKey: string) => ({
-  isPublished: !isGlobalChromePage(pageKey),
-  isVisibleInNavbar: !isDynamicDetailPage(pageKey) && !isGlobalChromePage(pageKey),
-  isVisibleInFooter: !isDynamicDetailPage(pageKey) && !isGlobalChromePage(pageKey)
+export const sectionSlotsFor = (websiteType: string) => resolveStructure(websiteType).sectionSlots;
+
+export const pagePurpose = (pageKey: string, websiteType: string = "company_profile") =>
+  resolveStructure(websiteType).pagePurposes[pageKey] || "";
+
+export const defaultPageNavLabel = (pageKey: string, websiteType: string = "company_profile") =>
+  resolveStructure(websiteType).defaultNavLabels[pageKey] || pageKey;
+
+export const isDynamicDetailPage = (pageKey: string, websiteType: string = "company_profile") =>
+  resolveStructure(websiteType).pages.find((page) => page.pageKey === pageKey)?.isDynamicDetailPage || false;
+
+export const isGlobalChromePage = (pageKey: string, websiteType: string = "company_profile") =>
+  resolveStructure(websiteType).pages.find((page) => page.pageKey === pageKey)?.isGlobalChromePage || false;
+
+export const defaultPageVisibility = (pageKey: string, websiteType: string = "company_profile") => ({
+  isPublished: !isGlobalChromePage(pageKey, websiteType),
+  isVisibleInNavbar: !isDynamicDetailPage(pageKey, websiteType) && !isGlobalChromePage(pageKey, websiteType),
+  isVisibleInFooter: !isDynamicDetailPage(pageKey, websiteType) && !isGlobalChromePage(pageKey, websiteType)
 });
 
-export const createCompanyProfileDefaults = async (
+export const createWebsiteDefaults = async (
   tx: Prisma.TransactionClient,
   websiteId: string,
-  websiteName: string
+  websiteName: string,
+  websiteType: string = "company_profile"
 ) => {
-  await ensureCompanyProfileStructure(tx, websiteId);
+  await ensureWebsiteStructure(tx, websiteId, websiteType);
 
   await tx.businessProfile.upsert({
     where: { websiteId },
@@ -42,15 +76,27 @@ export const createCompanyProfileDefaults = async (
   });
 };
 
-export const ensureCompanyProfileStructure = async (
+// Alias lama dipertahankan biar tidak ada call site yang patah kalau ada yang
+// belum sempat diupdate untuk ikut mengirim websiteType — selalu bootstrap
+// sebagai company_profile, sama seperti perilaku sebelumnya.
+export const createCompanyProfileDefaults = (
   tx: Prisma.TransactionClient,
-  websiteId: string
+  websiteId: string,
+  websiteName: string
+) => createWebsiteDefaults(tx, websiteId, websiteName, "company_profile");
+
+export const ensureWebsiteStructure = async (
+  tx: Prisma.TransactionClient,
+  websiteId: string,
+  websiteType: string = "company_profile"
 ) => {
+  const pages = pagesFor(websiteType);
+  const sectionSlots = sectionSlotsFor(websiteType);
   const pageByKey = new Map<string, { id: string; pageKey: string }>();
 
-  for (const page of COMPANY_PROFILE_PAGES) {
-    const visibility = defaultPageVisibility(page.pageKey);
-    const label = defaultPageNavLabel(page.pageKey);
+  for (const page of pages) {
+    const visibility = defaultPageVisibility(page.pageKey, websiteType);
+    const label = defaultPageNavLabel(page.pageKey, websiteType);
     const existing = await tx.websitePage.findUnique({
       where: { websiteId_pageKey: { websiteId, pageKey: page.pageKey } },
       select: {
@@ -75,10 +121,10 @@ export const ensureCompanyProfileStructure = async (
           title: existing.title || label,
           navLabel: existing.navLabel || label,
           footerLabel: existing.footerLabel || label,
-          purpose: existing.purpose || pagePurpose(page.pageKey),
+          purpose: existing.purpose || pagePurpose(page.pageKey, websiteType),
           isPublished: existing.isPublished ?? visibility.isPublished,
-          isVisibleInNavbar: isDynamicDetailPage(page.pageKey) || isGlobalChromePage(page.pageKey) ? false : existing.isVisibleInNavbar ?? visibility.isVisibleInNavbar,
-          isVisibleInFooter: isDynamicDetailPage(page.pageKey) || isGlobalChromePage(page.pageKey) ? false : existing.isVisibleInFooter ?? visibility.isVisibleInFooter
+          isVisibleInNavbar: isDynamicDetailPage(page.pageKey, websiteType) || isGlobalChromePage(page.pageKey, websiteType) ? false : existing.isVisibleInNavbar ?? visibility.isVisibleInNavbar,
+          isVisibleInFooter: isDynamicDetailPage(page.pageKey, websiteType) || isGlobalChromePage(page.pageKey, websiteType) ? false : existing.isVisibleInFooter ?? visibility.isVisibleInFooter
         },
         select: { id: true, pageKey: true }
       });
@@ -95,7 +141,7 @@ export const ensureCompanyProfileStructure = async (
         footerLabel: label,
         slug: page.slug,
         sortOrder: page.sortOrder,
-        purpose: pagePurpose(page.pageKey),
+        purpose: pagePurpose(page.pageKey, websiteType),
         isPublished: visibility.isPublished,
         isVisibleInNavbar: visibility.isVisibleInNavbar,
         isVisibleInFooter: visibility.isVisibleInFooter
@@ -105,7 +151,7 @@ export const ensureCompanyProfileStructure = async (
     pageByKey.set(saved.pageKey, saved);
   }
 
-  for (const slot of COMPANY_PROFILE_SECTION_SLOTS) {
+  for (const slot of sectionSlots) {
     const page = pageByKey.get(slot.pageKey);
     if (!page) continue;
     await tx.pageSection.upsert({
@@ -124,11 +170,15 @@ export const ensureCompanyProfileStructure = async (
   // (mis. "article_detail.article_detail_hero" / "portfolio_detail.portfolio_detail_hero"
   // yang sudah digabung ke dalam slot Content). Tanpa ini, "Sync Structure" cuma nambah
   // section baru dan section basi/deprecated akan terus nyangkut selamanya di database.
-  const currentSlotKeys = COMPANY_PROFILE_SECTION_SLOTS.map((slot) => slot.slotKey);
+  const currentSlotKeys = sectionSlots.map((slot) => slot.slotKey);
   await tx.pageSection.deleteMany({
     where: { websiteId, slotKey: { notIn: currentSlotKeys } }
   });
 };
 
-export const pageLabel = (pageKey: PageKey) =>
-  COMPANY_PROFILE_PAGES.find((page) => page.pageKey === pageKey)?.title || pageKey;
+// Alias lama.
+export const ensureCompanyProfileStructure = (tx: Prisma.TransactionClient, websiteId: string) =>
+  ensureWebsiteStructure(tx, websiteId, "company_profile");
+
+export const pageLabel = (pageKey: PageKey | string, websiteType: string = "company_profile") =>
+  resolveStructure(websiteType).pages.find((page) => page.pageKey === pageKey)?.title || pageKey;

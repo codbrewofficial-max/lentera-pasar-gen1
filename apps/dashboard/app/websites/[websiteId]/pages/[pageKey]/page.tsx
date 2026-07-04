@@ -41,6 +41,14 @@ interface PageDetail {
   sections: Section[];
 }
 
+// Halaman dinamis sekarang bisa lebih dari satu jenis (article_detail untuk
+// artikel, product_detail untuk produk di website Katalog Produk).
+const dynamicDetailNoun = (pageKey: string) => {
+  if (pageKey === "article_detail") return "artikel";
+  if (pageKey === "product_detail") return "produk";
+  return "konten";
+};
+
 export default function PageSectionsPage() {
   const router = useRouter();
   const params = useParams();
@@ -133,7 +141,7 @@ export default function PageSectionsPage() {
         {pageDetail?.isDynamicDetailPage && (
           <div className="p-4 bg-sky-50 border border-sky-200 rounded-2xl text-sky-800 text-sm flex items-start space-x-3 animate-fadeIn">
             <AlertCircle className="h-5 w-5 shrink-0 text-sky-600 mt-0.5" />
-            <span>Halaman ini mengatur tampilan detail artikel, bukan artikel tertentu.</span>
+            <span>Halaman ini mengatur tampilan detail {dynamicDetailNoun(pageDetail?.pageKey || "")}, bukan {dynamicDetailNoun(pageDetail?.pageKey || "")} tertentu.</span>
           </div>
         )}
 

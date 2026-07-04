@@ -150,6 +150,7 @@ export default function ChooseTemplatePage() {
   const slotKey = params?.slotKey as string;
 
   const [templates, setTemplates] = useState<TemplateSection[]>([]);
+  const [websiteType, setWebsiteType] = useState<string>("company_profile");
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
@@ -169,9 +170,12 @@ export default function ChooseTemplatePage() {
     setLoading(true);
     setErrorMsg("");
     try {
+      const websiteRes = await apiCall<{ websiteType: string }>("GET", `websites/${websiteId}`).catch(() => ({ data: null as { websiteType: string } | null }));
+      const currentWebsiteType = websiteRes.data?.websiteType || "company_profile";
+      setWebsiteType(currentWebsiteType);
       const res = await apiCall<TemplateSection[]>(
         "GET",
-        `template-sections/by-slot/${slotKey}`
+        `template-sections/by-slot/${slotKey}?websiteType=${encodeURIComponent(currentWebsiteType)}`
       );
       setTemplates(res.data || []);
     } catch (err: any) {

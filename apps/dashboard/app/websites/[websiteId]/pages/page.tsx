@@ -23,12 +23,38 @@ interface PageItem {
   isActive: boolean;
 }
 
+interface WebsiteInfo {
+  websiteType: string;
+  websiteTypeLabel?: string;
+}
+
+// Halaman dinamis sekarang bisa lebih dari satu jenis (article_detail untuk
+// artikel, product_detail untuk produk di website Katalog Produk), jadi label
+// & penjelasannya tidak boleh hardcode "artikel" lagi.
+const dynamicDetailNoun = (pageKey: string) => {
+  if (pageKey === "article_detail") return "artikel";
+  if (pageKey === "product_detail") return "produk";
+  return "konten";
+};
+
+const dynamicDetailBadgeLabel = (pageKey: string) => {
+  if (pageKey === "article_detail") return "Template Detail Artikel";
+  if (pageKey === "product_detail") return "Template Detail Produk";
+  return "Template Halaman Detail";
+};
+
+const STRUCTURE_INFO_BY_TYPE: Record<string, string> = {
+  company_profile: "Website tipe Company Profile memiliki 7 halaman default: Home, About Us, Service, Portfolio, Blog / Artikel, Article Detail, dan Contact.",
+  catalog_product: "Website tipe Katalog Produk memiliki 7 halaman default: Home, Produk, Detail Produk, FAQ, Blog / Artikel, Article Detail, dan Contact."
+};
+
 export default function WebsitePagesPage() {
   const router = useRouter();
   const params = useParams();
   const websiteId = params?.websiteId as string;
 
   const [pages, setPages] = useState<PageItem[]>([]);
+  const [website, setWebsite] = useState<WebsiteInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -36,8 +62,12 @@ export default function WebsitePagesPage() {
     setLoading(true);
     setErrorMsg("");
     try {
-      const res = await apiCall<PageItem[]>("GET", `websites/${websiteId}/pages`);
-      setPages(res.data || []);
+      const [pagesRes, websiteRes] = await Promise.all([
+        apiCall<PageItem[]>("GET", `websites/${websiteId}/pages`),
+        apiCall<WebsiteInfo>("GET", `websites/${websiteId}`).catch(() => ({ data: null as WebsiteInfo | null }))
+      ]);
+      setPages(pagesRes.data || []);
+      setWebsite(websiteRes.data || null);
     } catch (err: any) {
       console.error("Fetch pages error:", err);
       setErrorMsg(err.error?.message || "Gagal memuat daftar halaman.");
@@ -72,7 +102,8 @@ export default function WebsitePagesPage() {
 
         <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm text-xs text-slate-500 leading-normal">
           <p>
-            Website tipe <strong>Company Profile</strong> memiliki 7 halaman default: Home, About Us, Service, Portfolio, Blog / Artikel, Article Detail, dan Contact. Setiap halaman dibentuk oleh kumpulan <strong>Bagian Website (Section)</strong> yang tumpukannya disusun berurutan dari atas ke bawah. Klik tombol kelola untuk memilih tampilan visual dan mengisi teks di setiap bagian halaman tersebut.
+            {STRUCTURE_INFO_BY_TYPE[website?.websiteType || "company_profile"] || STRUCTURE_INFO_BY_TYPE.company_profile}
+            {" "}Setiap halaman dibentuk oleh kumpulan <strong>Bagian Website (Section)</strong> yang tumpukannya disusun berurutan dari atas ke bawah. Klik tombol kelola untuk memilih tampilan visual dan mengisi teks di setiap bagian halaman tersebut.
           </p>
         </div>
 
@@ -114,7 +145,7 @@ export default function WebsitePagesPage() {
                       )}
                       {p.isDynamicDetailPage && (
                         <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 bg-sky-50 text-sky-700 text-[10px] font-bold rounded-full border border-sky-100">
-                          <span>Template Detail Artikel</span>
+                          <span>{dynamicDetailBadgeLabel(p.pageKey)}</span>
                         </span>
                       )}
                       {hasDraft && p.filledSectionCount > 0 && (
@@ -140,7 +171,7 @@ export default function WebsitePagesPage() {
                     </div>
                     {p.isDynamicDetailPage && (
                       <p className="text-xs text-slate-500 leading-normal">
-                        Halaman ini mengatur tampilan detail artikel, bukan artikel tertentu.
+                        Halaman ini mengatur tampilan detail {dynamicDetailNoun(p.pageKey)}, bukan {dynamicDetailNoun(p.pageKey)} tertentu.
                       </p>
                     )}
                   </div>

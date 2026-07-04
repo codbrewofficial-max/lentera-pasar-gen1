@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
+import WebsiteTypeSelector, { WebsiteTypeValue } from "@/components/ui/WebsiteTypeSelector";
 import {
   Users,
   Plus,
@@ -118,7 +119,7 @@ export default function InternalOwnersPage() {
   // +Website modal state (2 mode: pilih existing / buat baru)
   const [websiteModalOwner, setWebsiteModalOwner] = useState<OwnerUser | null>(null);
   const [websiteModalMode, setWebsiteModalMode] = useState<"assign" | "create">("assign");
-  const [websiteFormData, setWebsiteFormData] = useState({ name: "", slug: "" });
+  const [websiteFormData, setWebsiteFormData] = useState<{ name: string; slug: string; websiteType: WebsiteTypeValue }>({ name: "", slug: "", websiteType: "company_profile" });
   const [selectedUnassignedId, setSelectedUnassignedId] = useState<string>("");
   const [creatingWebsite, setCreatingWebsite] = useState(false);
   const [assigningWebsite, setAssigningWebsite] = useState(false);
@@ -262,7 +263,7 @@ export default function InternalOwnersPage() {
   const handleOpenCreateWebsite = (owner: OwnerUser) => {
     setWebsiteModalOwner(owner);
     setWebsiteModalMode(unassignedWebsites.length > 0 ? "assign" : "create");
-    setWebsiteFormData({ name: "", slug: "" });
+    setWebsiteFormData({ name: "", slug: "", websiteType: "company_profile" });
     setSelectedUnassignedId("");
   };
 
@@ -278,7 +279,7 @@ export default function InternalOwnersPage() {
       await apiCall("POST", `internal/owners/${websiteModalOwner.id}/websites`, {
         name: websiteFormData.name,
         slug: websiteFormData.slug,
-        websiteType: "company_profile"
+        websiteType: websiteFormData.websiteType
       });
       setWebsiteModalOwner(null);
       showSuccess("Website baru untuk owner berhasil dibuat.");
@@ -698,6 +699,15 @@ export default function InternalOwnersPage() {
                     placeholder="nama-usaha"
                     required
                   />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-600">Tipe Website</label>
+                  <div className="mt-1">
+                    <WebsiteTypeSelector
+                      value={websiteFormData.websiteType}
+                      onChange={(value) => setWebsiteFormData({ ...websiteFormData, websiteType: value })}
+                    />
+                  </div>
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
                   <button

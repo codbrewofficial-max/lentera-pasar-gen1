@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
+import WebsiteTypeSelector, { WebsiteTypeValue } from "@/components/ui/WebsiteTypeSelector";
 import {
   Globe,
   Plus,
@@ -97,7 +98,7 @@ export default function InternalWebsitesPage() {
 
   // Pre-provisioning (buat website tanpa owner) state
   const [isPreProvisionOpen, setIsPreProvisionOpen] = useState(false);
-  const [preProvisionForm, setPreProvisionForm] = useState({
+  const [preProvisionForm, setPreProvisionForm] = useState<{ name: string; slug: string; websiteType: WebsiteTypeValue }>({
     name: "",
     slug: "",
     websiteType: "company_profile"
@@ -407,6 +408,15 @@ export default function InternalWebsitesPage() {
                   placeholder="nama-usaha"
                   required
                 />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-600">Tipe Website</label>
+                <div className="mt-1">
+                  <WebsiteTypeSelector
+                    value={preProvisionForm.websiteType}
+                    onChange={(value) => setPreProvisionForm({ ...preProvisionForm, websiteType: value })}
+                  />
+                </div>
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
