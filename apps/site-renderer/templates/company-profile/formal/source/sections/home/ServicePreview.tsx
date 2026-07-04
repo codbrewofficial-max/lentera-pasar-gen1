@@ -12,6 +12,7 @@ export interface HomeServicePreviewProps {
   services?: ServiceItem[];
   allServicesHref?: string;
   allServicesLabel?: string;
+  imageUrl?: string;
 }
 
 export const ServicePreview: React.FC<HomeServicePreviewProps> = ({
@@ -21,21 +22,40 @@ export const ServicePreview: React.FC<HomeServicePreviewProps> = ({
   services = servicesData,
   allServicesHref = "/services",
   allServicesLabel = "Lihat Seluruh Cakupan Layanan",
+  imageUrl,
 }) => {
   // Show only 3 items on Home preview
   const previewServices = services.slice(0, 3);
 
   return (
-    <section id="home-service-preview" className="py-16 md:py-24 bg-slate-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="home-service-preview" className="bg-slate-50">
+      {/* Kalau imageUrl diisi, heading + CTA dipindah ke "header band" bergambar di atas
+          grid (bukan CTA polos di bawah lagi) — kalau kosong, tampilan tetap seperti
+          semula supaya tidak ada regresi untuk section yang belum diisi gambar. */}
+      {imageUrl ? (
+        <div className="relative py-16 md:py-20 bg-slate-900 text-white overflow-hidden">
+          <div className="absolute inset-0">
+            <img src={imageUrl} alt="" className="w-full h-full object-cover opacity-30" referrerPolicy="no-referrer" />
+            <div className="absolute inset-0 bg-gradient-to-b from-slate-950/85 via-slate-950/75 to-slate-950/90" />
+          </div>
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="secondary" dark />
+            {allServicesLabel && (
+              <div className="text-center -mt-6">
+                <Button href={allServicesHref} variant="secondary">
+                  {allServicesLabel}
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 md:pt-24">
+          <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="secondary" />
+        </div>
+      )}
 
-        <SectionHeading
-          title={title}
-          subtitle={subtitle}
-          badge={badge}
-          badgeVariant="secondary"
-        />
-
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         {/* 3 Services Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           {previewServices.map((service) => (
@@ -47,24 +67,17 @@ export const ServicePreview: React.FC<HomeServicePreviewProps> = ({
               <p className="text-sm text-slate-600 font-light leading-relaxed mb-6 flex-grow">
                 {service.description}
               </p>
-
-              {/* <a
-                href={`${allServicesHref}#${service.id}`}
-                className="inline-flex text-xs text-[#1E3A5F] font-semibold pt-4 border-t border-slate-50 hover:underline"
-              >
-                Selengkapnya →
-              </a> */}
             </Card>
           ))}
         </div>
 
-        {/* Bottom Central Action */}
-        <div className="text-center">
-          <Button href={allServicesHref} variant="primary">
-            {allServicesLabel}
-          </Button>
-        </div>
-
+        {!imageUrl && allServicesLabel && (
+          <div className="text-center">
+            <Button href={allServicesHref} variant="primary">
+              {allServicesLabel}
+            </Button>
+          </div>
+        )}
       </div>
     </section>
   );

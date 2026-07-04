@@ -14,6 +14,8 @@ interface ArticlePreviewProps {
   subtitle?: string;
   badge?: string;
   businessLogoUrl?: string;
+  imageUrl?: string;
+  ctaLabel?: string;
 }
 
 const EMPTY_STATE = (
@@ -32,14 +34,39 @@ export const ArticlePreview: React.FC<ArticlePreviewProps> = ({
   title = "Semua Publikasi Kami",
   subtitle,
   badge,
-  businessLogoUrl
+  businessLogoUrl,
+  imageUrl,
+  ctaLabel,
 }) => {
   return (
-    <section id="articles-list-section" className="py-12 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="articles-list-section" className="bg-white">
+      {imageUrl ? (
+        <div className="relative py-16 md:py-20 mb-10 bg-slate-900 text-white overflow-hidden">
+          <div className="absolute inset-0">
+            <img src={imageUrl} alt="" className="w-full h-full object-cover opacity-30" referrerPolicy="no-referrer" />
+            <div className="absolute inset-0 bg-gradient-to-b from-slate-950/85 via-slate-950/75 to-slate-950/90" />
+          </div>
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="accent" dark />
+            {ctaLabel && (
+              <div className="text-center -mt-6">
+                <Button href="/contact" variant="secondary">{ctaLabel}</Button>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
+          <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="accent" />
+          {ctaLabel && (
+            <div className="text-center -mt-6 mb-6">
+              <Button href="/contact" variant="outline">{ctaLabel}</Button>
+            </div>
+          )}
+        </div>
+      )}
 
-        <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="accent" />
-
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
         {articles.length === 0 ? EMPTY_STATE : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {articles.map((item) => (

@@ -7,6 +7,7 @@ interface ArticleCtaProps {
   description?: string;
   ctaLabel?: string;
   ctaHref?: string;
+  imageUrl?: string;
 }
 
 export const ArticleCta: React.FC<ArticleCtaProps> = ({
@@ -14,9 +15,16 @@ export const ArticleCta: React.FC<ArticleCtaProps> = ({
   description = "Hubungi kami untuk membahas kebutuhan Anda secara langsung.",
   ctaLabel = "Hubungi Kami",
   ctaHref = "/contact",
+  imageUrl,
 }) => {
   return (
     <section id="article-detail-cta" className="py-14 md:py-20 bg-slate-900 text-white relative overflow-hidden">
+      {imageUrl && (
+        <div className="absolute inset-0">
+          <img src={imageUrl} alt="" className="w-full h-full object-cover opacity-25" referrerPolicy="no-referrer" />
+          <div className="absolute inset-0 bg-slate-950/80" />
+        </div>
+      )}
       <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#8A6D3B_1px,transparent_1px)] [background-size:24px_24px]" />
       <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <h2 className="text-2xl md:text-3xl font-semibold tracking-tight mb-4">{title}</h2>

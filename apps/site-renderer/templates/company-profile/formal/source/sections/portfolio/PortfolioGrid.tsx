@@ -5,6 +5,7 @@ import { PortfolioItem } from "../../lib/types";
 import { Card } from "../../shared/Card";
 import { Badge } from "../../shared/Badge";
 import { SectionHeading } from "../../shared/SectionHeading";
+import { Button } from "../../shared/Button";
 import { stripHtmlToText } from '@/components/content/RichHtml';
 
 interface PortfolioGridProps {
@@ -13,6 +14,9 @@ interface PortfolioGridProps {
   title?: string;
   subtitle?: string;
   portfolioDetailHref?: (id: string) => string;
+  imageUrl?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
 }
 
 export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
@@ -21,6 +25,9 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
   title,
   subtitle,
   portfolioDetailHref,
+  imageUrl,
+  ctaLabel,
+  ctaHref = "/contact",
 }) => {
   // Filter portfolios locally if not already handled
   const filtered = activeCategory === "Semua" 
@@ -36,13 +43,35 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
   }
 
   return (
-    <section id="portfolio-grid-section" className="py-8 bg-white">
-      {(title || subtitle) && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10">
-          <SectionHeading title={title || ""} subtitle={subtitle} badgeVariant="accent" />
+    <section id="portfolio-grid-section" className="bg-white">
+      {imageUrl ? (
+        <div className="relative py-16 md:py-20 mb-10 bg-slate-900 text-white overflow-hidden">
+          <div className="absolute inset-0">
+            <img src={imageUrl} alt="" className="w-full h-full object-cover opacity-30" referrerPolicy="no-referrer" />
+            <div className="absolute inset-0 bg-gradient-to-b from-slate-950/85 via-slate-950/75 to-slate-950/90" />
+          </div>
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            {(title || subtitle) && <SectionHeading title={title || ""} subtitle={subtitle} badgeVariant="accent" dark />}
+            {ctaLabel && (
+              <div className="text-center -mt-6">
+                <Button href={ctaHref} variant="secondary">{ctaLabel}</Button>
+              </div>
+            )}
+          </div>
         </div>
+      ) : (
+        (title || subtitle || ctaLabel) && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10">
+            {(title || subtitle) && <SectionHeading title={title || ""} subtitle={subtitle} badgeVariant="accent" />}
+            {ctaLabel && (
+              <div className="text-center -mt-6">
+                <Button href={ctaHref} variant="outline">{ctaLabel}</Button>
+              </div>
+            )}
+          </div>
+        )
       )}
-      <div className="space-y-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16 py-8">
         {filtered.map((project) => (
           <div
             key={project.id}
@@ -65,12 +94,6 @@ export const PortfolioGrid: React.FC<PortfolioGridProps> = ({
                     </Badge>
                   </div>
                 </div>
-
-                {/* {project.clientName && (
-                  <div className="text-xs text-slate-500 font-mono mb-4">
-                    <span className="font-semibold text-slate-700">{project.clientName}</span>
-                  </div>
-                )} */}
               </div>
             </div>
 

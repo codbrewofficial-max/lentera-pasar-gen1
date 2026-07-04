@@ -2,12 +2,15 @@
 
 import React from "react";
 import { SectionHeading } from "../../shared/SectionHeading";
+import { Button } from "../../shared/Button";
 
 interface PortfolioCategoryProps {
   categories: string[];
   className?: string;
   title?: string;
   subtitle?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
 }
 
 export const PortfolioCategory: React.FC<PortfolioCategoryProps> = ({
@@ -15,6 +18,8 @@ export const PortfolioCategory: React.FC<PortfolioCategoryProps> = ({
   className = "",
   title,
   subtitle,
+  ctaLabel,
+  ctaHref = "/contact",
 }) => {
   if (categories.length === 0) return null;
 
@@ -32,6 +37,11 @@ export const PortfolioCategory: React.FC<PortfolioCategoryProps> = ({
         {/* Heading Section */}
         <div className="text-center mb-10">
           <SectionHeading title={title || "Kategori Portofolio"} subtitle={subtitle} badgeVariant="accent" />
+          {ctaLabel && (
+            <div className="mt-2">
+              <Button href={ctaHref} variant="outline" size="sm">{ctaLabel}</Button>
+            </div>
+          )}
         </div>
 
         {/* Container Flex: Otomatis ke tengah, membungkus rapi jika data banyak */}
