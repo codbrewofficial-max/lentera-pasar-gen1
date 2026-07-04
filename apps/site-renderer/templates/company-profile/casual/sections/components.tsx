@@ -652,6 +652,58 @@ export function CasualContactCtaSection(props: CasualSectionProps) {
 // Casual — komponen hasil porting Google AI Studio untuk Website Type Company Profile.
 // Namespace "Casual<Slot>" mengikuti konvensi yang sama dengan tema Formal, supaya
 // gabungan ke registry global (SectionRegistry.tsx) tidak bentrok nama.
+// ---- Global Chrome (Navbar & Footer) ----
+// Slot "global.navbar" / "global.footer" — section biasa supaya bisa dipilih & di-preview
+// lintas tema lewat mekanisme "Pilih Tampilan Section" yang sama seperti section lain.
+import { Header as CasualSiteHeader } from "../source/shared/Header";
+import { Footer as CasualSiteFooter } from "../source/shared/Footer";
+
+export function CasualGlobalNavbar(props: CasualSectionProps) {
+  const business = businessOf(props.payload);
+  const navbarItems = props.payload.navigation?.navbar?.items || [];
+  const cta = props.payload.navigation?.navbar?.cta;
+  const getHref = (path: string) => getSiteHref(props.siteSlug, path);
+  return (
+    <CasualSiteHeader
+      siteSlug={props.siteSlug}
+      getHref={getHref}
+      businessName={text(business.name, props.payload.website.name)}
+      taglineLabel={text(business.tagline as string)}
+      logoUrl={text(business.logoUrl as string) || undefined}
+      navItems={navbarItems.length > 0 ? navbarItems : undefined}
+      ctaLabel={cta?.label || "Hubungi Kami"}
+      ctaPath={cta?.path || "/contact"}
+    />
+  );
+}
+
+export function CasualGlobalFooter(props: CasualSectionProps) {
+  const business = businessOf(props.payload);
+  const footerItems = props.payload.navigation?.footer?.items || [];
+  const getHref = (path: string) => getSiteHref(props.siteSlug, path);
+  return (
+    <CasualSiteFooter
+      getHref={getHref}
+      businessName={text(business.name, props.payload.website.name)}
+      taglineLabel={text(business.tagline as string) || "Company Profile"}
+      logoUrl={text(business.logoUrl as string) || undefined}
+      description={text(business.description as string, "Website company profile yang menampilkan profil, layanan, portofolio, artikel, dan kontak bisnis.")}
+      establishedYear={text(business.establishedYear as string) || undefined}
+      founderName={text(business.founderName as string) || undefined}
+      address={text(business.address as string)}
+      email={text(business.contactEmail as string)}
+      phone={text(business.phone as string)}
+      workingHours={text(business.workingHours as string, text(business.operationalHours as string))}
+      instagramUrl={text(business.instagramUrl as string) || undefined}
+      facebookUrl={text(business.facebookUrl as string) || undefined}
+      linkedinUrl={text(business.linkedinUrl as string) || undefined}
+      twitterUrl={text(business.twitterUrl as string) || undefined}
+      websiteUrl={text(business.websiteUrl as string) || undefined}
+      navItems={footerItems.length > 0 ? footerItems : undefined}
+    />
+  );
+}
+
 export const casualSectionComponents: Record<string, CasualSectionComponent> = {
   CasualHomeHero: CasualHomeHeroSection,
   CasualHomeProfileSummary: CasualHomeProfileSummarySection,
@@ -694,5 +746,7 @@ export const casualSectionComponents: Record<string, CasualSectionComponent> = {
   CasualContactInformation: CasualContactInformationSection,
   CasualMapsLocation: CasualMapsLocationSection,
   CasualContactFaq: CasualContactFaqSection,
-  CasualContactCta: CasualContactCtaSection
+  CasualContactCta: CasualContactCtaSection,
+  CasualGlobalNavbar,
+  CasualGlobalFooter
 };

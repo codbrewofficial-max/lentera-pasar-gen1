@@ -22,6 +22,8 @@ type Props = {
   children: ReactNode;
 };
 
+type Theme = 'formal' | 'casual' | 'premium' | 'abstract';
+
 function normalizePhone(value?: unknown) {
   const raw = String(value || '').trim();
   if (!raw) return '';
@@ -31,16 +33,21 @@ function normalizePhone(value?: unknown) {
   return digits;
 }
 
-// Tema "aktif" untuk satu website ditentukan dari templateTheme section manapun yang
-// sudah pakai Template Pack (semua section dalam satu website seharusnya konsisten satu
-// tema). Kalau belum ada satupun section yang pakai Template Pack bertema (mis. masih
-// fallback Clean / Abstract / Premium yang belum punya kode visual sendiri), header/footer
-// generik tetap dipakai supaya tidak nampilkan chrome tema yang salah.
-function resolveActiveTheme(payload: Props['payload']): 'formal' | 'casual' | 'premium' | 'abstract' | null {
+function asTheme(value?: string | null): Theme | null {
+  const normalized = (value || '').toLowerCase();
+  if (normalized === 'formal' || normalized === 'casual' || normalized === 'premium' || normalized === 'abstract') return normalized;
+  return null;
+}
+
+// Fallback historis: sebelum Navbar/Footer bisa dipilih sendiri (section "global.navbar" /
+// "global.footer"), tema header/footer selalu ikut tema section konten halaman. Dipakai
+// hanya kalau owner belum pernah memilih tampilan Navbar/Footer secara eksplisit, supaya
+// website yang sudah ada tidak tiba-tiba kehilangan header/footer bertema.
+function resolveThemeFromPageContent(payload: Props['payload']): Theme | null {
   const sections = payload.page?.sections || [];
   for (const section of sections) {
-    const theme = (section.templateTheme || '').toLowerCase();
-    if (theme === 'formal' || theme === 'casual' || theme === 'premium' || theme === 'abstract') return theme;
+    const theme = asTheme(section.templateTheme);
+    if (theme) return theme;
   }
   return null;
 }
@@ -63,12 +70,18 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
     payload.businessProfile?.tagline ||
     'Website company profile yang menampilkan profil, layanan, portofolio, artikel, dan kontak bisnis.';
 
-  const activeTheme = resolveActiveTheme(payload);
+  const contentTheme = resolveThemeFromPageContent(payload);
+  // Navbar & Footer sekarang section tersendiri yang bisa dipilih bebas lintas tema —
+  // masing-masing di-resolve independen, BOLEH beda satu sama lain (mis. Navbar Formal +
+  // Footer Casual). Kalau owner belum pernah memilih, fallback ke tema konten halaman
+  // seperti perilaku lama.
+  const navbarTheme = asTheme(payload.navigation?.navbar?.theme) || contentTheme;
+  const footerTheme = asTheme(payload.navigation?.footer?.theme) || contentTheme;
   const getHref = (path: string) => getSiteHref(siteSlug, path);
 
-  if (activeTheme === 'formal') {
-    return (
-      <div className="min-h-screen bg-white text-slate-950">
+  const header = (() => {
+    if (navbarTheme === 'formal') {
+      return (
         <FormalSiteHeader
           siteSlug={siteSlug}
           getHref={getHref}
@@ -79,34 +92,10 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
           ctaLabel={cta?.label || 'Hubungi Kami'}
           ctaPath={cta?.path || '/contact'}
         />
-        <main className="pt-[72px]">{children}</main>
-        <FormalSiteFooter
-          getHref={getHref}
-          businessName={businessName}
-          taglineLabel={tagline}
-          logoUrl={logoUrl || undefined}
-          description={description}
-          establishedYear={typeof payload.businessProfile?.establishedYear === 'string' ? payload.businessProfile.establishedYear : undefined}
-          founderName={typeof payload.businessProfile?.founderName === 'string' ? payload.businessProfile.founderName : undefined}
-          address={payload.businessProfile?.address || ''}
-          email={email || ''}
-          phone={payload.businessProfile?.phone || ''}
-          workingHours={payload.businessProfile?.workingHours || payload.businessProfile?.operationalHours || ''}
-          instagramUrl={payload.businessProfile?.instagramUrl || undefined}
-          facebookUrl={payload.businessProfile?.facebookUrl || undefined}
-          linkedinUrl={payload.businessProfile?.linkedinUrl || undefined}
-          twitterUrl={payload.businessProfile?.twitterUrl || undefined}
-          websiteUrl={payload.businessProfile?.websiteUrl || undefined}
-          navItems={footerItems.length > 0 ? footerItems : undefined}
-        />
-        <FloatingWhatsApp whatsappNumber={payload.businessProfile?.whatsapp || undefined} />
-      </div>
-    );
-  }
-
-  if (activeTheme === 'casual') {
-    return (
-      <div className="min-h-screen bg-white text-gray-950">
+      );
+    }
+    if (navbarTheme === 'casual') {
+      return (
         <CasualSiteHeader
           siteSlug={siteSlug}
           getHref={getHref}
@@ -117,33 +106,10 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
           ctaLabel={cta?.label || 'Hubungi Kami'}
           ctaPath={cta?.path || '/contact'}
         />
-        <main>{children}</main>
-        <CasualSiteFooter
-          getHref={getHref}
-          businessName={businessName}
-          taglineLabel={tagline}
-          logoUrl={logoUrl || undefined}
-          description={description}
-          establishedYear={typeof payload.businessProfile?.establishedYear === 'string' ? payload.businessProfile.establishedYear : undefined}
-          founderName={typeof payload.businessProfile?.founderName === 'string' ? payload.businessProfile.founderName : undefined}
-          address={payload.businessProfile?.address || ''}
-          email={email || ''}
-          phone={payload.businessProfile?.phone || ''}
-          workingHours={payload.businessProfile?.workingHours || payload.businessProfile?.operationalHours || ''}
-          instagramUrl={payload.businessProfile?.instagramUrl || undefined}
-          facebookUrl={payload.businessProfile?.facebookUrl || undefined}
-          linkedinUrl={payload.businessProfile?.linkedinUrl || undefined}
-          twitterUrl={payload.businessProfile?.twitterUrl || undefined}
-          websiteUrl={payload.businessProfile?.websiteUrl || undefined}
-          navItems={footerItems.length > 0 ? footerItems : undefined}
-        />
-      </div>
-    );
-  }
-
-  if (activeTheme === 'premium') {
-    return (
-      <div className="min-h-screen bg-[#0E0E0F] text-white">
+      );
+    }
+    if (navbarTheme === 'premium') {
+      return (
         <PremiumSiteHeader
           getHref={getHref}
           businessName={businessName}
@@ -152,24 +118,10 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
           ctaLabel={cta?.label || 'Konsultasi'}
           ctaPath={cta?.path || '/contact'}
         />
-        <main>{children}</main>
-        <PremiumSiteFooter
-          getHref={getHref}
-          businessName={businessName}
-          description={description}
-          address={payload.businessProfile?.address || 'Alamat belum diisi.'}
-          phone={payload.businessProfile?.phone || '-'}
-          email={email || 'email@contoh.com'}
-          logoUrl={logoUrl || undefined}
-          navItems={footerItems.length > 0 ? footerItems : undefined}
-        />
-      </div>
-    );
-  }
-
-  if (activeTheme === 'abstract') {
-    return (
-      <div className="min-h-screen bg-[#0d0d0d] text-white">
+      );
+    }
+    if (navbarTheme === 'abstract') {
+      return (
         <AbstractSiteHeader
           siteSlug={siteSlug}
           getHref={getHref}
@@ -180,22 +132,9 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
           ctaLabel={cta?.label || 'Hubungi Kami'}
           ctaPath={cta?.path || '/contact'}
         />
-        <main>{children}</main>
-        <AbstractSiteFooter
-          getHref={getHref}
-          businessName={businessName}
-          description={description}
-          address={payload.businessProfile?.address || 'Alamat belum diisi.'}
-          phone={payload.businessProfile?.phone || '-'}
-          email={email || 'email@contoh.com'}
-          navItems={footerItems.length > 0 ? footerItems : undefined}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-white text-slate-950">
+      );
+    }
+    return (
       <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur">
         <div className="lp-container flex min-h-16 items-center justify-between gap-4 py-3">
           <Link href={getSiteHref(siteSlug, '/')} className="flex min-w-0 items-center gap-3">
@@ -255,9 +194,84 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
           </details>
         </div>
       </header>
+    );
+  })();
 
-      <main>{children}</main>
-
+  const footer = (() => {
+    if (footerTheme === 'formal') {
+      return (
+        <FormalSiteFooter
+          getHref={getHref}
+          businessName={businessName}
+          taglineLabel={tagline}
+          logoUrl={logoUrl || undefined}
+          description={description}
+          establishedYear={typeof payload.businessProfile?.establishedYear === 'string' ? payload.businessProfile.establishedYear : undefined}
+          founderName={typeof payload.businessProfile?.founderName === 'string' ? payload.businessProfile.founderName : undefined}
+          address={payload.businessProfile?.address || ''}
+          email={email || ''}
+          phone={payload.businessProfile?.phone || ''}
+          workingHours={payload.businessProfile?.workingHours || payload.businessProfile?.operationalHours || ''}
+          instagramUrl={payload.businessProfile?.instagramUrl || undefined}
+          facebookUrl={payload.businessProfile?.facebookUrl || undefined}
+          linkedinUrl={payload.businessProfile?.linkedinUrl || undefined}
+          twitterUrl={payload.businessProfile?.twitterUrl || undefined}
+          websiteUrl={payload.businessProfile?.websiteUrl || undefined}
+          navItems={footerItems.length > 0 ? footerItems : undefined}
+        />
+      );
+    }
+    if (footerTheme === 'casual') {
+      return (
+        <CasualSiteFooter
+          getHref={getHref}
+          businessName={businessName}
+          taglineLabel={tagline}
+          logoUrl={logoUrl || undefined}
+          description={description}
+          establishedYear={typeof payload.businessProfile?.establishedYear === 'string' ? payload.businessProfile.establishedYear : undefined}
+          founderName={typeof payload.businessProfile?.founderName === 'string' ? payload.businessProfile.founderName : undefined}
+          address={payload.businessProfile?.address || ''}
+          email={email || ''}
+          phone={payload.businessProfile?.phone || ''}
+          workingHours={payload.businessProfile?.workingHours || payload.businessProfile?.operationalHours || ''}
+          instagramUrl={payload.businessProfile?.instagramUrl || undefined}
+          facebookUrl={payload.businessProfile?.facebookUrl || undefined}
+          linkedinUrl={payload.businessProfile?.linkedinUrl || undefined}
+          twitterUrl={payload.businessProfile?.twitterUrl || undefined}
+          websiteUrl={payload.businessProfile?.websiteUrl || undefined}
+          navItems={footerItems.length > 0 ? footerItems : undefined}
+        />
+      );
+    }
+    if (footerTheme === 'premium') {
+      return (
+        <PremiumSiteFooter
+          getHref={getHref}
+          businessName={businessName}
+          description={description}
+          address={payload.businessProfile?.address || ''}
+          phone={payload.businessProfile?.phone || ''}
+          email={email || ''}
+          logoUrl={logoUrl || undefined}
+          navItems={footerItems.length > 0 ? footerItems : undefined}
+        />
+      );
+    }
+    if (footerTheme === 'abstract') {
+      return (
+        <AbstractSiteFooter
+          getHref={getHref}
+          businessName={businessName}
+          description={description}
+          address={payload.businessProfile?.address || ''}
+          phone={payload.businessProfile?.phone || ''}
+          email={email || ''}
+          navItems={footerItems.length > 0 ? footerItems : undefined}
+        />
+      );
+    }
+    return (
       <footer className="border-t border-slate-200 bg-slate-950 text-white">
         <div className="lp-container grid gap-10 py-12 md:grid-cols-[1.4fr_1fr_1fr]">
           <div>
@@ -311,6 +325,24 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
           © <span suppressHydrationWarning>{new Date().getFullYear()}</span> {businessName}. Powered by Lentera Pasar.
         </div>
       </footer>
+    );
+  })();
+
+  const wrapperClass =
+    navbarTheme === 'premium' || footerTheme === 'premium'
+      ? 'min-h-screen bg-[#0E0E0F] text-white'
+      : navbarTheme === 'abstract' || footerTheme === 'abstract'
+      ? 'min-h-screen bg-[#0d0d0d] text-white'
+      : navbarTheme === 'casual' || footerTheme === 'casual'
+      ? 'min-h-screen bg-white text-gray-950'
+      : 'min-h-screen bg-white text-slate-950';
+
+  return (
+    <div className={wrapperClass}>
+      {header}
+      <main className={navbarTheme === 'formal' ? 'pt-[72px]' : ''}>{children}</main>
+      {footer}
+      {navbarTheme === 'formal' && <FloatingWhatsApp whatsappNumber={payload.businessProfile?.whatsapp || undefined} />}
     </div>
   );
 }

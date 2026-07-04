@@ -28,12 +28,10 @@ export const COMPANY_PROFILE_DEFAULT_SLOT_COMPONENTS = {
   "articles.featured_article": "CompanyProfileCleanFeaturedArticle",
   "articles.article_preview": "CompanyProfileCleanArticlePreview",
 
-  "article_detail.article_detail_hero": "CompanyProfileCleanArticleDetailHero",
   "article_detail.article_content": "CompanyProfileCleanArticleContent",
   "article_detail.related_articles": "CompanyProfileCleanRelatedArticles",
   "article_detail.article_cta": "CompanyProfileCleanArticleCta",
 
-  "portfolio_detail.portfolio_detail_hero": "CompanyProfileCleanPortfolioDetailHero",
   "portfolio_detail.portfolio_detail_content": "CompanyProfileCleanPortfolioDetailContent",
   "portfolio_detail.related_portfolios": "CompanyProfileCleanRelatedPortfolios",
   "portfolio_detail.portfolio_detail_cta": "CompanyProfileCleanPortfolioDetailCta",
@@ -42,7 +40,10 @@ export const COMPANY_PROFILE_DEFAULT_SLOT_COMPONENTS = {
   "contact.contact_information": "CompanyProfileCleanContactInformation",
   "contact.maps_location": "CompanyProfileCleanMapsLocation",
   "contact.contact_faq": "CompanyProfileCleanContactFaq",
-  "contact.contact_cta": "CompanyProfileCleanContactCta"
+  "contact.contact_cta": "CompanyProfileCleanContactCta",
+
+  "global.navbar": "FormalGlobalNavbar",
+  "global.footer": "FormalGlobalFooter"
 } as const;
 
 export type CompanyProfileSlotKey = keyof typeof COMPANY_PROFILE_DEFAULT_SLOT_COMPONENTS;

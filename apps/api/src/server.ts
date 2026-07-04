@@ -1692,7 +1692,9 @@ const registerWebsiteRoutes = () => {
       pages: pages.map(pageDashboardSummary),
       navbarItems: navigation.navbar.items,
       footerItems: navigation.footer.items,
-      availableTargets: navigation.availableTargets
+      availableTargets: navigation.availableTargets,
+      navbarChrome: { theme: navigation.navbar.theme, component: navigation.navbar.component },
+      footerChrome: { theme: navigation.footer.theme, component: navigation.footer.component }
     }, "Page setup loaded");
   });
 

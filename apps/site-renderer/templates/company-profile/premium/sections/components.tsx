@@ -658,6 +658,47 @@ export function PremiumContactCtaSection(props: PremiumSectionProps) {
 // Premium — komponen hasil porting Google AI Studio untuk Website Type Company Profile.
 // Namespace "Premium<Slot>" mengikuti konvensi yang sama dengan tema Formal dan Casual,
 // supaya gabungan ke registry global (SectionRegistry.tsx) tidak bentrok nama.
+// ---- Global Chrome (Navbar & Footer) ----
+import { Header as PremiumSiteHeader } from "../source/shared/Header";
+import { Footer as PremiumSiteFooter } from "../source/shared/Footer";
+
+export function PremiumGlobalNavbar(props: PremiumSectionProps) {
+  const business = businessOf(props.payload);
+  const navbarItems = props.payload.navigation?.navbar?.items || [];
+  const cta = props.payload.navigation?.navbar?.cta;
+  const getHref = (path: string) => getSiteHref(props.siteSlug, path);
+  return (
+    <PremiumSiteHeader
+      businessName={text(business.name, props.payload.website.name)}
+      logoUrl={text(business.logoUrl as string) || undefined}
+      getHref={getHref}
+      navItems={navbarItems.length > 0 ? navbarItems : undefined}
+      ctaLabel={cta?.label || "Konsultasi"}
+      ctaPath={cta?.path || "/contact"}
+    />
+  );
+}
+
+export function PremiumGlobalFooter(props: PremiumSectionProps) {
+  const business = businessOf(props.payload);
+  const footerItems = props.payload.navigation?.footer?.items || [];
+  const getHref = (path: string) => getSiteHref(props.siteSlug, path);
+  return (
+    <PremiumSiteFooter
+      getHref={getHref}
+      businessName={text(business.name, props.payload.website.name)}
+      description={text(business.description as string, text(business.tagline as string))}
+      address={text(business.address as string)}
+      phone={text(business.phone as string)}
+      email={text(business.contactEmail as string)}
+      logoUrl={text(business.logoUrl as string) || undefined}
+      instagramUrl={text(business.instagramUrl as string) || undefined}
+      linkedinUrl={text(business.linkedinUrl as string) || undefined}
+      navItems={footerItems.length > 0 ? footerItems : undefined}
+    />
+  );
+}
+
 export const premiumSectionComponents: Record<string, PremiumSectionComponent> = {
   PremiumHomeHero: PremiumHomeHeroSection,
   PremiumHomeProfileSummary: PremiumHomeProfileSummarySection,
@@ -700,5 +741,7 @@ export const premiumSectionComponents: Record<string, PremiumSectionComponent> =
   PremiumContactInformation: PremiumContactInformationSection,
   PremiumMapsLocation: PremiumMapsLocationSection,
   PremiumContactFaq: PremiumContactFaqSection,
-  PremiumContactCta: PremiumContactCtaSection
+  PremiumContactCta: PremiumContactCtaSection,
+  PremiumGlobalNavbar,
+  PremiumGlobalFooter
 };

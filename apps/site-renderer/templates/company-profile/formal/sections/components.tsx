@@ -763,6 +763,61 @@ export function FormalRelatedPortfolios(props: FormalSectionProps) {
   );
 }
 
+// ---- Global Chrome (Navbar & Footer) ----
+// Slot "global.navbar" / "global.footer" — dibuat sebagai section biasa (bukan hardcode
+// di SiteShell) supaya bisa dipilih & di-preview lewat mekanisme "Pilih Tampilan Section"
+// yang sama seperti section lain, termasuk lintas tema. Tidak ada field owner-editable
+// (schema-nya kosong) karena isinya (nav items, logo, kontak) sudah otomatis dari
+// Halaman & Menu + Business Profile.
+import { FormalSiteHeader } from "../source/layout/FormalSiteHeader";
+import { FormalSiteFooter } from "../source/layout/FormalSiteFooter";
+
+export function FormalGlobalNavbar(props: FormalSectionProps) {
+  const business = businessOf(props.payload);
+  const navbarItems = props.payload.navigation?.navbar?.items || [];
+  const cta = props.payload.navigation?.navbar?.cta;
+  const getHref = (path: string) => getSiteHref(props.siteSlug, path);
+  return (
+    <FormalSiteHeader
+      siteSlug={props.siteSlug}
+      getHref={getHref}
+      businessName={text(business.name, props.payload.website.name)}
+      taglineLabel={text(business.tagline as string)}
+      logoUrl={text(business.logoUrl as string) || undefined}
+      navItems={navbarItems.length > 0 ? navbarItems : undefined}
+      ctaLabel={cta?.label || "Hubungi Kami"}
+      ctaPath={cta?.path || "/contact"}
+    />
+  );
+}
+
+export function FormalGlobalFooter(props: FormalSectionProps) {
+  const business = businessOf(props.payload);
+  const footerItems = props.payload.navigation?.footer?.items || [];
+  const getHref = (path: string) => getSiteHref(props.siteSlug, path);
+  return (
+    <FormalSiteFooter
+      getHref={getHref}
+      businessName={text(business.name, props.payload.website.name)}
+      taglineLabel={text(business.tagline as string) || "Company Profile"}
+      logoUrl={text(business.logoUrl as string) || undefined}
+      description={text(business.description as string, "Website company profile yang menampilkan profil, layanan, portofolio, artikel, dan kontak bisnis.")}
+      establishedYear={text(business.establishedYear as string) || undefined}
+      founderName={text(business.founderName as string) || undefined}
+      address={text(business.address as string)}
+      email={text(business.contactEmail as string)}
+      phone={text(business.phone as string)}
+      workingHours={text(business.workingHours as string, text(business.operationalHours as string))}
+      instagramUrl={text(business.instagramUrl as string) || undefined}
+      facebookUrl={text(business.facebookUrl as string) || undefined}
+      linkedinUrl={text(business.linkedinUrl as string) || undefined}
+      twitterUrl={text(business.twitterUrl as string) || undefined}
+      websiteUrl={text(business.websiteUrl as string) || undefined}
+      navItems={footerItems.length > 0 ? footerItems : undefined}
+    />
+  );
+}
+
 export const formalSectionComponents: Record<string, FormalSectionComponent> = {
   FormalHomeHero,
   FormalHomeProfileSummary,
@@ -800,4 +855,7 @@ export const formalSectionComponents: Record<string, FormalSectionComponent> = {
   FormalPortfolioDetailContent,
   FormalRelatedPortfolios,
   FormalPortfolioDetailCta,
+
+  FormalGlobalNavbar,
+  FormalGlobalFooter,
 };
