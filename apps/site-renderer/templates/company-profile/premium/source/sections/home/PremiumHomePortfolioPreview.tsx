@@ -8,31 +8,58 @@ import { stripHtmlToText } from '@/components/content/RichHtml';
 interface PremiumHomePortfolioPreviewProps {
   title?: string;
   description?: string;
+  badge?: string;
   ctaLabel?: string;
   ctaUrl?: string;
   portfolios?: PortfolioItem[];
   portfolioDetailHref?: (id: string) => string;
+  imageUrl?: string;
 }
 
 export function PremiumHomePortfolioPreview({
   title = "Karya Terpilih & Landmark",
   description = "Tinjau beberapa mahakarya spatial yang menggambarkan komitmen kami terhadap presisi struktural, kecanggihan sirkulasi udara, serta penataan estetika taktil.",
+  badge = "KURASI ESTETIKA",
   ctaLabel = "LIHAT SEMUA PORTOFOLIO",
   ctaUrl = "/portfolio",
   portfolios = defaultPortfolios.slice(0, 3), // Show first 3 for preview
-  portfolioDetailHref
+  portfolioDetailHref,
+  imageUrl,
 }: PremiumHomePortfolioPreviewProps) {
   return (
-    <section id="premium-home-portfolio-preview" className="py-24 md:py-32 bg-[#FAF9F6] text-[#121212]">
-      <div className="max-w-7xl mx-auto px-6">
-        {/* Header Block */}
-        <div className="max-w-3xl mb-20 space-y-4">
-          <span className="text-[10px] font-bold tracking-[0.3em] text-[#B283AF] uppercase block">KURASI ESTETIKA</span>
-          <h2 className="text-3xl md:text-5xl font-serif font-light tracking-tight text-stone-900">{title}</h2>
-          <p className="text-stone-600 text-sm md:text-base leading-relaxed font-sans font-light">
-            {description}
-          </p>
+    <section id="premium-home-portfolio-preview" className="bg-[#FAF9F6] text-[#121212] relative overflow-hidden">
+      {imageUrl ? (
+        <div className="relative py-24 md:py-32 overflow-hidden text-white text-center">
+          <div className="absolute inset-0">
+            <img src={imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            <div className="absolute inset-0 bg-stone-950/75" />
+          </div>
+          <div className="max-w-3xl mx-auto px-6 relative z-10 space-y-4">
+            <span className="text-[10px] font-bold tracking-[0.3em] text-[#B283AF] uppercase block">{badge}</span>
+            <h2 className="text-3xl md:text-5xl font-serif font-light tracking-tight">{title}</h2>
+            <p className="text-stone-200 text-sm md:text-base leading-relaxed font-sans font-light">{description}</p>
+            {ctaLabel && (
+              <div className="pt-2">
+                <a href={ctaUrl} className="inline-flex items-center space-x-3 text-xs font-semibold tracking-[0.25em] text-white hover:text-[#649FF6] transition-colors py-2.5 border-b border-white/30 hover:border-[#649FF6]">
+                  <span>{ctaLabel}</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-[#F56B71]" />
+                </a>
+              </div>
+            )}
+          </div>
         </div>
+      ) : null}
+      <div className="max-w-7xl mx-auto px-6 relative z-10 py-24 md:py-32">
+        {!imageUrl && (
+          /* Header Block */
+          <div className="max-w-3xl mb-20 space-y-4">
+            <span className="text-[10px] font-bold tracking-[0.3em] text-[#B283AF] uppercase block">{badge}</span>
+            <h2 className="text-3xl md:text-5xl font-serif font-light tracking-tight text-stone-900">{title}</h2>
+            <p className="text-stone-600 text-sm md:text-base leading-relaxed font-sans font-light">
+              {description}
+            </p>
+          </div>
+        )}
 
         {/* Portfolio Showcase Grid (Large Cards with Hairline borders) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
@@ -95,16 +122,18 @@ export function PremiumHomePortfolioPreview({
         </div>
 
         {/* Action Link */}
-        <div className="text-center">
-          <a
-            id="portfolio-preview-cta"
-            href={ctaUrl}
-            className="inline-flex items-center space-x-3 text-xs font-semibold tracking-[0.25em] text-stone-900 hover:text-[#649FF6] transition-colors py-2.5 border-b border-stone-300 hover:border-[#649FF6]"
-          >
-            <span>{ctaLabel}</span>
-            <ArrowRight className="w-3.5 h-3.5 text-[#F56B71]" />
-          </a>
-        </div>
+        {!imageUrl && (
+          <div className="text-center">
+            <a
+              id="portfolio-preview-cta"
+              href={ctaUrl}
+              className="inline-flex items-center space-x-3 text-xs font-semibold tracking-[0.25em] text-stone-900 hover:text-[#649FF6] transition-colors py-2.5 border-b border-stone-300 hover:border-[#649FF6]"
+            >
+              <span>{ctaLabel}</span>
+              <ArrowRight className="w-3.5 h-3.5 text-[#F56B71]" />
+            </a>
+          </div>
+        )}
       </div>
     </section>
   );

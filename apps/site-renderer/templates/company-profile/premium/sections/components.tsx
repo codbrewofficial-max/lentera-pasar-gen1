@@ -306,9 +306,11 @@ export function PremiumHomeServicePreviewSection(props: PremiumSectionProps) {
     <PremiumHomeServicePreview
       title={text(content.title)}
       description={text(content.description)}
+      badge={text(content.badge)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", getPageHrefByKey(props.siteSlug, props.payload.navigation, "services", "/services"))}
       services={servicesFor(props)}
+      imageUrl={contentImage(content)}
     />
   );
 }
@@ -319,10 +321,12 @@ export function PremiumHomePortfolioPreviewSection(props: PremiumSectionProps) {
     <PremiumHomePortfolioPreview
       title={text(content.title)}
       description={text(content.description)}
+      badge={text(content.badge)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", getPageHrefByKey(props.siteSlug, props.payload.navigation, "portfolio", "/portfolio"))}
       portfolios={portfoliosFor(props)}
       portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)}
+      imageUrl={contentImage(content)}
     />
   );
 }

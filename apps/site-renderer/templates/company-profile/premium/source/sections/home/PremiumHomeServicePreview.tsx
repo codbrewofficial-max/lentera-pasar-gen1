@@ -7,17 +7,21 @@ import { defaultServices, ServiceItem } from '../../lib/dummy-data';
 interface PremiumHomeServicePreviewProps {
   title?: string;
   description?: string;
+  badge?: string;
   ctaLabel?: string;
   ctaUrl?: string;
   services?: ServiceItem[];
+  imageUrl?: string;
 }
 
 export function PremiumHomeServicePreview({
   title = "Layanan Eksklusif Kami",
   description = "Kami mendampingi Anda di setiap tahap siklus pembangunan properti premium, mulai dari perancangan visi awal hingga pengawasan detail finishing terkecil di lapangan.",
+  badge = "DIVERSITAS KEAHLIAN",
   ctaLabel = "EKSPLORASI SELURUH LAYANAN",
   ctaUrl = "/services",
-  services = defaultServices
+  services = defaultServices,
+  imageUrl,
 }: PremiumHomeServicePreviewProps) {
   // Simple map to match icon string to Lucide component
   const getIcon = (name?: string) => {
@@ -30,18 +34,33 @@ export function PremiumHomeServicePreview({
   };
 
   return (
-    <section id="premium-home-service-preview" className="py-24 md:py-32 bg-[#0E0E0F] text-white relative">
-      <div className="max-w-7xl mx-auto px-6">
+    <section id="premium-home-service-preview" className="py-24 md:py-32 bg-[#0E0E0F] text-white relative overflow-hidden">
+      {imageUrl && (
+        <div className="absolute inset-0">
+          <img src={imageUrl} alt="" className="w-full h-full object-cover opacity-25" referrerPolicy="no-referrer" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0E0E0F]/90 via-[#0E0E0F]/85 to-[#0E0E0F]" />
+        </div>
+      )}
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
         {/* Section Header */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end mb-20">
           <div className="lg:col-span-8 space-y-4">
-            <span className="text-[10px] font-bold tracking-[0.3em] text-[#649FF6] uppercase block">DIVERSITAS KEAHLIAN</span>
+            <span className="text-[10px] font-bold tracking-[0.3em] text-[#649FF6] uppercase block">{badge}</span>
             <h2 className="text-3xl md:text-5xl font-serif font-light tracking-tight">{title}</h2>
           </div>
-          <div className="lg:col-span-4 lg:text-right">
-            <p className="text-stone-400 text-xs md:text-sm leading-relaxed mb-4 font-light">
+          <div className="lg:col-span-4 lg:text-right space-y-4">
+            <p className="text-stone-400 text-xs md:text-sm leading-relaxed font-light">
               {description}
             </p>
+            {imageUrl && ctaLabel && (
+              <a
+                href={ctaUrl}
+                className="inline-flex items-center space-x-3 text-xs font-semibold tracking-[0.25em] text-white hover:text-[#649FF6] transition-colors py-2.5 border-b border-white/10 hover:border-[#649FF6]"
+              >
+                <span>{ctaLabel}</span>
+                <ArrowRight className="w-3.5 h-3.5 text-[#F56B71]" />
+              </a>
+            )}
           </div>
         </div>
 
@@ -86,16 +105,18 @@ export function PremiumHomeServicePreview({
         </div>
 
         {/* Section CTA Link */}
-        <div className="text-center pt-4">
-          <a
-            id="services-preview-cta"
-            href={ctaUrl}
-            className="inline-flex items-center space-x-3 text-xs font-semibold tracking-[0.25em] text-white hover:text-[#649FF6] transition-colors py-2.5 border-b border-white/10 hover:border-[#649FF6]"
-          >
-            <span>{ctaLabel}</span>
-            <ArrowRight className="w-3.5 h-3.5 text-[#F56B71]" />
-          </a>
-        </div>
+        {!imageUrl && ctaLabel && (
+          <div className="text-center pt-4">
+            <a
+              id="services-preview-cta"
+              href={ctaUrl}
+              className="inline-flex items-center space-x-3 text-xs font-semibold tracking-[0.25em] text-white hover:text-[#649FF6] transition-colors py-2.5 border-b border-white/10 hover:border-[#649FF6]"
+            >
+              <span>{ctaLabel}</span>
+              <ArrowRight className="w-3.5 h-3.5 text-[#F56B71]" />
+            </a>
+          </div>
+        )}
       </div>
     </section>
   );
