@@ -2,12 +2,16 @@ import React from "react";
 import { timelineData as defaultTimelineData } from "../../data/companyProfileData";
 import type { TimelineItem } from "../../lib/types";
 import { SectionHeading } from "../../shared/SectionHeading";
+import { Button } from "../../shared/Button";
 
 interface HistoryTimelineProps {
   title?: string;
   subtitle?: string;
   badge?: string;
   items?: TimelineItem[];
+  imageUrl?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
 }
 
 export const HistoryTimeline: React.FC<HistoryTimelineProps> = ({
@@ -15,11 +19,38 @@ export const HistoryTimeline: React.FC<HistoryTimelineProps> = ({
   subtitle = "Mengikuti evolusi korporasi kami dari penyedia perizinan dasar hingga menjadi firma penasihat manajemen strategis komprehensif.",
   badge = "Linimasa",
   items = defaultTimelineData,
+  imageUrl,
+  ctaLabel,
+  ctaHref = "/contact",
 }) => {
   return (
-    <section id="about-history-timeline" className="py-16 md:py-24 bg-slate-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="secondary" />
+    <section id="about-history-timeline" className="bg-slate-50">
+      {imageUrl ? (
+        <div className="relative py-16 md:py-20 mb-4 bg-slate-900 text-white overflow-hidden">
+          <div className="absolute inset-0">
+            <img src={imageUrl} alt="" className="w-full h-full object-cover opacity-30" referrerPolicy="no-referrer" />
+            <div className="absolute inset-0 bg-gradient-to-b from-slate-950/85 via-slate-950/75 to-slate-950/90" />
+          </div>
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="secondary" dark />
+            {ctaLabel && (
+              <div className="text-center -mt-6">
+                <Button href={ctaHref} variant="secondary">{ctaLabel}</Button>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 md:pt-24">
+          <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="secondary" />
+          {ctaLabel && (
+            <div className="text-center -mt-6 mb-6">
+              <Button href={ctaHref} variant="outline">{ctaLabel}</Button>
+            </div>
+          )}
+        </div>
+      )}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         <div className="relative border-l border-slate-200 max-w-3xl mx-auto pl-6 sm:pl-8 space-y-12">
           {items.map((item, idx) => (
             <div key={`${item.year}-${idx}`} className="relative group">

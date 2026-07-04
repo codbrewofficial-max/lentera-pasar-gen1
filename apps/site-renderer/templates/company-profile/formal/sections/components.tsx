@@ -479,6 +479,9 @@ export function FormalHomeTrustProof(props: FormalSectionProps) {
       testimonials={testimonials}
       metrics={metrics}
       brands={brands}
+      imageUrl={contentImage(content)}
+      ctaLabel={text(content.ctaLabel)}
+      ctaHref={sectionHref(props, "cta", "/contact")}
     />
   );
 }
@@ -520,6 +523,9 @@ export function FormalAboutHistoryTimeline(props: FormalSectionProps) {
       subtitle={text(content.description)}
       badge={text(content.badge)}
       items={timelineFor(props.section)}
+      imageUrl={contentImage(content)}
+      ctaLabel={text(content.ctaLabel)}
+      ctaHref={sectionHref(props, "cta", "/contact")}
     />
   );
 }
@@ -538,6 +544,9 @@ export function FormalAboutVisionMission(props: FormalSectionProps) {
       missionTitle={text(content.missionTitle)}
       vision={text(content.vision, company.vision)}
       mission={text(content.mission, missionFallback)}
+      imageUrl={contentImage(content)}
+      ctaLabel={text(content.ctaLabel)}
+      ctaHref={sectionHref(props, "cta", "/contact")}
     />
   );
 }
@@ -550,6 +559,9 @@ export function FormalAboutValueStatement(props: FormalSectionProps) {
       subtitle={text(content.description)}
       badge={text(content.badge)}
       values={valuesFor(props.section)}
+      imageUrl={contentImage(content)}
+      ctaLabel={text(content.ctaLabel)}
+      ctaHref={sectionHref(props, "cta", "/contact")}
     />
   );
 }
@@ -589,7 +601,7 @@ export function FormalServicesBenefits(props: FormalSectionProps) {
 
 export function FormalServicesFaq(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiServicesFaq title={text(content.title)} subtitle={text(content.description)} badge={text(content.badge)} faqs={faqsForPage(props, ["services", "service", "general", "umum"]).length > 0 ? faqsForPage(props, ["services", "service", "general", "umum"]) : faqsFor(props.section)} />;
+  return <AiServicesFaq title={text(content.title)} subtitle={text(content.description)} badge={text(content.badge)} faqs={faqsForPage(props, ["services", "service", "general", "umum"]).length > 0 ? faqsForPage(props, ["services", "service", "general", "umum"]) : faqsFor(props.section)} imageUrl={contentImage(content)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} />;
 }
 
 export function FormalPortfolioHero(props: FormalSectionProps) {
@@ -707,7 +719,7 @@ export function FormalMapsLocation(props: FormalSectionProps) {
 
 export function FormalContactFaq(props: FormalSectionProps) {
   const content = contentOf(props.section);
-  return <AiContactFaq title={text(content.title)} subtitle={text(content.description)} faqs={faqsFor(props.section)} siteSlug={props.siteSlug} pageKey={props.payload.page.pageKey} slotKey={props.section.slotKey} />;
+  return <AiContactFaq title={text(content.title)} subtitle={text(content.description)} faqs={faqsFor(props.section)} siteSlug={props.siteSlug} pageKey={props.payload.page.pageKey} slotKey={props.section.slotKey} imageUrl={contentImage(content)} />;
 }
 
 export function FormalContactCta(props: FormalSectionProps) {

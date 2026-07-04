@@ -3,6 +3,7 @@ import { Star, Quote } from "lucide-react";
 import { testimonialData } from "../../data/companyProfileData";
 import { SectionHeading } from "../../shared/SectionHeading";
 import { Card } from "../../shared/Card";
+import { Button } from "../../shared/Button";
 import type { TestimonialItem, BrandItem } from "../../lib/types";
 
 export interface HomeTrustProofProps {
@@ -12,6 +13,9 @@ export interface HomeTrustProofProps {
   testimonials?: TestimonialItem[];
   metrics?: { label: string; value: string }[];
   brands?: BrandItem[];
+  imageUrl?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
 }
 
 export const TrustProof: React.FC<HomeTrustProofProps> = ({
@@ -21,6 +25,9 @@ export const TrustProof: React.FC<HomeTrustProofProps> = ({
   testimonials = testimonialData,
   metrics = [],
   brands = [],
+  imageUrl,
+  ctaLabel,
+  ctaHref = "/contact",
 }) => {
   // Komponen ini murni menampilkan apa yang dikirim (maksimal 3 kartu); logika memilih
   // mana yang "featured/unggulan" dari CRUD dilakukan di layer binding (components.tsx),
@@ -28,16 +35,34 @@ export const TrustProof: React.FC<HomeTrustProofProps> = ({
   const limitedTestimonials = testimonials.slice(0, 3);
 
   return (
-    <section id="home-trust-proof" className="py-16 md:py-24 bg-slate-50/50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="home-trust-proof" className="bg-slate-50/50">
+      {imageUrl ? (
+        <div className="relative py-16 md:py-20 mb-4 bg-slate-900 text-white overflow-hidden">
+          <div className="absolute inset-0">
+            <img src={imageUrl} alt="" className="w-full h-full object-cover opacity-30" referrerPolicy="no-referrer" />
+            <div className="absolute inset-0 bg-gradient-to-b from-slate-950/85 via-slate-950/75 to-slate-950/90" />
+          </div>
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="primary" dark />
+            {ctaLabel && (
+              <div className="text-center -mt-6">
+                <Button href={ctaHref} variant="secondary">{ctaLabel}</Button>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 md:pt-24">
+          <SectionHeading title={title} subtitle={subtitle} badge={badge} badgeVariant="primary" />
+          {ctaLabel && (
+            <div className="text-center -mt-6 mb-6">
+              <Button href={ctaHref} variant="outline">{ctaLabel}</Button>
+            </div>
+          )}
+        </div>
+      )}
 
-        <SectionHeading
-          title={title}
-          subtitle={subtitle}
-          badge={badge}
-          badgeVariant="primary"
-        />
-
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         {metrics.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10">
             {metrics.map((metric, idx) => (
