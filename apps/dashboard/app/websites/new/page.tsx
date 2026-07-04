@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Globe, ArrowRight, AlertCircle, Info, Sparkles, Layout, ShieldAlert, Mail } from "lucide-react";
+import WebsiteTypeSelector, { WebsiteTypeValue } from "@/components/ui/WebsiteTypeSelector";
+import { Globe, ArrowRight, AlertCircle, Sparkles, Layout, ShieldAlert, Mail } from "lucide-react";
 
 export default function CreateNewWebsitePage() {
   const router = useRouter();
@@ -14,6 +15,7 @@ export default function CreateNewWebsitePage() {
 
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
+  const [websiteType, setWebsiteType] = useState<WebsiteTypeValue>("company_profile");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -71,7 +73,7 @@ export default function CreateNewWebsitePage() {
       const response = await apiCall<any>("POST", "websites", {
         name: name.trim(),
         slug: slug.trim(),
-        websiteType: "company_profile"
+        websiteType
       });
 
       setSuccessMsg("Website berhasil dibuat! Mengalihkan ke halaman kelola...");
@@ -192,12 +194,11 @@ export default function CreateNewWebsitePage() {
                 </p>
               </div>
 
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-start gap-3 text-xs text-slate-500">
-                <Info className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>
-                  Tipe website yang tersedia saat ini: <strong>Company Profile</strong>. Setelah dibuat,
-                  Anda bisa langsung mulai mengisi konten halaman.
-                </span>
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-slate-700">
+                  Tipe Website
+                </label>
+                <WebsiteTypeSelector value={websiteType} onChange={setWebsiteType} />
               </div>
 
               <button
@@ -229,7 +230,10 @@ export default function CreateNewWebsitePage() {
             <ul className="space-y-3 text-xs text-slate-500">
               <li className="flex items-start gap-2">
                 <Globe className="h-3.5 w-3.5 shrink-0 mt-0.5 text-slate-400" />
-                <span>Website otomatis berisi 7 halaman default Company Profile.</span>
+                <span>
+                  Website otomatis berisi halaman default{" "}
+                  {websiteType === "catalog_product" ? "Katalog Produk (7 halaman)" : "Company Profile (7 halaman)"}.
+                </span>
               </li>
               <li className="flex items-start gap-2">
                 <Globe className="h-3.5 w-3.5 shrink-0 mt-0.5 text-slate-400" />

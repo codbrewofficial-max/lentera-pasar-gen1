@@ -27,10 +27,14 @@ import {
   Tags,
   CalendarDays,
   Lock,
-  ChevronDown
+  ChevronDown,
+  ShoppingBag,
+  Sparkles,
+  LayoutTemplate
 } from "lucide-react";
 import BrandMark from "@/components/brand/BrandMark";
 import BrandSignature from "@/components/brand/BrandSignature";
+import { apiCall } from "@/lib/api";
 
 type UserRole = "internal_admin" | "owner_admin" | string;
 
@@ -182,6 +186,21 @@ export default function DashboardLayout({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userName, setUserName] = useState("Pengguna");
   const [userRole, setUserRole] = useState<UserRole>("owner_admin");
+  // Default "company_profile" biar sidebar lama tetap tampil normal sementara
+  // fetch belum selesai / kalau fetch gagal — tidak ada perubahan perilaku.
+  const [websiteType, setWebsiteType] = useState<string>("company_profile");
+
+  useEffect(() => {
+    if (!websiteId) return;
+    apiCall<{ websiteType: string }>("GET", `websites/${websiteId}`)
+      .then((res) => {
+        if (res.data?.websiteType) setWebsiteType(res.data.websiteType);
+      })
+      .catch(() => {
+        // Diamkan saja — sidebar fallback ke company_profile, halaman lain
+        // yang butuh data website tetap fetch sendiri-sendiri seperti biasa.
+      });
+  }, [websiteId]);
 
   useEffect(() => {
     const token = window.localStorage.getItem("LP_AUTH_TOKEN");
@@ -225,6 +244,203 @@ export default function DashboardLayout({
     }
   ];
 
+  // Group "Isi Konten Utama" & "Lengkapi Pendukung" beda tergantung Website Type.
+  // Company Profile: Layanan, Portfolio, Testimoni, Timeline, Anggota Tim.
+  // Katalog Produk: Produk (+ Kategori Produk), Keunggulan/USP, Banner.
+  // Item yang dipakai bersama (Artikel, Media Library, Brand/Partner, FAQ) tetap sama.
+  const isCatalogProduct = websiteType === "catalog_product";
+
+  const mainContentGroup: NavGroup = isCatalogProduct
+    ? {
+        title: "3. Isi Konten Utama",
+        description: "Konten yang paling sering dilihat calon pelanggan.",
+        items: [
+          {
+            label: "Produk",
+            description: "Katalog produk/layanan yang dijual, lengkap dengan gambar.",
+            icon: ShoppingBag,
+            href: `/websites/${websiteId}/content/products`,
+            active: pathname?.includes(`/websites/${websiteId}/content/products`) || false,
+            children: [
+              {
+                label: "Semua Produk",
+                href: `/websites/${websiteId}/content/products`,
+                active: (pathname?.includes(`/websites/${websiteId}/content/products`) && !pathname?.includes(`product-categories`)) || false
+              },
+              {
+                label: "Kategori Produk",
+                href: `/websites/${websiteId}/content/product-categories`,
+                active: pathname?.includes(`/websites/${websiteId}/content/product-categories`) || false
+              }
+            ]
+          },
+          {
+            label: "Artikel",
+            description: "Tulisan edukasi, berita, insight, dan SEO.",
+            icon: FileText,
+            href: `/websites/${websiteId}/content/articles`,
+            active: pathname?.includes(`/websites/${websiteId}/content/articles`) || false,
+            children: [
+              {
+                label: "Semua Artikel",
+                href: `/websites/${websiteId}/content/articles`,
+                active: (pathname?.includes(`/websites/${websiteId}/content/articles`) && !pathname?.includes(`article-categories`)) || false
+              },
+              {
+                label: "Kategori Artikel",
+                href: `/websites/${websiteId}/content/article-categories`,
+                active: pathname?.includes(`/websites/${websiteId}/content/article-categories`) || false
+              }
+            ]
+          }
+        ]
+      }
+    : {
+        title: "3. Isi Konten Utama",
+        description: "Konten yang paling sering dilihat calon pelanggan.",
+        items: [
+          {
+            label: "Layanan",
+            description: "Daftar layanan/jasa yang ditawarkan.",
+            icon: HeartHandshake,
+            href: `/websites/${websiteId}/content/services`,
+            active: pathname?.includes(`/websites/${websiteId}/content/services`) || false
+          },
+          {
+            label: "Portfolio",
+            description: "Hasil kerja, kegiatan, project, atau studi kasus.",
+            icon: FolderKanban,
+            href: `/websites/${websiteId}/content/portfolio`,
+            // Menggunakan penanda utama kelompok portfolio
+            active: pathname?.includes(`/websites/${websiteId}/content/portfolio`) || false,
+            children: [
+              {
+                label: "Semua Portfolio",
+                href: `/websites/${websiteId}/content/portfolio`,
+                // Aktif jika berada di halaman list, create, maupun edit portfolio, tapi BUKAN halaman kategori
+                active: (pathname?.includes(`/websites/${websiteId}/content/portfolio`) && !pathname?.includes(`portfolio-categories`)) || false
+              },
+              {
+                label: "Kategori Portfolio",
+                href: `/websites/${websiteId}/content/portfolio-categories`,
+                active: pathname?.includes(`/websites/${websiteId}/content/portfolio-categories`) || false
+              }
+            ]
+          },
+          {
+            label: "Artikel",
+            description: "Tulisan edukasi, berita, insight, dan SEO.",
+            icon: FileText,
+            href: `/websites/${websiteId}/content/articles`,
+            active: pathname?.includes(`/websites/${websiteId}/content/articles`) || false,
+            children: [
+              {
+                label: "Semua Artikel",
+                href: `/websites/${websiteId}/content/articles`,
+                // Aktif jika berada di halaman list, create, maupun edit artikel, tapi BUKAN halaman kategori
+                active: (pathname?.includes(`/websites/${websiteId}/content/articles`) && !pathname?.includes(`article-categories`)) || false
+              },
+              {
+                label: "Kategori Artikel",
+                href: `/websites/${websiteId}/content/article-categories`,
+                active: pathname?.includes(`/websites/${websiteId}/content/article-categories`) || false
+              }
+            ]
+          }
+        ]
+      };
+
+  const supportingContentGroup: NavGroup = isCatalogProduct
+    ? {
+        title: "4. Lengkapi Pendukung",
+        description: "Data bantu agar konten lebih rapi dan meyakinkan.",
+        items: [
+          {
+            label: "Media Library",
+            description: "Bank gambar untuk logo, produk, artikel, dan section.",
+            icon: ImageIcon,
+            href: `/websites/${websiteId}/content/media`,
+            active: pathname?.includes(`/websites/${websiteId}/content/media`) || false
+          },
+          {
+            label: "Keunggulan / USP",
+            description: "Poin keunggulan toko yang tampil di Home.",
+            icon: Sparkles,
+            href: `/websites/${websiteId}/content/value-propositions`,
+            active: pathname?.includes(`/websites/${websiteId}/content/value-propositions`) || false
+          },
+          {
+            label: "Banner",
+            description: "Banner promo untuk Hero Section Home.",
+            icon: LayoutTemplate,
+            href: `/websites/${websiteId}/content/banners`,
+            active: pathname?.includes(`/websites/${websiteId}/content/banners`) || false
+          },
+          {
+            label: "Brand / Partner",
+            description: "Logo brand atau partner untuk penguat kepercayaan.",
+            icon: Award,
+            href: `/websites/${websiteId}/content/brands`,
+            active: pathname?.includes(`/websites/${websiteId}/content/brands`) || false
+          },
+          {
+            label: "FAQ",
+            description: "Pertanyaan umum untuk halaman FAQ dan produk.",
+            icon: HelpCircle,
+            href: `/websites/${websiteId}/content/faq`,
+            active: pathname?.includes(`/websites/${websiteId}/content/faq`) || false
+          }
+        ]
+      }
+    : {
+        title: "4. Lengkapi Pendukung",
+        description: "Data bantu agar konten lebih rapi dan meyakinkan.",
+        items: [
+          {
+            label: "Media Library",
+            description: "Bank gambar untuk logo, artikel, portfolio, dan section.",
+            icon: ImageIcon,
+            href: `/websites/${websiteId}/content/media`,
+            active: pathname?.includes(`/websites/${websiteId}/content/media`) || false
+          },
+          {
+            label: "Perjalanan Bisnis",
+            description: "Milestone/sejarah yang tampil di halaman About.",
+            icon: CalendarDays,
+            href: `/websites/${websiteId}/content/timeline`,
+            active: pathname?.includes(`/websites/${websiteId}/content/timeline`) || false
+          },
+          {
+            label: "Anggota Tim",
+            description: "Profil tim inti yang tampil di halaman About.",
+            icon: Users,
+            href: `/websites/${websiteId}/content/team-members`,
+            active: pathname?.includes(`/websites/${websiteId}/content/team-members`) || false
+          },
+          {
+            label: "Testimoni",
+            description: "Cerita pelanggan/klien untuk memperkuat trust.",
+            icon: MessageSquare,
+            href: `/websites/${websiteId}/content/testimonials`,
+            active: pathname?.includes(`/websites/${websiteId}/content/testimonials`) || false
+          },
+          {
+            label: "Brand / Partner",
+            description: "Logo partner, brand, komunitas, atau kolaborator.",
+            icon: Award,
+            href: `/websites/${websiteId}/content/brands`,
+            active: pathname?.includes(`/websites/${websiteId}/content/brands`) || false
+          },
+          {
+            label: "FAQ",
+            description: "Pertanyaan umum untuk halaman layanan dan kontak.",
+            icon: HelpCircle,
+            href: `/websites/${websiteId}/content/faq`,
+            active: pathname?.includes(`/websites/${websiteId}/content/faq`) || false
+          }
+        ]
+      };
+
   const websiteGroups: NavGroup[] = websiteId
     ? [
         {
@@ -267,108 +483,8 @@ export default function DashboardLayout({
             }
           ]
         },
-        {
-          title: "3. Isi Konten Utama",
-          description: "Konten yang paling sering dilihat calon pelanggan.",
-          items: [
-            {
-              label: "Layanan",
-              description: "Daftar layanan/jasa yang ditawarkan.",
-              icon: HeartHandshake,
-              href: `/websites/${websiteId}/content/services`,
-              active: pathname?.includes(`/websites/${websiteId}/content/services`) || false
-            },
-            {
-              label: "Portfolio",
-              description: "Hasil kerja, kegiatan, project, atau studi kasus.",
-              icon: FolderKanban,
-              href: `/websites/${websiteId}/content/portfolio`,
-              // Menggunakan penanda utama kelompok portfolio
-              active: pathname?.includes(`/websites/${websiteId}/content/portfolio`) || false,
-              children: [
-                {
-                  label: "Semua Portfolio",
-                  href: `/websites/${websiteId}/content/portfolio`,
-                  // Aktif jika berada di halaman list, create, maupun edit portfolio, tapi BUKAN halaman kategori
-                  active: (pathname?.includes(`/websites/${websiteId}/content/portfolio`) && !pathname?.includes(`portfolio-categories`)) || false
-                },
-                {
-                  label: "Kategori Portfolio",
-                  href: `/websites/${websiteId}/content/portfolio-categories`,
-                  active: pathname?.includes(`/websites/${websiteId}/content/portfolio-categories`) || false
-                }
-              ]
-            },
-            {
-              label: "Artikel",
-              description: "Tulisan edukasi, berita, insight, dan SEO.",
-              icon: FileText,
-              href: `/websites/${websiteId}/content/articles`,
-              active: pathname?.includes(`/websites/${websiteId}/content/articles`) || false,
-              children: [
-                {
-                  label: "Semua Artikel",
-                  href: `/websites/${websiteId}/content/articles`,
-                  // Aktif jika berada di halaman list, create, maupun edit artikel, tapi BUKAN halaman kategori
-                  active: (pathname?.includes(`/websites/${websiteId}/content/articles`) && !pathname?.includes(`article-categories`)) || false
-                },
-                {
-                  label: "Kategori Artikel",
-                  href: `/websites/${websiteId}/content/article-categories`,
-                  active: pathname?.includes(`/websites/${websiteId}/content/article-categories`) || false
-                }
-              ]
-            }
-          ]
-        },
-        {
-          title: "4. Lengkapi Pendukung",
-          description: "Data bantu agar konten lebih rapi dan meyakinkan.",
-          items: [
-            {
-              label: "Media Library",
-              description: "Bank gambar untuk logo, artikel, portfolio, dan section.",
-              icon: ImageIcon,
-              href: `/websites/${websiteId}/content/media`,
-              active: pathname?.includes(`/websites/${websiteId}/content/media`) || false
-            },
-            {
-              label: "Perjalanan Bisnis",
-              description: "Milestone/sejarah yang tampil di halaman About.",
-              icon: CalendarDays,
-              href: `/websites/${websiteId}/content/timeline`,
-              active: pathname?.includes(`/websites/${websiteId}/content/timeline`) || false
-            },
-            {
-              label: "Anggota Tim",
-              description: "Profil tim inti yang tampil di halaman About.",
-              icon: Users,
-              href: `/websites/${websiteId}/content/team-members`,
-              active: pathname?.includes(`/websites/${websiteId}/content/team-members`) || false
-            },
-            {
-              label: "Testimoni",
-              description: "Cerita pelanggan/klien untuk memperkuat trust.",
-              icon: MessageSquare,
-              href: `/websites/${websiteId}/content/testimonials`,
-              active: pathname?.includes(`/websites/${websiteId}/content/testimonials`) || false
-            },
-            {
-              label: "Brand / Partner",
-              description: "Logo partner, brand, komunitas, atau kolaborator.",
-              icon: Award,
-              href: `/websites/${websiteId}/content/brands`,
-              active: pathname?.includes(`/websites/${websiteId}/content/brands`) || false
-            },
-            {
-              label: "FAQ",
-              description: "Pertanyaan umum untuk halaman layanan dan kontak.",
-              icon: HelpCircle,
-              href: `/websites/${websiteId}/content/faq`,
-              active: pathname?.includes(`/websites/${websiteId}/content/faq`) || false
-            }
-          ]
-        },
+        mainContentGroup,
+        supportingContentGroup,
         {
           title: "5. Pantau Hasil",
           description: "Lihat minat pengunjung dan tindak lanjuti prospek.",
