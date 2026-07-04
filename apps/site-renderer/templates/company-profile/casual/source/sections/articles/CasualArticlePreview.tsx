@@ -8,15 +8,21 @@ import { ArrowRight, Calendar, User } from 'lucide-react';
 export interface CasualArticlePreviewProps {
   title?: string;
   description?: string;
+  badge?: string;
   articles?: ArticleItem[];
   articlesHref?: string;
+  imageUrl?: string;
+  ctaLabel?: string;
 }
 
 export function CasualArticlePreview({
   title = 'Artikel & Inspirasi Menarik Lainnya',
   description = 'Jelajahi kumpulan wawasan praktis dari studio kami. Kami membagikan tips gratis seputar fotografi produk, copywriting sosmed, dan branding secara konsisten.',
+  badge = 'FEED ARTIKEL',
   articles = articlesData,
   articlesHref = '/articles',
+  imageUrl,
+  ctaLabel,
 }: CasualArticlePreviewProps) {
   
   // Show all articles in the general feed list
@@ -33,25 +39,54 @@ export function CasualArticlePreview({
   };
 
   return (
-    <section id="CasualArticlePreview" className="py-20 bg-gray-50 relative overflow-hidden">
-      
-      {/* Decorative Blob */}
-      <div className="absolute bottom-0 right-10 w-96 h-96 rounded-full bg-[#649FF6]/5 blur-3xl pointer-events-none" />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        
-        {/* Section Heading */}
-        <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
-          <span className="text-sm font-bold text-[#649FF6] uppercase tracking-widest block font-mono">
-            FEED ARTIKEL
-          </span>
-          <h2 className="font-sans font-extrabold text-3xl sm:text-4xl text-gray-950 tracking-tight">
-            {title}
-          </h2>
-          <p className="font-sans text-base text-gray-600 leading-relaxed">
-            {description}
-          </p>
+    <section id="CasualArticlePreview" className="bg-gray-50 relative overflow-hidden">
+      {imageUrl ? (
+        <div className="relative py-16 md:py-20 mb-4 overflow-hidden text-white text-center">
+          <div className="absolute inset-0">
+            <img src={imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            <div className="absolute inset-0 bg-gray-950/70" />
+          </div>
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-4">
+            <span className="text-sm font-bold text-white/80 uppercase tracking-widest block font-mono">{badge}</span>
+            <h2 className="font-sans font-extrabold text-3xl sm:text-4xl tracking-tight">{title}</h2>
+            <p className="font-sans text-base text-gray-200 leading-relaxed">{description}</p>
+            {ctaLabel && (
+              <div className="pt-2">
+                <Link href={articlesHref} className="inline-flex items-center gap-2 bg-white text-gray-900 px-6 py-3 rounded-full text-sm font-bold hover:bg-gray-100 transition-all">
+                  <span>{ctaLabel}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
+      ) : (
+        <div className="absolute bottom-0 right-10 w-96 h-96 rounded-full bg-[#649FF6]/5 blur-3xl pointer-events-none" />
+      )}
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 py-12 md:py-16">
+        {!imageUrl && (
+          /* Section Heading */
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
+            <span className="text-sm font-bold text-[#649FF6] uppercase tracking-widest block font-mono">
+              {badge}
+            </span>
+            <h2 className="font-sans font-extrabold text-3xl sm:text-4xl text-gray-950 tracking-tight">
+              {title}
+            </h2>
+            <p className="font-sans text-base text-gray-600 leading-relaxed">
+              {description}
+            </p>
+            {ctaLabel && (
+              <div className="pt-2">
+                <Link href={articlesHref} className="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-800 px-6 py-3 rounded-full text-sm font-bold transition-all">
+                  <span>{ctaLabel}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Articles Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">

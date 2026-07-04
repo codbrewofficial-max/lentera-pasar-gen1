@@ -412,7 +412,7 @@ export function CasualServicesHeroSection(props: CasualSectionProps) {
 
 export function CasualServicesGridSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
-  return <CasualServicesGrid title={text(content.title)} description={text(content.description)} services={servicesFor(props)} />;
+  return <CasualServicesGrid title={text(content.title)} description={text(content.description)} badge={text(content.badge)} services={servicesFor(props)} imageUrl={contentImage(content)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} />;
 }
 
 export function CasualServicesProcessSection(props: CasualSectionProps) {
@@ -451,12 +451,34 @@ export function CasualPortfolioHeroSection(props: CasualSectionProps) {
 
 export function CasualPortfolioCategorySection(props: CasualSectionProps) {
   const content = contentOf(props.section);
-  return <CasualPortfolioCategory title={text(content.title)} description={text(content.description)} />;
+  const categories = [...new Set((props.section.data?.portfolioCategories || []).map((item) => titleOf(item)))];
+  return (
+    <CasualPortfolioCategory
+      title={text(content.title)}
+      description={text(content.description)}
+      badge={text(content.badge)}
+      categories={categories}
+      imageUrl={contentImage(content)}
+      ctaLabel={text(content.ctaLabel)}
+      ctaHref={sectionHref(props, "cta", "/contact")}
+    />
+  );
 }
 
 export function CasualPortfolioGridSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
-  return <CasualPortfolioGrid title={text(content.title)} description={text(content.description)} portfolios={portfoliosFor(props)} portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)} />;
+  return (
+    <CasualPortfolioGrid
+      title={text(content.title)}
+      description={text(content.description)}
+      badge={text(content.badge)}
+      portfolios={portfoliosFor(props)}
+      portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)}
+      imageUrl={contentImage(content)}
+      ctaLabel={text(content.ctaLabel)}
+      ctaHref={sectionHref(props, "cta", "/contact")}
+    />
+  );
 }
 
 export function CasualPortfolioCaseHighlightSection(props: CasualSectionProps) {
@@ -494,12 +516,12 @@ export function CasualFeaturedArticleSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
   const articles = articlesFor(props);
   const article = articles.find((item, index) => props.section.data?.articles?.[index]?.isFeatured) || articles[0];
-  return <CasualFeaturedArticle title={text(content.title)} description={text(content.description)} article={article} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} />;
+  return <CasualFeaturedArticle title={text(content.title)} description={text(content.description)} badge={text(content.badge)} article={article} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} imageUrl={contentImage(content)} ctaLabel={text(content.ctaLabel)} />;
 }
 
 export function CasualArticlePreviewSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
-  return <CasualArticlePreview title={text(content.title)} description={text(content.description)} articles={articlesFor(props)} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} />;
+  return <CasualArticlePreview title={text(content.title)} description={text(content.description)} badge={text(content.badge)} articles={articlesFor(props)} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} imageUrl={contentImage(content)} ctaLabel={text(content.ctaLabel)} />;
 }
 
 // ---- Article Detail ----
