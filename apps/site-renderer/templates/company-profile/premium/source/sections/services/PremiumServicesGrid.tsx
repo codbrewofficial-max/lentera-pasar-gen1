@@ -7,13 +7,21 @@ import { defaultServices, ServiceItem } from '../../lib/dummy-data';
 interface PremiumServicesGridProps {
   title?: string;
   description?: string;
+  badge?: string;
   services?: ServiceItem[];
+  imageUrl?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
 }
 
 export function PremiumServicesGrid({
   title = "Spesialisasi Arsitektural Kami",
   description = "Tiga layanan utama yang dirancang untuk klien korporasi, developer resor butik, serta pemilik hunian pribadi berkelas tinggi.",
-  services = defaultServices
+  badge = "DIVERSITAS SOLUSI",
+  services = defaultServices,
+  imageUrl,
+  ctaLabel,
+  ctaHref = "/contact",
 }: PremiumServicesGridProps) {
   const getIcon = (name?: string) => {
     switch (name) {
@@ -25,15 +33,26 @@ export function PremiumServicesGrid({
   };
 
   return (
-    <section id="premium-services-grid" className="py-24 md:py-32 bg-[#0E0E0F] text-white">
-      <div className="max-w-7xl mx-auto px-6">
+    <section id="premium-services-grid" className="bg-[#0E0E0F] text-white relative overflow-hidden">
+      {imageUrl && (
+        <div className="absolute inset-0">
+          <img src={imageUrl} alt="" className="w-full h-full object-cover opacity-20" referrerPolicy="no-referrer" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0E0E0F]/90 via-[#0E0E0F]/85 to-[#0E0E0F]" />
+        </div>
+      )}
+      <div className="max-w-7xl mx-auto px-6 relative z-10 py-24 md:py-32">
         {/* Header Block */}
         <div className="max-w-3xl mb-20 space-y-4">
-          <span className="text-[10px] font-bold tracking-[0.3em] text-[#649FF6] uppercase block">DIVERSITAS SOLUSI</span>
+          <span className="text-[10px] font-bold tracking-[0.3em] text-[#649FF6] uppercase block">{badge}</span>
           <h2 className="text-3xl md:text-5xl font-serif font-light tracking-tight text-white">{title}</h2>
           <p className="text-stone-400 text-xs md:text-sm leading-relaxed font-sans font-light">
             {description}
           </p>
+          {ctaLabel && (
+            <a href={ctaHref} className="inline-flex items-center gap-2 text-xs font-semibold tracking-[0.25em] text-white hover:text-[#649FF6] transition-colors py-2.5 border-b border-white/20 hover:border-[#649FF6]">
+              {ctaLabel}
+            </a>
+          )}
         </div>
 
         {/* Detailed services grid layout */}

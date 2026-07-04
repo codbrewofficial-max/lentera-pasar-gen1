@@ -424,7 +424,7 @@ export function PremiumServicesHeroSection(props: PremiumSectionProps) {
 
 export function PremiumServicesGridSection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
-  return <PremiumServicesGrid title={text(content.title)} description={text(content.description)} services={servicesFor(props)} />;
+  return <PremiumServicesGrid title={text(content.title)} description={text(content.description)} badge={text(content.badge)} services={servicesFor(props)} imageUrl={contentImage(content)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} />;
 }
 
 export function PremiumServicesProcessSection(props: PremiumSectionProps) {
@@ -463,12 +463,23 @@ export function PremiumPortfolioHeroSection(props: PremiumSectionProps) {
 
 export function PremiumPortfolioCategorySection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
-  return <PremiumPortfolioCategory title={text(content.title)} description={text(content.description)} />;
+  const categories = [...new Set((props.section.data?.portfolioCategories || []).map((item) => titleOf(item)))];
+  return (
+    <PremiumPortfolioCategory
+      title={text(content.title)}
+      description={text(content.description)}
+      badge={text(content.badge)}
+      categories={categories}
+      imageUrl={contentImage(content)}
+      ctaLabel={text(content.ctaLabel)}
+      ctaHref={sectionHref(props, "cta", "/contact")}
+    />
+  );
 }
 
 export function PremiumPortfolioGridSection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
-  return <PremiumPortfolioGrid title={text(content.title)} description={text(content.description)} portfolios={portfoliosFor(props)} portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)} />;
+  return <PremiumPortfolioGrid title={text(content.title)} description={text(content.description)} badge={text(content.badge)} portfolios={portfoliosFor(props)} portfolioDetailHref={(id: string) => getPortfolioDetailHref(props.siteSlug, props.payload.navigation, id)} imageUrl={contentImage(content)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} />;
 }
 
 export function PremiumPortfolioCaseHighlightSection(props: PremiumSectionProps) {
@@ -506,12 +517,12 @@ export function PremiumFeaturedArticleSection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
   const articles = articlesFor(props);
   const article = articles.find((item, index) => props.section.data?.articles?.[index]?.isFeatured) || articles[0];
-  return <PremiumFeaturedArticle title={text(content.title)} description={text(content.description)} article={article} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} />;
+  return <PremiumFeaturedArticle title={text(content.title)} description={text(content.description)} badge={text(content.badge)} article={article} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} imageUrl={contentImage(content)} ctaLabel={text(content.ctaLabel)} />;
 }
 
 export function PremiumArticlePreviewSection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
-  return <PremiumArticlePreview title={text(content.title)} description={text(content.description)} articles={articlesFor(props)} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} />;
+  return <PremiumArticlePreview title={text(content.title)} description={text(content.description)} badge={text(content.badge)} articles={articlesFor(props)} articlesHref={getPageHrefByKey(props.siteSlug, props.payload.navigation, "articles", "/articles")} imageUrl={contentImage(content)} ctaLabel={text(content.ctaLabel)} />;
 }
 
 // ---- Article Detail ----
