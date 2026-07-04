@@ -402,7 +402,7 @@ export function CasualAboutTeamHighlightSection(props: CasualSectionProps) {
 
 export function CasualServicesHeroSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
-  return <CasualServicesHero title={text(content.title)} description={text(content.description)} />;
+  return <CasualServicesHero title={text(content.title)} description={text(content.description)} badge={text(content.badge)} imageUrl={contentImage(content)} />;
 }
 
 export function CasualServicesGridSection(props: CasualSectionProps) {
@@ -441,7 +441,7 @@ export function CasualServicesFaqSection(props: CasualSectionProps) {
 
 export function CasualPortfolioHeroSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
-  return <CasualPortfolioHero title={text(content.title)} description={text(content.description)} />;
+  return <CasualPortfolioHero title={text(content.title)} description={text(content.description)} badge={text(content.badge)} imageUrl={contentImage(content)} />;
 }
 
 export function CasualPortfolioCategorySection(props: CasualSectionProps) {
@@ -481,7 +481,7 @@ export function CasualPortfolioCtaSection(props: CasualSectionProps) {
 
 export function CasualArticlesHeroSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
-  return <CasualArticlesHero title={text(content.title)} description={text(content.description)} />;
+  return <CasualArticlesHero title={text(content.title)} description={text(content.description)} badge={text(content.badge)} imageUrl={contentImage(content)} />;
 }
 
 export function CasualFeaturedArticleSection(props: CasualSectionProps) {
@@ -595,7 +595,7 @@ export function CasualPortfolioDetailCtaSection(props: CasualSectionProps) {
 
 export function CasualContactHeroSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
-  return <CasualContactHero title={text(content.title)} description={text(content.description)} />;
+  return <CasualContactHero title={text(content.title)} description={text(content.description)} badge={text(content.badge)} imageUrl={contentImage(content)} />;
 }
 
 export function CasualContactInformationSection(props: CasualSectionProps) {
