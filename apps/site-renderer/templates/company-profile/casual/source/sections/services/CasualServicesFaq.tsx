@@ -7,13 +7,21 @@ import { HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
 export interface CasualServicesFaqProps {
   title?: string;
   description?: string;
+  badge?: string;
   faqs?: FaqItem[];
+  imageUrl?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
 }
 
 export function CasualServicesFaq({
   title = 'Ada Pertanyaan? Kami Punya Jawaban!',
   description = 'Punya ganjalan atau rasa penasaran soal cara kerja, pembayaran, atau detail teknis? Kami kumpulkan beberapa pertanyaan yang paling sering diajukan klien kami di bawah ini.',
+  badge = 'TANYA JAWAB (FAQ)',
   faqs = faqData,
+  imageUrl,
+  ctaLabel,
+  ctaHref = '/contact',
 }: CasualServicesFaqProps) {
   
   const [openIndex, setOpenIndex] = useState<number | null>(0);
@@ -23,25 +31,55 @@ export function CasualServicesFaq({
   };
 
   return (
-    <section id="CasualServicesFaq" className="py-20 bg-gray-50 relative overflow-hidden">
-      {/* Background blobs */}
-      <div className="absolute top-0 right-10 w-96 h-96 rounded-full bg-[#649FF6]/5 blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-10 w-96 h-96 rounded-full bg-[#B283AF]/5 blur-3xl pointer-events-none" />
-
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        
-        {/* Section Heading */}
-        <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
-          <span className="text-sm font-bold text-[#649FF6] uppercase tracking-widest block font-mono">
-            TANYA JAWAB (FAQ)
-          </span>
-          <h2 className="font-sans font-extrabold text-3xl sm:text-4xl text-gray-950 tracking-tight">
-            {title}
-          </h2>
-          <p className="font-sans text-base text-gray-600 leading-relaxed">
-            {description}
-          </p>
+    <section id="CasualServicesFaq" className="bg-gray-50 relative overflow-hidden">
+      {imageUrl ? (
+        <div className="relative py-16 md:py-20 mb-4 overflow-hidden text-white text-center">
+          <div className="absolute inset-0">
+            <img src={imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            <div className="absolute inset-0 bg-gray-950/70" />
+          </div>
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-4">
+            <span className="text-sm font-bold text-white/80 uppercase tracking-widest block font-mono">{badge}</span>
+            <h2 className="font-sans font-extrabold text-3xl sm:text-4xl tracking-tight">{title}</h2>
+            <p className="font-sans text-base text-gray-200 leading-relaxed">{description}</p>
+            {ctaLabel && (
+              <div className="pt-2">
+                <a href={ctaHref} className="inline-flex items-center gap-2 bg-white text-gray-900 px-6 py-3 rounded-full text-sm font-bold hover:bg-gray-100 transition-all">
+                  {ctaLabel}
+                </a>
+              </div>
+            )}
+          </div>
         </div>
+      ) : (
+        <>
+          <div className="absolute top-0 right-10 w-96 h-96 rounded-full bg-[#649FF6]/5 blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-10 w-96 h-96 rounded-full bg-[#B283AF]/5 blur-3xl pointer-events-none" />
+        </>
+      )}
+
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 py-12 md:py-16">
+        {!imageUrl && (
+          /* Section Heading */
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
+            <span className="text-sm font-bold text-[#649FF6] uppercase tracking-widest block font-mono">
+              {badge}
+            </span>
+            <h2 className="font-sans font-extrabold text-3xl sm:text-4xl text-gray-950 tracking-tight">
+              {title}
+            </h2>
+            <p className="font-sans text-base text-gray-600 leading-relaxed">
+              {description}
+            </p>
+            {ctaLabel && (
+              <div className="pt-2">
+                <a href={ctaHref} className="inline-flex items-center gap-2 bg-white hover:bg-gray-100 border border-gray-200 text-gray-800 px-6 py-3 rounded-full text-sm font-bold transition-all">
+                  {ctaLabel}
+                </a>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Interactive FAQ Accordion List */}
         <div className="space-y-4 max-w-3xl mx-auto">

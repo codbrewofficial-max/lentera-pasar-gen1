@@ -7,59 +7,66 @@ import { FaqItem } from '../../lib/dummy-data';
 export interface CasualContactFaqProps {
   title?: string;
   description?: string;
+  badge?: string;
   faqs?: FaqItem[];
+  imageUrl?: string;
 }
 
 export function CasualContactFaq({
   title = 'Tanya Jawab Seputar Pemesanan & Kontak',
   description = 'Punya kebingungan sebelum memencet tombol sapa kami? Bacalah beberapa rangkuman penjelasan singkat tentang sistem diskusi dan pemesanan di studio kami.',
-  faqs,
+  badge = 'KONSULTASI FAQ',
+  faqs = [],
+  imageUrl,
 }: CasualContactFaqProps) {
   
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
-  const localFaq: FaqItem[] = faqs && faqs.length > 0 ? faqs : [
-    {
-      question: 'Apakah sesi konsultasi awal benar-benar gratis?',
-      answer: 'Ya, 100% gratis tanpa komitmen apapun! Sesi obrolan 30 menit dirancang agar kita bisa saling kenal, bertukar ide kreatif, dan melihat kecocokan visi sebelum sepakat berkontrak.'
-    },
-    {
-      question: 'Bagaimana cara pembayaran jika sudah sepakat bekerja sama?',
-      answer: 'Pembayaran bisa ditransfer via bank komersial reguler atau e-wallet nasional. Kami biasanya menerapkan DP (Down Payment) sebesar 50% di awal kontrak, dan pelunasan 50% sisanya setelah revisi final selesai dan sebelum aset dikirim.'
-    },
-    {
-      question: 'Bisakah saya berkunjung langsung ke studio?',
-      answer: 'Tentu saja! Kantor kami berlokasi di kawasan Dipati Ukur Bandung yang sejuk. Harap membuat janji temu terlebih dahulu minimal 1 hari sebelumnya lewat WhatsApp, agar tim desainer kami bisa menjadwalkan waktu menyambutmu dengan kopi hangat.'
-    }
-  ];
+  // FAQ sekarang murni dari data FAQ asli yang owner input di dashboard — tidak ada lagi
+  // 3 pertanyaan contoh yang dipakai sebagai fallback kalau datanya kosong.
+  if (faqs.length === 0) return null;
 
   const toggleFaq = (idx: number) => {
     setOpenIndex(openIndex === idx ? null : idx);
   };
 
   return (
-    <section id="CasualContactFaq" className="py-20 bg-white relative overflow-hidden">
-      {/* Decorative Blob */}
-      <div className="absolute top-0 left-10 w-80 h-80 rounded-full bg-[#B283AF]/5 blur-3xl pointer-events-none" />
-
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        
-        {/* Section Heading */}
-        <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
-          <span className="text-sm font-bold text-[#649FF6] uppercase tracking-widest block font-mono">
-            KONSULTASI FAQ
-          </span>
-          <h2 className="font-sans font-extrabold text-3xl sm:text-4xl text-gray-950 tracking-tight">
-            {title}
-          </h2>
-          <p className="font-sans text-base text-gray-600 leading-relaxed">
-            {description}
-          </p>
+    <section id="CasualContactFaq" className="bg-white relative overflow-hidden">
+      {imageUrl ? (
+        <div className="relative py-16 md:py-20 mb-4 overflow-hidden text-white text-center">
+          <div className="absolute inset-0">
+            <img src={imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            <div className="absolute inset-0 bg-gray-950/70" />
+          </div>
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-4">
+            <span className="text-sm font-bold text-white/80 uppercase tracking-widest block font-mono">{badge}</span>
+            <h2 className="font-sans font-extrabold text-3xl sm:text-4xl tracking-tight">{title}</h2>
+            <p className="font-sans text-base text-gray-200 leading-relaxed">{description}</p>
+          </div>
         </div>
+      ) : (
+        <div className="absolute top-0 left-10 w-80 h-80 rounded-full bg-[#B283AF]/5 blur-3xl pointer-events-none" />
+      )}
+
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 py-12 md:py-16">
+        {!imageUrl && (
+          /* Section Heading */
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
+            <span className="text-sm font-bold text-[#649FF6] uppercase tracking-widest block font-mono">
+              {badge}
+            </span>
+            <h2 className="font-sans font-extrabold text-3xl sm:text-4xl text-gray-950 tracking-tight">
+              {title}
+            </h2>
+            <p className="font-sans text-base text-gray-600 leading-relaxed">
+              {description}
+            </p>
+          </div>
+        )}
 
         {/* Accordion list */}
         <div className="space-y-4 max-w-3xl mx-auto">
-          {localFaq.map((faq, index) => {
+          {faqs.map((faq, index) => {
             const isOpen = openIndex === index;
             return (
               <div

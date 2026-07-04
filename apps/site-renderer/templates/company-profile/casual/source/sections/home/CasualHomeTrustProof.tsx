@@ -24,9 +24,13 @@ export interface CasualMetricItem {
 export interface CasualHomeTrustProofProps {
   title?: string;
   description?: string;
+  badge?: string;
   metrics?: CasualMetricItem[];
   testimonials?: CasualTestimonialItem[];
   brands?: CasualBrandItem[];
+  imageUrl?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
 }
 
 const METRIC_ICONS = [ThumbsUp, Star, Heart, Sparkles];
@@ -35,9 +39,13 @@ const METRIC_ACCENTS = ['#649FF6', '#F56B71', '#B283AF', '#649FF6'];
 export function CasualHomeTrustProof({
   title,
   description,
+  badge = 'PENCAPAIAN KAMI',
   metrics = [],
   testimonials = [],
   brands = [],
+  imageUrl,
+  ctaLabel,
+  ctaHref = '/contact',
 }: CasualHomeTrustProofProps) {
   const badgeColors = ['bg-[#F56B71]/10 text-[#F56B71]', 'bg-[#649FF6]/10 text-[#649FF6]', 'bg-[#B283AF]/10 text-[#B283AF]'];
 
@@ -49,18 +57,48 @@ export function CasualHomeTrustProof({
   }
 
   return (
-    <section id="CasualHomeTrustProof" className="py-20 bg-gradient-to-b from-white to-[#649FF6]/5 relative overflow-hidden">
-      <div className="absolute top-10 left-1/3 w-32 h-32 rounded-full bg-[#B283AF]/10 blur-3xl pointer-events-none" />
-      <div className="absolute bottom-10 right-10 w-48 h-48 rounded-full bg-[#F56B71]/10 blur-3xl pointer-events-none" />
+    <section id="CasualHomeTrustProof" className="bg-gradient-to-b from-white to-[#649FF6]/5 relative overflow-hidden">
+      {imageUrl ? (
+        <div className="relative py-16 md:py-20 mb-4 overflow-hidden text-white text-center">
+          <div className="absolute inset-0">
+            <img src={imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            <div className="absolute inset-0 bg-gray-950/70" />
+          </div>
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-4">
+            <span className="text-sm font-bold text-white/80 uppercase tracking-widest block font-mono">{badge}</span>
+            {title && <h2 className="font-sans font-extrabold text-3xl sm:text-4xl tracking-tight">{title}</h2>}
+            {description && <p className="font-sans text-base text-gray-200 leading-relaxed">{description}</p>}
+            {ctaLabel && (
+              <div className="pt-2">
+                <a href={ctaHref} className="inline-flex items-center gap-2 bg-white text-gray-900 px-6 py-3 rounded-full text-sm font-bold hover:bg-gray-100 transition-all">
+                  {ctaLabel}
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="absolute top-10 left-1/3 w-32 h-32 rounded-full bg-[#B283AF]/10 blur-3xl pointer-events-none" />
+          <div className="absolute bottom-10 right-10 w-48 h-48 rounded-full bg-[#F56B71]/10 blur-3xl pointer-events-none" />
+        </>
+      )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        {(title || description) && (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 py-12 md:py-16">
+        {!imageUrl && (title || description) && (
           <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
             <span className="text-sm font-bold text-[#649FF6] uppercase tracking-widest block font-mono">
-              PENCAPAIAN KAMI
+              {badge}
             </span>
             {title && <h2 className="font-sans font-extrabold text-3xl sm:text-4xl text-gray-950 tracking-tight">{title}</h2>}
             {description && <p className="font-sans text-base text-gray-600 leading-relaxed">{description}</p>}
+            {ctaLabel && (
+              <div className="pt-2">
+                <a href={ctaHref} className="inline-flex items-center gap-2 bg-white hover:bg-gray-100 border border-gray-200 text-gray-800 px-6 py-3 rounded-full text-sm font-bold transition-all">
+                  {ctaLabel}
+                </a>
+              </div>
+            )}
           </div>
         )}
 

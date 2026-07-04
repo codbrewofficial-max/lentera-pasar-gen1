@@ -328,9 +328,13 @@ export function CasualHomeTrustProofSection(props: CasualSectionProps) {
     <CasualHomeTrustProof
       title={text(content.title)}
       description={text(content.description)}
+      badge={text(content.badge)}
       metrics={itemsOf(props.section).map((item) => ({ label: text(item?.value as string), value: text(item?.title as string) })).filter((m) => m.label && m.value)}
       testimonials={testimonials}
       brands={brandsFor(props)}
+      imageUrl={contentImage(content)}
+      ctaLabel={text(content.ctaLabel)}
+      ctaHref={sectionHref(props, "cta", "/contact")}
     />
   );
 }
@@ -364,7 +368,7 @@ export function CasualAboutOrganizationProfileSection(props: CasualSectionProps)
 
 export function CasualAboutHistoryTimelineSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
-  return <CasualAboutHistoryTimeline title={text(content.title)} description={text(content.description)} items={timelineFor(props)} />;
+  return <CasualAboutHistoryTimeline title={text(content.title)} description={text(content.description)} badge={text(content.badge)} items={timelineFor(props)} imageUrl={contentImage(content)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} />;
 }
 
 export function CasualAboutVisionMissionSection(props: CasualSectionProps) {
@@ -372,10 +376,16 @@ export function CasualAboutVisionMissionSection(props: CasualSectionProps) {
   const business = businessOf(props.payload);
   return (
     <CasualAboutVisionMission
+      title={text(content.title)}
+      description={text(content.description)}
+      badge={text(content.badge)}
       visionTitle={text(content.visionTitle)}
       vision={text(content.vision, text(business.vision))}
       missionTitle={text(content.missionTitle)}
       mission={text(content.mission, text(business.mission))}
+      imageUrl={contentImage(content)}
+      ctaLabel={text(content.ctaLabel)}
+      ctaHref={sectionHref(props, "cta", "/contact")}
     />
   );
 }
@@ -386,7 +396,11 @@ export function CasualAboutValueStatementSection(props: CasualSectionProps) {
     <CasualAboutValueStatement
       title={text(content.title)}
       description={text(content.description)}
+      badge={text(content.badge)}
       items={itemsOf(props.section)}
+      imageUrl={contentImage(content)}
+      ctaLabel={text(content.ctaLabel)}
+      ctaHref={sectionHref(props, "cta", "/contact")}
     />
   );
 }
@@ -439,7 +453,7 @@ export function CasualServicesBenefitsSection(props: CasualSectionProps) {
 
 export function CasualServicesFaqSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
-  return <CasualServicesFaq title={text(content.title)} description={text(content.description)} faqs={faqsFor(props)} />;
+  return <CasualServicesFaq title={text(content.title)} description={text(content.description)} badge={text(content.badge)} faqs={faqsFor(props)} imageUrl={contentImage(content)} ctaLabel={text(content.ctaLabel)} ctaHref={sectionHref(props, "cta", "/contact")} />;
 }
 
 // ---- Portfolio ----
@@ -664,7 +678,7 @@ export function CasualMapsLocationSection(props: CasualSectionProps) {
 
 export function CasualContactFaqSection(props: CasualSectionProps) {
   const content = contentOf(props.section);
-  return <CasualContactFaq title={text(content.title)} description={text(content.description)} faqs={faqsFor(props)} />;
+  return <CasualContactFaq title={text(content.title)} description={text(content.description)} badge={text(content.badge)} faqs={faqsFor(props)} imageUrl={contentImage(content)} />;
 }
 
 export function CasualContactCtaSection(props: CasualSectionProps) {
