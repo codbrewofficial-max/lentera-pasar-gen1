@@ -45,6 +45,21 @@ const THEME_LABELS: Record<string, string> = {
   abstract: "Abstract"
 };
 
+// Halaman dinamis sekarang bisa lebih dari satu jenis (article_detail untuk
+// artikel, product_detail untuk produk di website Katalog Produk), jadi label
+// & penjelasannya tidak boleh hardcode "artikel" lagi.
+const dynamicDetailNoun = (pageKey: string) => {
+  if (pageKey === "article_detail") return "artikel";
+  if (pageKey === "product_detail") return "produk";
+  return "konten";
+};
+
+const dynamicDetailBadgeLabel = (pageKey: string) => {
+  if (pageKey === "article_detail") return "Template Detail Artikel";
+  if (pageKey === "product_detail") return "Template Detail Produk";
+  return "Template Halaman Detail";
+};
+
 const normalizeSlug = (value: string) =>
   value
     .trim()
@@ -180,7 +195,12 @@ export default function PageSetupPage() {
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Total Halaman Internal</p>
             <p className="mt-1 text-2xl font-black text-slate-900">{pages.length}</p>
-            <p className="mt-1 text-xs text-slate-500">Termasuk template detail artikel.</p>
+            <p className="mt-1 text-xs text-slate-500">
+              {(() => {
+                const nouns = Array.from(new Set(pages.filter((p) => p.isDynamicDetailPage).map((p) => dynamicDetailNoun(p.pageKey))));
+                return nouns.length > 0 ? `Termasuk template detail ${nouns.join(" & ")}.` : "Termasuk halaman teknis internal.";
+              })()}
+            </p>
           </div>
         </div>
 
@@ -247,7 +267,7 @@ export default function PageSetupPage() {
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="text-lg font-black text-slate-900">{page.pageLabel}</h2>
-                      {dynamic && <span className="rounded-full bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-700">Template Detail Artikel</span>}
+                      {dynamic && <span className="rounded-full bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-700">{dynamicDetailBadgeLabel(page.pageKey)}</span>}
                       {!page.isPublished && <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600">Tidak Dipublish</span>}
                     </div>
                     <p className="mt-1 max-w-3xl text-sm leading-relaxed text-slate-500">{page.purpose}</p>
@@ -339,7 +359,7 @@ export default function PageSetupPage() {
                     value={!dynamic && Boolean(page.isVisibleInNavbar)}
                     onChange={(value) => updatePage(page.pageKey, { isVisibleInNavbar: value })}
                     disabled={dynamic}
-                    description={dynamic ? "Detail artikel tidak masuk navbar." : "Pilih Ya jika menu ini tampil di atas website."}
+                    description={dynamic ? `Detail ${dynamicDetailNoun(page.pageKey)} tidak masuk navbar.` : "Pilih Ya jika menu ini tampil di atas website."}
                   />
                   <BooleanRadio
                     id={`footer-${page.pageKey}`}
@@ -347,13 +367,13 @@ export default function PageSetupPage() {
                     value={!dynamic && Boolean(page.isVisibleInFooter)}
                     onChange={(value) => updatePage(page.pageKey, { isVisibleInFooter: value })}
                     disabled={dynamic}
-                    description={dynamic ? "Detail artikel tidak masuk footer." : "Pilih Ya jika menu ini tampil di footer."}
+                    description={dynamic ? `Detail ${dynamicDetailNoun(page.pageKey)} tidak masuk footer.` : "Pilih Ya jika menu ini tampil di footer."}
                   />
                 </div>
 
                 {dynamic && (
                   <p className="mt-3 rounded-2xl bg-amber-50 px-4 py-3 text-xs text-amber-800">
-                    Halaman detail artikel digunakan otomatis ketika pengunjung membuka artikel tertentu, jadi tidak dimasukkan ke navbar/footer.
+                    Halaman detail {dynamicDetailNoun(page.pageKey)} digunakan otomatis ketika pengunjung membuka {dynamicDetailNoun(page.pageKey)} tertentu, jadi tidak dimasukkan ke navbar/footer.
                   </p>
                 )}
 
