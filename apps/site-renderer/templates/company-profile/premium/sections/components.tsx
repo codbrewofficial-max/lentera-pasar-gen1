@@ -342,12 +342,16 @@ export function PremiumHomeTrustProofSection(props: PremiumSectionProps) {
 
 export function PremiumHomeCtaContactSection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
+  const business = businessOf(props.payload);
   return (
     <PremiumHomeCtaContact
       title={text(content.title)}
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", "/contact")}
+      imageUrl={contentImage(content)}
+      email={text(business.contactEmail as string)}
+      whatsapp={text(business.whatsapp as string, text(business.phone as string))}
     />
   );
 }
@@ -482,6 +486,7 @@ export function PremiumPortfolioCtaSection(props: PremiumSectionProps) {
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", "/contact")}
+      imageUrl={contentImage(content)}
     />
   );
 }
@@ -545,6 +550,7 @@ export function PremiumArticleCtaSection(props: PremiumSectionProps) {
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", "/contact")}
+      imageUrl={contentImage(content)}
     />
   );
 }
@@ -594,6 +600,7 @@ export function PremiumPortfolioDetailCtaSection(props: PremiumSectionProps) {
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", "/contact")}
+      imageUrl={contentImage(content)}
     />
   );
 }
@@ -651,6 +658,7 @@ export function PremiumContactCtaSection(props: PremiumSectionProps) {
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", "/contact")}
+      imageUrl={contentImage(content)}
     />
   );
 }
