@@ -1393,6 +1393,15 @@ const registerCoreRoutes = () => {
   });
   app.get("/api/v1/website-types", async (_request, reply) => ok(reply, WEBSITE_TYPES, "Website types loaded"));
   app.get("/api/v1/settings/public-activation", async (_request, reply) => {
+    // 1. Cek autentikasi dan otorisasi terlebih dahulu
+    const actor = await requireRole(_request, ["internal_admin"]);
+    
+    // 2. Jika internal_admin, langsung bypass pengecekan DB dan return true
+    if (actor.role === "internal_admin") {
+      return ok(reply, { enabled: true }, "Public activation setting loaded (Bypassed for Admin)");
+    }
+    
+    // 3. Jika nanti ada role lain di array requireRole, mereka akan mengecek nilai asli dari DB
     const enabled = await isPublicActivationEnabled();
     return ok(reply, { enabled }, "Public activation setting loaded");
   });
