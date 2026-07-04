@@ -50,3 +50,7 @@ export function getArticleDetailHref(siteSlug: string, navigation: NavigationCon
 export function getPortfolioDetailHref(siteSlug: string, navigation: NavigationContract | undefined, portfolioId?: string | null) {
   return getDetailHref(siteSlug, navigation, 'portfolio', '/portfolio', portfolioId);
 }
+
+export function getProductDetailHref(siteSlug: string, navigation: NavigationContract | undefined, productSlug?: string | null) {
+  return getDetailHref(siteSlug, navigation, 'products', '/products', productSlug);
+}

@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { submitTracking } from '@/lib/api';
-import type { ArticleDetailPayload, PortfolioDetailPayload, PublicPagePayload } from '@/lib/types';
+import type { ArticleDetailPayload, PortfolioDetailPayload, ProductDetailPayload, PublicPagePayload } from '@/lib/types';
 
 function getOrCreateStorageValue(key: string, prefix: string) {
   const existing = window.localStorage.getItem(key);
@@ -99,6 +99,29 @@ export function PortfolioTracking({ detail }: { detail: PortfolioDetailPayload }
       metadata: {
         path: window.location.pathname,
         title: detail.portfolio.title
+      }
+    });
+  }, [detail]);
+
+  return null;
+}
+
+export function ProductTracking({ detail }: { detail: ProductDetailPayload }) {
+  useEffect(() => {
+    if (!detail.trackingKey) return;
+
+    submitTracking({
+      trackingKey: detail.trackingKey,
+      eventName: 'product_view',
+      ...trackingContext(),
+      pageKey: 'product_detail',
+      pageSlug: detail.product.slug,
+      objectType: 'product',
+      objectId: detail.product.id,
+      metadata: {
+        path: window.location.pathname,
+        title: detail.product.title,
+        price: detail.product.price
       }
     });
   }, [detail]);

@@ -13,6 +13,8 @@ import { Header as PremiumSiteHeader } from '@/templates/company-profile/premium
 import { Footer as PremiumSiteFooter } from '@/templates/company-profile/premium/source/shared/Footer';
 import { Header as AbstractSiteHeader } from '@/templates/company-profile/abstract/source/shared/Header';
 import { Footer as AbstractSiteFooter } from '@/templates/company-profile/abstract/source/shared/Footer';
+import { FormalCatalogSiteHeader } from '@/templates/catalog-product/formal/layout/FormalCatalogSiteHeader';
+import { FormalCatalogSiteFooter } from '@/templates/catalog-product/formal/layout/FormalCatalogSiteFooter';
 
 type Props = {
   siteSlug: string;
@@ -53,6 +55,7 @@ function resolveThemeFromPageContent(payload: Props['payload']): Theme | null {
 }
 
 export function SiteShell({ siteSlug, payload, children }: Props) {
+  const websiteType = payload.website.websiteType;
   const navbarItems = payload.navigation?.navbar?.items || [];
   const footerItems = payload.navigation?.footer?.items || [];
   const cta = payload.navigation?.navbar?.cta;
@@ -80,7 +83,27 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
   const getHref = (path: string) => getSiteHref(siteSlug, path);
 
   const header = (() => {
-    if (navbarTheme === 'formal') {
+    // Katalog Produk & Company Profile sama-sama bisa punya theme string "formal" (dua
+    // TemplatePack terpisah, kebetulan pakai slug yang sama). Dicek lebih dulu supaya
+    // website catalog_product tidak salah ambil header Company Profile Formal.
+    if (websiteType === 'catalog_product') {
+      if (navbarTheme === 'formal') {
+        return (
+          <FormalCatalogSiteHeader
+            siteSlug={siteSlug}
+            getHref={getHref}
+            businessName={businessName}
+            taglineLabel={tagline}
+            logoUrl={logoUrl || undefined}
+            navItems={navbarItems.length > 0 ? navbarItems : undefined}
+            ctaLabel={cta?.label || 'Lihat Produk'}
+            ctaPath={cta?.path || '/products'}
+          />
+        );
+      }
+      // Tema lain untuk Katalog Produk belum dibangun — jatuh ke header generik di
+      // bawah (skip semua pengecekan tema Company Profile).
+    } else if (navbarTheme === 'formal') {
       return (
         <FormalSiteHeader
           siteSlug={siteSlug}
@@ -198,7 +221,29 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
   })();
 
   const footer = (() => {
-    if (footerTheme === 'formal') {
+    if (websiteType === 'catalog_product') {
+      if (footerTheme === 'formal') {
+        return (
+          <FormalCatalogSiteFooter
+            getHref={getHref}
+            businessName={businessName}
+            taglineLabel={tagline}
+            logoUrl={logoUrl || undefined}
+            description={description}
+            address={payload.businessProfile?.address || ''}
+            email={email || ''}
+            phone={payload.businessProfile?.phone || ''}
+            workingHours={payload.businessProfile?.workingHours || payload.businessProfile?.operationalHours || ''}
+            instagramUrl={payload.businessProfile?.instagramUrl || undefined}
+            facebookUrl={payload.businessProfile?.facebookUrl || undefined}
+            linkedinUrl={payload.businessProfile?.linkedinUrl || undefined}
+            twitterUrl={payload.businessProfile?.twitterUrl || undefined}
+            websiteUrl={payload.businessProfile?.websiteUrl || undefined}
+            navItems={footerItems.length > 0 ? footerItems : undefined}
+          />
+        );
+      }
+    } else if (footerTheme === 'formal') {
       return (
         <FormalSiteFooter
           getHref={getHref}

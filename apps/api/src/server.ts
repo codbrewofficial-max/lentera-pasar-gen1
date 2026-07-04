@@ -3456,6 +3456,101 @@ const registerPublicRoutes = () => {
       navigation: await buildNavigationContract(website.id, website.websiteType)
     }, "Public portfolio loaded");
   });
+  // Daftar produk publik (Product Grid di halaman "products") — dipaginasi + bisa
+  // difilter kategori/rentang harga dan diurutkan, niru pola paginated di
+  // registerProductRoutes (admin) tapi hanya untuk produk isActive milik website published.
+  app.get("/api/v1/public/sites/:slug/products", async (request: Req, reply) => {
+    const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" } });
+    if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
+    if (website.lifecycleStatus !== "active") {
+      throw new AppError(403, "WEBSITE_UNAVAILABLE", "Website ini sedang tidak aktif dan tidak dapat diakses publik.");
+    }
+    const { page, pageSize, skip, take } = parsePagination(request.query as Record<string, unknown>);
+    const query = (request.query || {}) as Record<string, unknown>;
+    const where: any = { websiteId: website.id, isActive: true };
+    if (query.categoryId) where.categoryId = query.categoryId;
+    const search = String(query.q || "").trim();
+    if (search) where.title = { contains: search, mode: "insensitive" };
+    const minPrice = Number(query.minPrice);
+    const maxPrice = Number(query.maxPrice);
+    if (Number.isFinite(minPrice) || Number.isFinite(maxPrice)) {
+      where.price = {};
+      if (Number.isFinite(minPrice)) where.price.gte = minPrice;
+      if (Number.isFinite(maxPrice)) where.price.lte = maxPrice;
+    }
+    const sort = String(query.sort || "featured");
+    const orderBy =
+      sort === "price_asc" ? [{ price: "asc" as const }] :
+      sort === "price_desc" ? [{ price: "desc" as const }] :
+      sort === "newest" ? [{ createdAt: "desc" as const }] :
+      [{ isFeatured: "desc" as const }, { featuredOrder: "asc" as const }, { sortOrder: "asc" as const }];
+    const [rows, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        orderBy,
+        skip,
+        take,
+        include: { category: true, images: { orderBy: { sortOrder: "asc" } } }
+      }),
+      prisma.product.count({ where })
+    ]);
+    return paginated(reply, rows.map(productContract), buildPaginationMeta(page, pageSize, total), "Public products loaded");
+  });
+  app.get("/api/v1/public/sites/:slug/products/:productSlug", async (request: Req, reply) => {
+    const website = await prisma.website.findFirst({ where: { slug: request.params?.slug, status: "published" }, include: { businessProfile: true } });
+    if (!website) throw new AppError(404, "WEBSITE_NOT_PUBLISHED", "Published site not found");
+    if (website.lifecycleStatus !== "active") {
+      throw new AppError(403, "WEBSITE_UNAVAILABLE", "Website ini sedang tidak aktif dan tidak dapat diakses publik.");
+    }
+    const identifier = request.params?.productSlug;
+    const productInclude = {
+      category: true,
+      images: { orderBy: { sortOrder: "asc" as const } },
+      variants: { where: { isActive: true }, orderBy: { sortOrder: "asc" as const } },
+      reviews: { where: { isActive: true }, orderBy: { sortOrder: "asc" as const } }
+    };
+    const product =
+      (await prisma.product.findFirst({ where: { websiteId: website.id, slug: identifier, isActive: true }, include: productInclude })) ||
+      (await prisma.product.findFirst({ where: { websiteId: website.id, id: identifier, isActive: true }, include: productInclude }));
+    if (!product) throw new AppError(404, "PRODUCT_NOT_FOUND", "Published product not found");
+
+    const sameCategoryProducts = product.categoryId
+      ? await prisma.product.findMany({
+        where: { websiteId: website.id, isActive: true, id: { not: product.id }, categoryId: product.categoryId },
+        orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }],
+        take: 4,
+        include: productInclude
+      })
+      : [];
+    const fallbackProducts = sameCategoryProducts.length < 4
+      ? await prisma.product.findMany({
+        where: {
+          websiteId: website.id,
+          isActive: true,
+          id: { notIn: [product.id, ...sameCategoryProducts.map((item: any) => item.id)] }
+        },
+        orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }],
+        take: 4 - sameCategoryProducts.length,
+        include: productInclude
+      })
+      : [];
+    const relatedProducts = [...sameCategoryProducts, ...fallbackProducts].slice(0, 4);
+    const productDetailPage = await buildPublicPage(website.id, { pageKey: "product_detail" }).catch(() => null);
+
+    return ok(reply, {
+      product: productContract(product),
+      relatedProducts: relatedProducts.map(productContract),
+      productDetailSections: productDetailPage?.page?.sections || [],
+      website: websiteSummary(website),
+      businessProfile: website.businessProfile,
+      seo: {
+        title: product.title,
+        description: product.shortDescription || product.description || website.businessProfile?.description || website.name
+      },
+      trackingKey: website.trackingKey,
+      navigation: await buildNavigationContract(website.id, website.websiteType)
+    }, "Public product loaded");
+  });
   app.get("/api/v1/websites/:websiteId/preview/pages/:pageKey", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
     return ok(reply, { ...(await buildPublicPage(website.id, { pageKey: request.params?.pageKey || "home" })), isPreview: true }, "Preview page loaded");
