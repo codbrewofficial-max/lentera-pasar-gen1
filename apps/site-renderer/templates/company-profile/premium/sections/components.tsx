@@ -411,7 +411,7 @@ export function PremiumAboutTeamHighlightSection(props: PremiumSectionProps) {
 
 export function PremiumServicesHeroSection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
-  return <PremiumServicesHero title={text(content.title)} description={text(content.description)} />;
+  return <PremiumServicesHero title={text(content.title)} description={text(content.description)} badge={text(content.badge)} imageUrl={contentImage(content)} />;
 }
 
 export function PremiumServicesGridSection(props: PremiumSectionProps) {
@@ -450,7 +450,7 @@ export function PremiumServicesFaqSection(props: PremiumSectionProps) {
 
 export function PremiumPortfolioHeroSection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
-  return <PremiumPortfolioHero title={text(content.title)} description={text(content.description)} />;
+  return <PremiumPortfolioHero title={text(content.title)} description={text(content.description)} badge={text(content.badge)} imageUrl={contentImage(content)} />;
 }
 
 export function PremiumPortfolioCategorySection(props: PremiumSectionProps) {
@@ -490,7 +490,7 @@ export function PremiumPortfolioCtaSection(props: PremiumSectionProps) {
 
 export function PremiumArticlesHeroSection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
-  return <PremiumArticlesHero title={text(content.title)} description={text(content.description)} />;
+  return <PremiumArticlesHero title={text(content.title)} description={text(content.description)} badge={text(content.badge)} imageUrl={contentImage(content)} />;
 }
 
 export function PremiumFeaturedArticleSection(props: PremiumSectionProps) {
@@ -602,7 +602,7 @@ export function PremiumPortfolioDetailCtaSection(props: PremiumSectionProps) {
 
 export function PremiumContactHeroSection(props: PremiumSectionProps) {
   const content = contentOf(props.section);
-  return <PremiumContactHero title={text(content.title)} description={text(content.description)} />;
+  return <PremiumContactHero title={text(content.title)} description={text(content.description)} badge={text(content.badge)} imageUrl={contentImage(content)} />;
 }
 
 export function PremiumContactInformationSection(props: PremiumSectionProps) {
