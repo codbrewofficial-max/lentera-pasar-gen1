@@ -9,6 +9,7 @@ export interface CasualPortfolioDetailCtaProps {
   description?: string;
   ctaLabel?: string;
   ctaUrl?: string;
+  imageUrl?: string;
 }
 
 export function CasualPortfolioDetailCta({
@@ -16,6 +17,7 @@ export function CasualPortfolioDetailCta({
   description = 'Setiap proyek punya cerita unik seperti ini. Ceritakan kebutuhanmu, kita rancang solusi yang paling pas buat bisnismu.',
   ctaLabel = 'Mulai Obrolan Santai',
   ctaUrl = 'https://wa.me/628123456789',
+  imageUrl,
 }: CasualPortfolioDetailCtaProps) {
   return (
     <section id="CasualPortfolioDetailCta" className="py-16 bg-white relative overflow-hidden">
@@ -23,7 +25,14 @@ export function CasualPortfolioDetailCta({
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="bg-gradient-to-tr from-[#649FF6]/10 via-[#B283AF]/10 to-[#F56B71]/15 rounded-[40px] p-8 md:p-12 text-center border-2 border-white shadow-xl relative overflow-hidden">
-          <div className="max-w-2xl mx-auto space-y-5">
+                    {imageUrl && (
+            <div className="absolute inset-0">
+              <img src={imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              <div className="absolute inset-0 bg-gray-950/70" />
+            </div>
+          )}
+          <div className="relative z-10">
+<div className="max-w-2xl mx-auto space-y-5">
             <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white text-gray-800 text-[10px] font-extrabold uppercase tracking-wider shadow-sm">
               <Sparkles className="w-3.5 h-3.5 text-[#F56B71] fill-[#F56B71]" />
               <span>SIAP JADI PROYEK BERIKUTNYA</span>
@@ -59,6 +68,7 @@ export function CasualPortfolioDetailCta({
               </Link>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </section>

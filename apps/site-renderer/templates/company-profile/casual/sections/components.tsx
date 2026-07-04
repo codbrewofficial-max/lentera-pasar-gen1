@@ -339,6 +339,7 @@ export function CasualHomeCtaContactSection(props: CasualSectionProps) {
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", "/contact")}
+      imageUrl={contentImage(content)}
     />
   );
 }
@@ -473,6 +474,7 @@ export function CasualPortfolioCtaSection(props: CasualSectionProps) {
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", "/contact")}
+      imageUrl={contentImage(content)}
     />
   );
 }
@@ -538,6 +540,7 @@ export function CasualArticleCtaSection(props: CasualSectionProps) {
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", "/contact")}
+      imageUrl={contentImage(content)}
     />
   );
 }
@@ -587,6 +590,7 @@ export function CasualPortfolioDetailCtaSection(props: CasualSectionProps) {
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", "/contact")}
+      imageUrl={contentImage(content)}
     />
   );
 }
@@ -645,6 +649,7 @@ export function CasualContactCtaSection(props: CasualSectionProps) {
       description={text(content.description)}
       ctaLabel={text(content.ctaLabel)}
       ctaUrl={sectionHref(props, "cta", "/contact")}
+      imageUrl={contentImage(content)}
     />
   );
 }
