@@ -105,6 +105,10 @@ model Website {
   mediaAssets     MediaAsset[]
   articleCategories ArticleCategory[]
   portfolioCategories PortfolioCategory[]
+  products        Product[]
+  productCategories ProductCategory[]
+  valuePropositions ValueProposition[]
+  banners         Banner[]
   leads           Lead[]
   trackingEvents  TrackingEvent[]
   primaryForUsers User[]            @relation("PrimaryWebsite")
@@ -363,6 +367,147 @@ model Faq {
   updatedAt DateTime @updatedAt
 
   @@index([websiteId, pageKey, sortOrder])
+  @@index([websiteId, isActive])
+}
+
+// ==========================================================================
+// Website Type: Katalog Produk (catalog_product)
+// Model di bawah ini khusus dipakai oleh Website Type "catalog_product".
+// Faq, Article, ArticleCategory, dan BrandPartner di atas tetap direuse
+// untuk Website Type ini (lihat PAGE_SECTION_RULES.catalog_product di
+// packages/shared/src/website-structure.ts).
+// ==========================================================================
+
+model ProductCategory {
+  id          String    @id @default(cuid())
+  websiteId   String
+  website     Website   @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String
+  description String?
+  sortOrder   Int       @default(0)
+  isActive    Boolean   @default(true)
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([websiteId, slug])
+  @@index([websiteId, sortOrder])
+  @@index([websiteId, isActive])
+}
+
+model Product {
+  id               String            @id @default(cuid())
+  websiteId        String
+  website          Website           @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  categoryId       String?
+  category         ProductCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  title            String
+  slug             String
+  sku              String?
+  shortDescription String?
+  description      String?
+  price            Decimal           @db.Decimal(14, 2)
+  compareAtPrice   Decimal?          @db.Decimal(14, 2)
+  ctaLabel         String?
+  ctaUrl           String?
+  isFeatured       Boolean           @default(false)
+  featuredOrder    Int               @default(0)
+  isNewArrival     Boolean           @default(false)
+  isActive         Boolean           @default(true)
+  sortOrder        Int               @default(0)
+  images           ProductImage[]
+  variants         ProductVariant[]
+  reviews          ProductReview[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@unique([websiteId, slug])
+  @@index([websiteId, sortOrder])
+  @@index([websiteId, isActive, sortOrder])
+  @@index([websiteId, isFeatured, featuredOrder])
+  @@index([websiteId, isNewArrival, sortOrder])
+  @@index([websiteId, categoryId])
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  altText   String?
+  isPrimary Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([productId, sortOrder])
+  @@index([productId, isPrimary])
+}
+
+model ProductVariant {
+  id            String   @id @default(cuid())
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name          String
+  sku           String?
+  priceOverride Decimal? @db.Decimal(14, 2)
+  stock         Int      @default(0)
+  sortOrder     Int      @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([productId, sortOrder])
+  @@index([productId, isActive])
+}
+
+model ProductReview {
+  id           String   @id @default(cuid())
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  customerName String
+  rating       Int      @default(5)
+  comment      String
+  avatarUrl    String?
+  isActive     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([productId, isActive, sortOrder])
+}
+
+model ValueProposition {
+  id          String   @id @default(cuid())
+  websiteId   String
+  website     Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  icon        String?
+  title       String
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([websiteId, sortOrder])
+  @@index([websiteId, isActive])
+}
+
+model Banner {
+  id        String   @id @default(cuid())
+  websiteId String
+  website   Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  imageUrl  String
+  title     String?
+  subtitle  String?
+  ctaLabel  String?
+  ctaUrl    String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([websiteId, sortOrder])
   @@index([websiteId, isActive])
 }
 

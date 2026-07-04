@@ -1,5 +1,12 @@
 export * from "./website-structure.js";
 import {
+  CATALOG_PRODUCT_DEFAULT_NAV_LABELS,
+  CATALOG_PRODUCT_PAGE_LABELS,
+  CATALOG_PRODUCT_PAGE_PURPOSES,
+  CATALOG_PRODUCT_PAGES,
+  CATALOG_PRODUCT_SECTION_SLOT_DESCRIPTIONS,
+  CATALOG_PRODUCT_SECTION_SLOT_LABELS,
+  CATALOG_PRODUCT_SECTION_SLOTS,
   COMPANY_PROFILE_PAGE_LABELS,
   COMPANY_PROFILE_PAGES,
   COMPANY_PROFILE_PAGE_PURPOSES,
@@ -73,8 +80,16 @@ export const TRACKING_EVENT_LABELS = {
 export const SECTION_FIELD_TYPES = ["text", "textarea", "image_url", "url", "repeater"] as const;
 export type SectionFieldType = (typeof SECTION_FIELD_TYPES)[number];
 
-export type PageKey = (typeof COMPANY_PROFILE_PAGES)[number]["pageKey"];
-export type SlotKey = (typeof COMPANY_PROFILE_SECTION_SLOTS)[number]["slotKey"];
+export type CompanyProfilePageKey = (typeof COMPANY_PROFILE_PAGES)[number]["pageKey"];
+export type CompanyProfileSlotKey = (typeof COMPANY_PROFILE_SECTION_SLOTS)[number]["slotKey"];
+export type CatalogProductPageKey = (typeof CATALOG_PRODUCT_PAGES)[number]["pageKey"];
+export type CatalogProductSlotKey = (typeof CATALOG_PRODUCT_SECTION_SLOTS)[number]["slotKey"];
+
+// PageKey/SlotKey sekarang union dari SEMUA website type yang sudah punya struktur
+// lengkap (company_profile & catalog_product). Kalau nanti nambah website type baru
+// (booking_inquiry, community_website, dst), tinggal union-kan pageKey/slotKey-nya di sini.
+export type PageKey = CompanyProfilePageKey | CatalogProductPageKey;
+export type SlotKey = CompanyProfileSlotKey | CatalogProductSlotKey;
 export type WebsiteTypeKey = (typeof WEBSITE_TYPES)[number]["key"];
 export const WEBSITE_TYPE_LABELS = {
   landing_page: "Landing Page",
@@ -84,8 +99,47 @@ export const WEBSITE_TYPE_LABELS = {
   company_profile: "Company Profile"
 } as const satisfies Record<WebsiteTypeKey, string>;
 
+// Kumpulan lookup per website type. Website type yang belum punya struktur
+// lengkap (booking_inquiry, community_website, landing_page) fallback ke
+// company_profile supaya tidak crash — sama seperti pola di apps/api/src/defaults.ts.
+const PAGE_LABEL_SETS: Record<string, Record<string, string>> = {
+  company_profile: COMPANY_PROFILE_PAGE_LABELS,
+  catalog_product: CATALOG_PRODUCT_PAGE_LABELS
+};
+
+const SLOT_LABEL_SETS: Record<string, Record<string, string>> = {
+  company_profile: COMPANY_PROFILE_SECTION_SLOT_LABELS,
+  catalog_product: CATALOG_PRODUCT_SECTION_SLOT_LABELS
+};
+
+const SLOT_DESCRIPTION_SETS: Record<string, Record<string, string>> = {
+  company_profile: COMPANY_PROFILE_SECTION_SLOT_DESCRIPTIONS,
+  catalog_product: CATALOG_PRODUCT_SECTION_SLOT_DESCRIPTIONS
+};
+
+const PAGE_PURPOSE_SETS: Record<string, Record<string, string>> = {
+  company_profile: COMPANY_PROFILE_PAGE_PURPOSES,
+  catalog_product: CATALOG_PRODUCT_PAGE_PURPOSES
+};
+
+const DEFAULT_NAV_LABEL_SETS: Record<string, Record<string, string>> = {
+  company_profile: COMPANY_PROFILE_DEFAULT_NAV_LABELS,
+  catalog_product: CATALOG_PRODUCT_DEFAULT_NAV_LABELS
+};
+
+const SLOT_KEY_SETS: Record<string, ReadonlyArray<{ slotKey: string }>> = {
+  company_profile: COMPANY_PROFILE_SECTION_SLOTS,
+  catalog_product: CATALOG_PRODUCT_SECTION_SLOTS
+};
+
+// Tetap dipertahankan apa adanya (nama & perilaku spesifik Company Profile) —
+// tidak dipakai di tempat lain saat ini. Untuk cek generik lintas website type,
+// pakai isValidSectionSlot(slotKey, websiteType) di bawah.
 export const isCompanyProfileSlot = (slotKey: string) =>
   COMPANY_PROFILE_SECTION_SLOTS.some((slot) => slot.slotKey === slotKey);
+
+export const isValidSectionSlot = (slotKey: string, websiteType: string = "company_profile") =>
+  (SLOT_KEY_SETS[websiteType] || SLOT_KEY_SETS.company_profile).some((slot) => slot.slotKey === slotKey);
 
 export const getWebsiteTypeLabel = (key: string) =>
   WEBSITE_TYPE_LABELS[key as WebsiteTypeKey] || key;
@@ -93,14 +147,14 @@ export const getWebsiteTypeLabel = (key: string) =>
 export const getWebsiteStatusLabel = (status: string) =>
   WEBSITE_STATUS_LABELS[status as WebsiteStatus] || status;
 
-export const getPageLabel = (pageKey: string) =>
-  COMPANY_PROFILE_PAGE_LABELS[pageKey as PageKey] || pageKey;
+export const getPageLabel = (pageKey: string, websiteType: string = "company_profile") =>
+  (PAGE_LABEL_SETS[websiteType] || PAGE_LABEL_SETS.company_profile)[pageKey] || pageKey;
 
-export const getSlotLabel = (slotKey: string) =>
-  (COMPANY_PROFILE_SECTION_SLOT_LABELS as Record<string, string>)[slotKey] || slotKey;
+export const getSlotLabel = (slotKey: string, websiteType: string = "company_profile") =>
+  (SLOT_LABEL_SETS[websiteType] || SLOT_LABEL_SETS.company_profile)[slotKey] || slotKey;
 
-export const getSlotDescription = (slotKey: string) =>
-  (COMPANY_PROFILE_SECTION_SLOT_DESCRIPTIONS as Record<string, string>)[slotKey] || "";
+export const getSlotDescription = (slotKey: string, websiteType: string = "company_profile") =>
+  (SLOT_DESCRIPTION_SETS[websiteType] || SLOT_DESCRIPTION_SETS.company_profile)[slotKey] || "";
 
 export const getLeadStatusLabel = (status: string) =>
   LEAD_STATUS_LABELS[status as LeadStatus] || status;
@@ -112,8 +166,8 @@ export const getTemplateSectionStatusLabel = (status: string) =>
   TEMPLATE_SECTION_STATUS_LABELS[status as TemplateSectionStatus] || status;
 
 
-export const getPagePurpose = (pageKey: string) =>
-  (COMPANY_PROFILE_PAGE_PURPOSES as Record<string, string>)[pageKey] || "";
+export const getPagePurpose = (pageKey: string, websiteType: string = "company_profile") =>
+  (PAGE_PURPOSE_SETS[websiteType] || PAGE_PURPOSE_SETS.company_profile)[pageKey] || "";
 
-export const getDefaultPageNavLabel = (pageKey: string) =>
-  (COMPANY_PROFILE_DEFAULT_NAV_LABELS as Record<string, string>)[pageKey] || getPageLabel(pageKey);
+export const getDefaultPageNavLabel = (pageKey: string, websiteType: string = "company_profile") =>
+  (DEFAULT_NAV_LABEL_SETS[websiteType] || DEFAULT_NAV_LABEL_SETS.company_profile)[pageKey] || getPageLabel(pageKey, websiteType);

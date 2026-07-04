@@ -30,6 +30,7 @@ export const PAGES = {
   booking: "Booking / Inquiry",
   events: "Events",
   join: "Join Community",
+  faq: "FAQ / Bantuan",
   // "global" BUKAN halaman sungguhan — ini kontainer teknis tempat nempel section
   // Navbar & Footer supaya bisa dipilih/preview lewat mekanisme "Pilih Tampilan Section"
   // yang sama seperti section biasa. Tidak pernah punya rute publik sendiri, dan selalu
@@ -40,7 +41,7 @@ export const PAGES = {
 export const WEBSITE_TYPE_PAGES = {
   landing_page: ["home"],
   company_profile: ["home", "about", "services", "portfolio", "articles", "article_detail", "contact", "portfolio_detail", "global"],
-  catalog_product: ["home", "products", "product_detail", "articles", "article_detail", "contact"],
+  catalog_product: ["home", "products", "product_detail", "faq", "articles", "article_detail", "contact", "global"],
   booking_inquiry: ["home", "packages", "gallery", "booking", "articles", "contact"],
   community_website: ["home", "events", "gallery", "articles", "join"]
 } as const;
@@ -58,12 +59,14 @@ export const PAGE_SECTION_RULES = {
     global: ["navbar", "footer"]
   },
   catalog_product: {
-    home: ["hero", "category_preview", "featured_products", "advantages", "testimonials", "whatsapp_cta"],
-    products: ["product_hero", "product_category_filter", "product_grid", "product_promo_highlight", "faq", "order_cta"],
-    product_detail: ["product_detail_hero", "product_specification", "product_recommendation", "product_order_cta"],
-    articles: ["article_preview"],
-    article_detail: ["article_detail_hero", "article_content", "related_articles", "article_cta"],
-    contact: ["contact_information", "maps_location", "contact_cta"]
+    home: ["hero", "category_showcase", "featured_products", "new_arrivals", "value_proposition", "brand_trust"],
+    products: ["breadcrumbs", "product_filter_sidebar", "product_grid", "product_pagination"],
+    product_detail: ["product_core_info", "product_tabs", "product_recommendation", "product_reviews", "product_faq"],
+    faq: ["faq_hero_search", "faq_accordion", "faq_contact_cta"],
+    articles: ["blog_hero", "featured_post", "article_category_filter", "article_grid", "article_pagination"],
+    article_detail: ["article_header_meta", "article_main_content", "product_contextual_cta", "related_articles", "article_comments"],
+    contact: ["contact_info_cards", "inquiry_form", "maps_location"],
+    global: ["navbar", "footer", "whatsapp_fab"]
   },
   booking_inquiry: {
     home: ["hero_slider", "package_grid", "gallery_preview", "facilities", "testimonials", "booking_cta"],
@@ -216,3 +219,103 @@ export const COMPANY_PROFILE_SECTION_SLOT_LABELS = {
 export const COMPANY_PROFILE_SECTION_SLOT_DESCRIPTIONS = Object.fromEntries(
   Object.entries(COMPANY_PROFILE_SECTION_SLOT_LABELS).map(([slotKey, label]) => [slotKey, `${label} untuk halaman ${slotKey.split(".")[0]}.`])
 ) as Record<keyof typeof COMPANY_PROFILE_SECTION_SLOT_LABELS, string>;
+
+// ==========================================================================
+// Website Type: Katalog Produk (catalog_product)
+// Pola di bawah ini meniru persis blok COMPANY_PROFILE_* di atas, sesuai
+// catatan di apps/site-renderer/templates/company-profile/clean/template.ts
+// yang minta pola Company Profile direplikasi untuk Website Type baru.
+// ==========================================================================
+
+export const CATALOG_PRODUCT_PAGES = WEBSITE_TYPE_PAGES.catalog_product.map((pageKey, index) => ({
+  pageKey,
+  title: PAGES[pageKey],
+  slug: pageKey === "home" ? "" : pageKey === "product_detail" ? "product-detail" : pageKey === "article_detail" ? "article-detail" : pageKey === "global" ? "__global__" : pageKey,
+  sortOrder: index + 1,
+  isDynamicDetailPage: pageKey === "product_detail" || pageKey === "article_detail",
+  // Halaman kontainer teknis untuk Navbar, Footer & WhatsApp FAB — tidak pernah
+  // dirutekan publik, tidak pernah tampil di navbar/footer, dan selalu difilter
+  // keluar dari daftar "Halaman Website" / "Halaman & Menu" di dashboard.
+  isGlobalChromePage: pageKey === "global"
+}));
+
+export const CATALOG_PRODUCT_SECTION_SLOTS = Object.entries(PAGE_SECTION_RULES.catalog_product).flatMap(
+  ([pageKey, sections]) =>
+    sections.map((section, index) => ({
+      pageKey,
+      sectionKey: section,
+      slotKey: `${pageKey}.${section}`,
+      sortOrder: index + 1
+    }))
+) as Array<{
+  pageKey: (typeof WEBSITE_TYPE_PAGES.catalog_product)[number];
+  sectionKey: string;
+  slotKey: string;
+  sortOrder: number;
+}>;
+
+export const CATALOG_PRODUCT_PAGE_PURPOSES = {
+  home: "Halaman utama untuk menampilkan promo, kategori, dan produk unggulan agar pengunjung tertarik menjelajah katalog.",
+  products: "Halaman daftar/arsip produk dengan filter dan sortir untuk membantu pengunjung menemukan produk yang dicari.",
+  product_detail: "Template halaman detail satu produk: galeri, harga, varian, spesifikasi, rekomendasi, dan ulasan pelanggan. Tidak tampil di navbar karena dipakai otomatis saat pengunjung membuka produk tertentu.",
+  faq: "Halaman pusat bantuan berisi pertanyaan yang sering diajukan seputar cara pesan, pembayaran, dan pengiriman.",
+  articles: "Halaman arsip artikel/blog untuk konten edukasi dan SEO seputar produk.",
+  article_detail: "Template halaman detail artikel. Tidak tampil di navbar karena dipakai otomatis saat pengunjung membuka artikel tertentu.",
+  contact: "Halaman kontak, lokasi, dan formulir permintaan penawaran harga (request a quote).",
+  global: "Kontainer teknis tempat menyimpan pilihan tampilan Navbar, Footer, dan Tombol WhatsApp mengambang. Tidak pernah tampil sebagai halaman publik."
+} as const;
+
+export const CATALOG_PRODUCT_DEFAULT_NAV_LABELS = {
+  home: "Home",
+  products: "Produk",
+  product_detail: "Detail Produk",
+  faq: "FAQ",
+  articles: "Artikel",
+  article_detail: "Detail Artikel",
+  contact: "Kontak"
+} as const;
+
+export const CATALOG_PRODUCT_PAGE_LABELS = Object.fromEntries(
+  WEBSITE_TYPE_PAGES.catalog_product.map((pageKey) => [pageKey, PAGES[pageKey]])
+) as Record<(typeof WEBSITE_TYPE_PAGES.catalog_product)[number], string>;
+
+export const CATALOG_PRODUCT_SECTION_SLOT_LABELS = {
+  "home.hero": "Hero / Banner Utama",
+  "home.category_showcase": "Kategori Produk (Showcase)",
+  "home.featured_products": "Produk Unggulan / Best Seller",
+  "home.new_arrivals": "Produk Terbaru",
+  "home.value_proposition": "Keunggulan / USP",
+  "home.brand_trust": "Kepercayaan Brand / Partner",
+  "products.breadcrumbs": "Judul Halaman & Breadcrumbs",
+  "products.product_filter_sidebar": "Filter & Sortir Produk",
+  "products.product_grid": "Daftar Produk (Grid)",
+  "products.product_pagination": "Navigasi Halaman Produk",
+  "product_detail.product_core_info": "Info Utama Produk (Galeri, Harga, CTA)",
+  "product_detail.product_tabs": "Spesifikasi & Deskripsi",
+  "product_detail.product_recommendation": "Produk Terkait / Rekomendasi",
+  "product_detail.product_reviews": "Ulasan Pelanggan",
+  "product_detail.product_faq": "FAQ Produk",
+  "faq.faq_hero_search": "Pembuka & Pencarian Bantuan",
+  "faq.faq_accordion": "Daftar Pertanyaan (Accordion)",
+  "faq.faq_contact_cta": "CTA Hubungi Support",
+  "articles.blog_hero": "Pembuka Blog & Pencarian Artikel",
+  "articles.featured_post": "Artikel Utama",
+  "articles.article_category_filter": "Filter Kategori Artikel",
+  "articles.article_grid": "Daftar Artikel (Grid)",
+  "articles.article_pagination": "Navigasi Halaman Artikel",
+  "article_detail.article_header_meta": "Judul & Info Artikel",
+  "article_detail.article_main_content": "Isi Artikel (2 Kolom + Sidebar)",
+  "article_detail.product_contextual_cta": "CTA Produk Terkait Artikel",
+  "article_detail.related_articles": "Artikel Terkait",
+  "article_detail.article_comments": "Kolom Komentar",
+  "contact.contact_info_cards": "Info Kontak (Kartu)",
+  "contact.inquiry_form": "Formulir Permintaan Penawaran",
+  "contact.maps_location": "Lokasi / Maps",
+  "global.navbar": "Navbar (Menu Atas + Pencarian & Wishlist)",
+  "global.footer": "Footer (Bagian Bawah)",
+  "global.whatsapp_fab": "Tombol Mengambang WhatsApp"
+} as const;
+
+export const CATALOG_PRODUCT_SECTION_SLOT_DESCRIPTIONS = Object.fromEntries(
+  Object.entries(CATALOG_PRODUCT_SECTION_SLOT_LABELS).map(([slotKey, label]) => [slotKey, `${label} untuk halaman ${slotKey.split(".")[0]}.`])
+) as Record<keyof typeof CATALOG_PRODUCT_SECTION_SLOT_LABELS, string>;

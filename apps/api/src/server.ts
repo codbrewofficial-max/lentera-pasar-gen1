@@ -13,6 +13,7 @@ import { loggerConfig, registerObservabilityHooks, safeServerInfo } from "./obse
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import {
+  CATALOG_PRODUCT_SECTION_SLOTS,
   COMPANY_PROFILE_PAGES,
   COMPANY_PROFILE_SECTION_SLOTS,
   LEAD_STATUS,
@@ -31,7 +32,7 @@ import {
   getWebsiteTypeLabel
 } from "@lentera-pasar/shared";
 import { prisma } from "./prisma.js";
-import { createCompanyProfileDefaults, ensureCompanyProfileStructure, defaultPageNavLabel, isDynamicDetailPage, pagePurpose } from "./defaults.js";
+import { createWebsiteDefaults, ensureWebsiteStructure, defaultPageNavLabel, isDynamicDetailPage, pagePurpose } from "./defaults.js";
 import { AppError, buildPaginationMeta, created, ok, paginated, parsePagination, publicUser, toErrorPayload } from "./http.js";
 import { hashIp, hashPassword, hashToken, limitJson, prismaJson, randomToken, verifyApiKey, verifyPassword } from "./security.js";
 import { buildPasswordResetEmail, buildVerificationEmail, sendEmail } from "./email.js";
@@ -137,9 +138,9 @@ const templateContract = (template: any) => ({
   templatePackId: template.templatePackId || null,
   templatePack: template.templatePack ? templatePackContract(template.templatePack) : null,
   pageKey: template.pageKey || template.slotKey?.split(".")[0] || null,
-  pageLabel: template.pageKey || template.slotKey ? getPageLabel(template.pageKey || template.slotKey.split(".")[0]) : null,
+  pageLabel: template.pageKey || template.slotKey ? getPageLabel(template.pageKey || template.slotKey.split(".")[0], template.websiteType) : null,
   slotKey: template.slotKey,
-  slotLabel: getSlotLabel(template.slotKey),
+  slotLabel: getSlotLabel(template.slotKey, template.websiteType),
   websiteType: template.websiteType,
   websiteTypeLabel: getWebsiteTypeLabel(template.websiteType),
   name: template.name,
@@ -301,11 +302,11 @@ const AUTO_MANAGED_SLOT_FIELDS: Record<string, string[]> = {
   "contact.contact_information": ["address", "contactEmail", "phone", "whatsapp"]
 };
 
-const sectionDetailContract = (section: any, websiteId: string, businessProfile: any = null) => ({
+const sectionDetailContract = (section: any, websiteId: string, businessProfile: any = null, websiteType: string = "company_profile") => ({
   id: section.id,
   slotKey: section.slotKey,
-  slotLabel: getSlotLabel(section.slotKey),
-  slotDescription: getSlotDescription(section.slotKey),
+  slotLabel: getSlotLabel(section.slotKey, websiteType),
+  slotDescription: getSlotDescription(section.slotKey, websiteType),
   sortOrder: section.sortOrder,
   isVisible: section.isVisible,
   hasTemplate: Boolean(section.templateSection),
@@ -339,15 +340,17 @@ const isValidPageSlug = (value: string) => value === "" || /^[a-z0-9]+(?:-[a-z0-
 const pagePublicPath = (page: any) => {
   if (page.pageKey === "article_detail") return "/articles/:articleSlug";
   if (page.pageKey === "portfolio_detail") return "/portfolio/:portfolioId";
+  if (page.pageKey === "product_detail") return "/products/:productSlug";
   if (page.pageKey === "home") return "/";
   return `/${page.slug}`;
 };
 
-const pageDisplayLabel = (page: any) => page.navLabel || page.title || defaultPageNavLabel(page.pageKey);
+const pageDisplayLabel = (page: any, websiteType: string = "company_profile") =>
+  page.navLabel || page.title || defaultPageNavLabel(page.pageKey, websiteType);
 
-const pageDashboardSummary = (page: any) => {
+const pageDashboardSummary = (page: any, websiteType: string = "company_profile") => {
   const sections = page.sections || [];
-  const dynamicDetailPage = isDynamicDetailPage(page.pageKey);
+  const dynamicDetailPage = isDynamicDetailPage(page.pageKey, websiteType);
   return {
     id: page.id,
     pageKey: page.pageKey,
@@ -356,8 +359,8 @@ const pageDashboardSummary = (page: any) => {
     footerLabel: page.footerLabel || page.navLabel || page.title,
     slug: page.slug,
     publicPath: pagePublicPath(page),
-    purpose: page.purpose || pagePurpose(page.pageKey),
-    pageLabel: getPageLabel(page.pageKey),
+    purpose: page.purpose || pagePurpose(page.pageKey, websiteType),
+    pageLabel: getPageLabel(page.pageKey, websiteType),
     isDynamicDetailPage: dynamicDetailPage,
     isPublished: page.isPublished ?? page.isActive,
     isVisibleInNavbar: dynamicDetailPage ? false : Boolean(page.isVisibleInNavbar),
@@ -372,7 +375,7 @@ const pageDashboardSummary = (page: any) => {
   };
 };
 
-const buildNavigationContract = async (websiteId: string) => {
+const buildNavigationContract = async (websiteId: string, websiteType: string = "company_profile") => {
   const [pages, businessProfile, chromeSections] = await Promise.all([
     prisma.websitePage.findMany({ where: { websiteId }, orderBy: { sortOrder: "asc" } }),
     prisma.businessProfile.findUnique({ where: { websiteId } }),
@@ -395,13 +398,13 @@ const buildNavigationContract = async (websiteId: string) => {
   const navbarComponent = navbarSection?.templateSection?.component || null;
   const footerComponent = footerSection?.templateSection?.component || null;
 
-  const publishedPages = pages.filter((page: any) => (page.isPublished ?? page.isActive) && !isDynamicDetailPage(page.pageKey));
+  const publishedPages = pages.filter((page: any) => (page.isPublished ?? page.isActive) && !isDynamicDetailPage(page.pageKey, websiteType));
   const navbarItems = publishedPages
     .filter((page: any) => page.isVisibleInNavbar)
     .slice(0, 6)
     .map((page: any) => ({
       pageKey: page.pageKey,
-      label: page.navLabel || page.title || defaultPageNavLabel(page.pageKey),
+      label: page.navLabel || page.title || defaultPageNavLabel(page.pageKey, websiteType),
       slug: page.slug,
       path: pagePublicPath(page),
       sortOrder: page.sortOrder
@@ -411,7 +414,7 @@ const buildNavigationContract = async (websiteId: string) => {
     .filter((page: any) => page.isVisibleInFooter)
     .map((page: any) => ({
       pageKey: page.pageKey,
-      label: page.footerLabel || page.navLabel || page.title || defaultPageNavLabel(page.pageKey),
+      label: page.footerLabel || page.navLabel || page.title || defaultPageNavLabel(page.pageKey, websiteType),
       slug: page.slug,
       path: pagePublicPath(page),
       sortOrder: page.sortOrder
@@ -421,7 +424,7 @@ const buildNavigationContract = async (websiteId: string) => {
     ...publishedPages.map((page: any) => ({
       type: "page",
       pageKey: page.pageKey,
-      label: `Halaman ${pageDisplayLabel(page)}`,
+      label: `Halaman ${pageDisplayLabel(page, websiteType)}`,
       path: pagePublicPath(page)
     })),
     {
@@ -451,7 +454,7 @@ const buildNavigationContract = async (websiteId: string) => {
   };
 };
 
-const leadContract = (lead: any) => ({
+const leadContract = (lead: any, websiteType: string = "company_profile") => ({
   id: lead.id,
   name: lead.name,
   email: lead.email,
@@ -461,9 +464,9 @@ const leadContract = (lead: any) => ({
   status: lead.status,
   statusLabel: getLeadStatusLabel(lead.status),
   sourcePage: lead.sourcePage,
-  sourcePageLabel: lead.sourcePage ? getPageLabel(lead.sourcePage) : null,
+  sourcePageLabel: lead.sourcePage ? getPageLabel(lead.sourcePage, websiteType) : null,
   sourceSection: lead.sourceSection,
-  sourceSectionLabel: lead.sourceSection ? getSlotLabel(lead.sourceSection) : null,
+  sourceSectionLabel: lead.sourceSection ? getSlotLabel(lead.sourceSection, websiteType) : null,
   createdAt: lead.createdAt
 });
 
@@ -547,13 +550,13 @@ const categoryContract = (category: any) => ({
   updatedAt: category.updatedAt
 });
 
-const faqContract = (faq: any) => ({
+const faqContract = (faq: any, websiteType: string = "company_profile") => ({
   id: faq.id,
   websiteId: faq.websiteId,
   question: faq.question,
   answer: faq.answer,
   pageKey: faq.pageKey,
-  pageLabel: faq.pageKey ? getPageLabel(faq.pageKey) : null,
+  pageLabel: faq.pageKey ? getPageLabel(faq.pageKey, websiteType) : null,
   sortOrder: faq.sortOrder,
   isActive: faq.isActive,
   createdAt: faq.createdAt,
@@ -571,6 +574,94 @@ const mediaAssetContract = (asset: any) => ({
   altText: asset.altText,
   createdAt: asset.createdAt,
   updatedAt: asset.updatedAt
+});
+
+const productImageContract = (image: any) => ({
+  id: image.id,
+  productId: image.productId,
+  url: image.url,
+  altText: image.altText,
+  isPrimary: image.isPrimary,
+  sortOrder: image.sortOrder,
+  createdAt: image.createdAt
+});
+
+const productVariantContract = (variant: any) => ({
+  id: variant.id,
+  productId: variant.productId,
+  name: variant.name,
+  sku: variant.sku,
+  priceOverride: variant.priceOverride !== null && variant.priceOverride !== undefined ? Number(variant.priceOverride) : null,
+  stock: variant.stock,
+  sortOrder: variant.sortOrder,
+  isActive: variant.isActive,
+  createdAt: variant.createdAt,
+  updatedAt: variant.updatedAt
+});
+
+const productReviewContract = (review: any) => ({
+  id: review.id,
+  productId: review.productId,
+  customerName: review.customerName,
+  rating: review.rating,
+  comment: review.comment,
+  avatarUrl: review.avatarUrl,
+  isActive: review.isActive,
+  sortOrder: review.sortOrder,
+  createdAt: review.createdAt,
+  updatedAt: review.updatedAt
+});
+
+const productContract = (product: any) => ({
+  id: product.id,
+  websiteId: product.websiteId,
+  categoryId: product.categoryId,
+  category: product.category ? categoryContract(product.category) : null,
+  title: product.title,
+  slug: product.slug,
+  sku: product.sku,
+  shortDescription: product.shortDescription,
+  description: product.description,
+  price: Number(product.price),
+  compareAtPrice: product.compareAtPrice !== null && product.compareAtPrice !== undefined ? Number(product.compareAtPrice) : null,
+  ctaLabel: product.ctaLabel,
+  ctaUrl: product.ctaUrl,
+  isFeatured: product.isFeatured ?? false,
+  featuredOrder: product.featuredOrder ?? 0,
+  isNewArrival: product.isNewArrival ?? false,
+  isActive: product.isActive,
+  sortOrder: product.sortOrder,
+  images: Array.isArray(product.images) ? product.images.map(productImageContract) : undefined,
+  variants: Array.isArray(product.variants) ? product.variants.map(productVariantContract) : undefined,
+  reviews: Array.isArray(product.reviews) ? product.reviews.map(productReviewContract) : undefined,
+  createdAt: product.createdAt,
+  updatedAt: product.updatedAt
+});
+
+const valuePropositionContract = (item: any) => ({
+  id: item.id,
+  websiteId: item.websiteId,
+  icon: item.icon,
+  title: item.title,
+  description: item.description,
+  sortOrder: item.sortOrder,
+  isActive: item.isActive,
+  createdAt: item.createdAt,
+  updatedAt: item.updatedAt
+});
+
+const bannerContract = (banner: any) => ({
+  id: banner.id,
+  websiteId: banner.websiteId,
+  imageUrl: banner.imageUrl,
+  title: banner.title,
+  subtitle: banner.subtitle,
+  ctaLabel: banner.ctaLabel,
+  ctaUrl: banner.ctaUrl,
+  sortOrder: banner.sortOrder,
+  isActive: banner.isActive,
+  createdAt: banner.createdAt,
+  updatedAt: banner.updatedAt
 });
 
 const ctaLabel = (ctaKey: string | null) => {
@@ -608,7 +699,10 @@ const patchOwnerBody = z.object({
 const websiteBody = z.object({
   name: z.string().min(2),
   slug: z.string().min(2).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
-  websiteType: z.literal("company_profile")
+  // Baru company_profile & catalog_product yang punya struktur halaman/section
+  // lengkap (lihat apps/api/src/defaults.ts). Tipe lain nanti ditambah setelah
+  // CATALOG/BOOKING/COMMUNITY_* constants-nya digarap di packages/shared.
+  websiteType: z.enum(["company_profile", "catalog_product"])
 });
 const patchWebsiteBody = z.object({
   name: z.string().min(2).optional(),
@@ -673,6 +767,61 @@ const brandBody = z.object({
   name: z.string().min(1),
   logoUrl: z.string().nullable().optional(),
   url: z.string().nullable().optional(),
+  sortOrder: z.number().int().optional(),
+  isActive: z.boolean().optional()
+});
+const productBody = z.object({
+  categoryId: z.string().nullable().optional(),
+  title: z.string().min(1),
+  slug: z.string().min(1).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be lowercase kebab-case"),
+  sku: z.string().nullable().optional(),
+  shortDescription: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  price: z.number().nonnegative(),
+  compareAtPrice: z.number().nonnegative().nullable().optional(),
+  ctaLabel: z.string().nullable().optional(),
+  ctaUrl: z.string().nullable().optional(),
+  isFeatured: z.boolean().optional(),
+  featuredOrder: z.number().int().optional(),
+  isNewArrival: z.boolean().optional(),
+  isActive: z.boolean().optional(),
+  sortOrder: z.number().int().optional()
+});
+const productImageBody = z.object({
+  url: z.string().min(1),
+  altText: z.string().nullable().optional(),
+  isPrimary: z.boolean().optional(),
+  sortOrder: z.number().int().optional()
+});
+const productVariantBody = z.object({
+  name: z.string().min(1),
+  sku: z.string().nullable().optional(),
+  priceOverride: z.number().nonnegative().nullable().optional(),
+  stock: z.number().int().nonnegative().optional(),
+  sortOrder: z.number().int().optional(),
+  isActive: z.boolean().optional()
+});
+const productReviewBody = z.object({
+  customerName: z.string().min(1),
+  rating: z.number().int().min(1).max(5).optional(),
+  comment: z.string().min(1),
+  avatarUrl: z.string().nullable().optional(),
+  isActive: z.boolean().optional(),
+  sortOrder: z.number().int().optional()
+});
+const valuePropositionBody = z.object({
+  icon: z.string().nullable().optional(),
+  title: z.string().min(1),
+  description: z.string().nullable().optional(),
+  sortOrder: z.number().int().optional(),
+  isActive: z.boolean().optional()
+});
+const bannerBody = z.object({
+  imageUrl: z.string().min(1),
+  title: z.string().nullable().optional(),
+  subtitle: z.string().nullable().optional(),
+  ctaLabel: z.string().nullable().optional(),
+  ctaUrl: z.string().nullable().optional(),
   sortOrder: z.number().int().optional(),
   isActive: z.boolean().optional()
 });
@@ -882,7 +1031,8 @@ const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string;
     }
   });
   if (!page) throw new AppError(404, "PAGE_NOT_FOUND", "Page not found");
-  const [services, portfolios, testimonials, brands, articles, faqs, articleCategories, portfolioCategories, timelines, teamMembers] = await Promise.all([
+  const websiteType = website.websiteType;
+  const [services, portfolios, testimonials, brands, articles, faqs, articleCategories, portfolioCategories, timelines, teamMembers, products, productCategories, valuePropositions, banners] = await Promise.all([
     prisma.service.findMany({ where: { websiteId, isActive: true }, orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }] }),
     prisma.portfolio.findMany({ where: { websiteId, isActive: true }, orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }], include: { category: true } }),
     prisma.testimonial.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
@@ -892,9 +1042,22 @@ const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string;
     prisma.articleCategory.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
     prisma.portfolioCategory.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
     prisma.businessTimeline.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
-    prisma.teamMember.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } })
+    prisma.teamMember.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.product.findMany({
+      where: { websiteId, isActive: true },
+      orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }],
+      include: {
+        category: true,
+        images: { orderBy: { sortOrder: "asc" } },
+        variants: { where: { isActive: true }, orderBy: { sortOrder: "asc" } },
+        reviews: { where: { isActive: true }, orderBy: { sortOrder: "asc" } }
+      }
+    }),
+    prisma.productCategory.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.valueProposition.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.banner.findMany({ where: { websiteId, isActive: true }, orderBy: { sortOrder: "asc" } })
   ]);
-  const navigation = await buildNavigationContract(websiteId);
+  const navigation = await buildNavigationContract(websiteId, websiteType);
   return {
     website: {
       id: website.id,
@@ -919,9 +1082,9 @@ const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string;
       footerLabel: page.footerLabel || page.navLabel || page.title,
       slug: page.slug,
       path: pagePublicPath(page),
-      purpose: page.purpose || pagePurpose(page.pageKey),
+      purpose: page.purpose || pagePurpose(page.pageKey, websiteType),
       isPublished: page.isPublished ?? page.isActive,
-      isDynamicDetailPage: isDynamicDetailPage(page.pageKey),
+      isDynamicDetailPage: isDynamicDetailPage(page.pageKey, websiteType),
       seoTitle: page.seoTitle || null,
       seoDescription: page.seoDescription || null,
       sections: page.sections
@@ -929,7 +1092,7 @@ const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string;
         .map((section: any) => ({
           id: section.id,
           slotKey: section.slotKey,
-          slotLabel: getSlotLabel(section.slotKey),
+          slotLabel: getSlotLabel(section.slotKey, websiteType),
           sectionKey: section.templateSection?.sectionKey || null,
           templateKey: section.templateSection?.templatePack?.templatePackKey || null,
           templateName: section.templateSection?.templatePack?.name || null,
@@ -946,12 +1109,16 @@ const buildPublicPage = async (websiteId: string, pageWhere: { pageKey?: string;
             portfolios,
             testimonials,
             brands,
-            faqs: faqs.map(faqContract),
+            faqs: faqs.map((f) => faqContract(f, websiteType)),
             articleCategories: articleCategories.map(categoryContract),
             portfolioCategories: portfolioCategories.map(categoryContract),
             articles: articles.map(publicArticleSummary),
             timelines,
             teamMembers,
+            products: products.map(productContract),
+            productCategories: productCategories.map(categoryContract),
+            valuePropositions: valuePropositions.map(valuePropositionContract),
+            banners: banners.map(bannerContract)
           }
         }))
     }
@@ -1317,7 +1484,7 @@ const registerInternalRoutes = () => {
           trackingKey: randomToken("trk")
         }
       });
-      await createCompanyProfileDefaults(tx, createdWebsite.id, createdWebsite.name);
+      await createWebsiteDefaults(tx, createdWebsite.id, createdWebsite.name, createdWebsite.websiteType);
       return createdWebsite;
     });
     await createAuditLog(request, {
@@ -1391,7 +1558,7 @@ const registerInternalRoutes = () => {
           trackingKey: randomToken("trk")
         }
       });
-      await createCompanyProfileDefaults(tx, createdWebsite.id, createdWebsite.name);
+      await createWebsiteDefaults(tx, createdWebsite.id, createdWebsite.name, createdWebsite.websiteType);
       return createdWebsite;
     });
 
@@ -1504,7 +1671,7 @@ const registerInternalRoutes = () => {
     const website = await prisma.website.findUnique({ where: { id: websiteId } });
     if (!website) throw new AppError(404, "WEBSITE_NOT_FOUND", "Website tidak ditemukan.");
     
-    if (website.websiteType !== "company_profile") {
+    if (!["company_profile", "catalog_product"].includes(website.websiteType)) {
       throw new AppError(400, "UNSUPPORTED_WEBSITE_TYPE", `Sinkronisasi struktur belum didukung untuk tipe website: ${website.websiteType}`);
     }
 
@@ -1515,7 +1682,7 @@ const registerInternalRoutes = () => {
 
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Sekarang baris ini sudah aman dari error ts(2345)
-      await ensureCompanyProfileStructure(tx, websiteId);
+      await ensureWebsiteStructure(tx, websiteId, website.websiteType);
     });
 
     const after = {
@@ -1605,7 +1772,7 @@ const registerWebsiteRoutes = () => {
           trackingKey: randomToken("trk")
         }
       });
-      await createCompanyProfileDefaults(tx, created.id, created.name);
+      await createWebsiteDefaults(tx, created.id, created.name, created.websiteType);
       return created;
     });
     await createAuditLog(request, {
@@ -1687,9 +1854,9 @@ const registerWebsiteRoutes = () => {
       include: { sections: true, _count: { select: { slugHistories: true } } },
       orderBy: { sortOrder: "asc" }
     });
-    const navigation = await buildNavigationContract(website.id);
+    const navigation = await buildNavigationContract(website.id, website.websiteType);
     return ok(reply, {
-      pages: pages.map(pageDashboardSummary),
+      pages: pages.map((p) => pageDashboardSummary(p, website.websiteType)),
       navbarItems: navigation.navbar.items,
       footerItems: navigation.footer.items,
       availableTargets: navigation.availableTargets,
@@ -1700,7 +1867,7 @@ const registerWebsiteRoutes = () => {
 
   app.get("/api/v1/websites/:websiteId/navigation-contract", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
-    return ok(reply, await buildNavigationContract(website.id), "Navigation contract loaded");
+    return ok(reply, await buildNavigationContract(website.id, website.websiteType), "Navigation contract loaded");
   });
 
   app.get("/api/v1/websites/:websiteId/page-redirects", async (request: Req, reply) => {
@@ -1728,7 +1895,7 @@ const registerWebsiteRoutes = () => {
     const page = await prisma.websitePage.findUnique({ where: { websiteId_pageKey: { websiteId: website.id, pageKey } } });
     if (!page) throw new AppError(404, "PAGE_NOT_FOUND", "Page not found");
 
-    const dynamicDetailPage = isDynamicDetailPage(page.pageKey);
+    const dynamicDetailPage = isDynamicDetailPage(page.pageKey, website.websiteType);
     const nextSlug = page.pageKey === "home" ? "" : body.slug === undefined ? page.slug : cleanPageSlug(body.slug);
     if (!isValidPageSlug(nextSlug)) throw new AppError(422, "INVALID_PAGE_SLUG", "Slug must use lowercase kebab-case without slash");
     if (page.pageKey !== "home" && !nextSlug) throw new AppError(422, "PAGE_SLUG_REQUIRED", "Slug is required for this page");
@@ -1786,7 +1953,7 @@ const registerWebsiteRoutes = () => {
         changedFields: Object.keys(body)
       }
     });
-    return ok(reply, pageDashboardSummary(updated), "Page setup updated");
+    return ok(reply, pageDashboardSummary(updated, website.websiteType), "Page setup updated");
   });
 
   app.get("/api/v1/websites/:websiteId/pages", async (request: Req, reply) => {
@@ -1796,7 +1963,7 @@ const registerWebsiteRoutes = () => {
       include: { sections: true, _count: { select: { slugHistories: true } } },
       orderBy: { sortOrder: "asc" }
     });
-    return ok(reply, pages.map(pageDashboardSummary), "Pages loaded");
+    return ok(reply, pages.map((p) => pageDashboardSummary(p, website.websiteType)), "Pages loaded");
   });
   app.get("/api/v1/websites/:websiteId/pages/:pageKey", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
@@ -1819,16 +1986,16 @@ const registerWebsiteRoutes = () => {
       footerLabel: page.footerLabel || page.navLabel || page.title,
       slug: page.slug,
       publicPath: pagePublicPath(page),
-      purpose: page.purpose || pagePurpose(page.pageKey),
-      pageLabel: getPageLabel(page.pageKey),
-      isDynamicDetailPage: isDynamicDetailPage(page.pageKey),
+      purpose: page.purpose || pagePurpose(page.pageKey, website.websiteType),
+      pageLabel: getPageLabel(page.pageKey, website.websiteType),
+      isDynamicDetailPage: isDynamicDetailPage(page.pageKey, website.websiteType),
       isPublished: page.isPublished ?? page.isActive,
-      isVisibleInNavbar: isDynamicDetailPage(page.pageKey) ? false : page.isVisibleInNavbar,
-      isVisibleInFooter: isDynamicDetailPage(page.pageKey) ? false : page.isVisibleInFooter,
+      isVisibleInNavbar: isDynamicDetailPage(page.pageKey, website.websiteType) ? false : page.isVisibleInNavbar,
+      isVisibleInFooter: isDynamicDetailPage(page.pageKey, website.websiteType) ? false : page.isVisibleInFooter,
       seoTitle: page.seoTitle || null,
       seoDescription: page.seoDescription || null,
       isActive: page.isActive,
-      sections: page.sections.map((section: any) => sectionDetailContract(section, website.id, businessProfile))
+      sections: page.sections.map((section: any) => sectionDetailContract(section, website.id, businessProfile, website.websiteType))
     }, "Page loaded");
   });
 };
@@ -1838,21 +2005,21 @@ const registerSectionRoutes = () => {
     const { website } = await getWebsiteForAccess(request);
     const sections = await prisma.pageSection.findMany({ where: { websiteId: website.id }, include: { templateSection: true }, orderBy: { sortOrder: "asc" } });
     const businessProfile = await getBusinessProfileForWebsite(website.id);
-    return ok(reply, sections.map((section: any) => sectionDetailContract(section, website.id, businessProfile)), "Sections loaded");
+    return ok(reply, sections.map((section: any) => sectionDetailContract(section, website.id, businessProfile, website.websiteType)), "Sections loaded");
   });
   app.get("/api/v1/websites/:websiteId/sections/:slotKey", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
     const section = await prisma.pageSection.findUnique({ where: { websiteId_slotKey: { websiteId: website.id, slotKey: request.params?.slotKey || "" } }, include: { templateSection: true } });
     if (!section) throw new AppError(404, "SECTION_NOT_FOUND", "Section not found");
     const businessProfile = await getBusinessProfileForWebsite(website.id);
-    return ok(reply, sectionDetailContract(section, website.id, businessProfile), "Section loaded");
+    return ok(reply, sectionDetailContract(section, website.id, businessProfile, website.websiteType), "Section loaded");
   });
   app.patch("/api/v1/websites/:websiteId/sections/:slotKey/template", async (request: Req, reply) => {
     const { user, website } = await getWebsiteForAccess(request);
     const body = sectionTemplateBody.parse(request.body);
     const section = await prisma.pageSection.findUnique({ where: { websiteId_slotKey: { websiteId: website.id, slotKey: request.params?.slotKey || "" } } });
     const template = await prisma.templateSection.findUnique({ where: { id: body.templateSectionId } });
-    if (!section || !template || template.slotKey !== section.slotKey || template.websiteType !== "company_profile" || template.status !== "active" || !template.isActive) {
+    if (!section || !template || template.slotKey !== section.slotKey || template.websiteType !== website.websiteType || template.status !== "active" || !template.isActive) {
       throw new AppError(400, "INVALID_TEMPLATE_SECTION", "Template section does not match this slot");
     }
     const updated = await prisma.pageSection.update({ where: { id: section.id }, data: { templateSectionId: template.id }, include: { templateSection: true } });
@@ -1866,7 +2033,7 @@ const registerSectionRoutes = () => {
       metadata: { slotKey: updated.slotKey, templateSectionId: template.id, sectionKey: template.sectionKey }
     });
     const businessProfile = await getBusinessProfileForWebsite(website.id);
-    return ok(reply, sectionDetailContract(updated, website.id, businessProfile), "Section template updated");
+    return ok(reply, sectionDetailContract(updated, website.id, businessProfile, website.websiteType), "Section template updated");
   });
   app.patch("/api/v1/websites/:websiteId/sections/:slotKey/content", async (request: Req, reply) => {
     const { user, website } = await getWebsiteForAccess(request);
@@ -1890,7 +2057,7 @@ const registerSectionRoutes = () => {
       metadata: { slotKey: updated.slotKey, contentKeys: Object.keys(body.contentJson || {}) }
     });
     const businessProfile = await getBusinessProfileForWebsite(website.id);
-    return ok(reply, sectionDetailContract(updated, website.id, businessProfile), "Section content updated");
+    return ok(reply, sectionDetailContract(updated, website.id, businessProfile, website.websiteType), "Section content updated");
   });
   app.patch("/api/v1/websites/:websiteId/sections/:slotKey/visibility", async (request: Req, reply) => {
     const { user, website } = await getWebsiteForAccess(request);
@@ -1910,7 +2077,7 @@ const registerSectionRoutes = () => {
       metadata: { slotKey: updated.slotKey, isVisible: updated.isVisible }
     });
     const businessProfile = await getBusinessProfileForWebsite(website.id);
-    return ok(reply, sectionDetailContract(updated, website.id, businessProfile), "Section visibility updated");
+    return ok(reply, sectionDetailContract(updated, website.id, businessProfile, website.websiteType), "Section visibility updated");
   });
 };
 
@@ -1929,7 +2096,7 @@ const templateImportSchema = z.object({
   sectionKey: z.string().min(1),
   templateKey: z.string().min(1).nullable().optional(),
   slotKey: z.string().min(1),
-  websiteType: z.literal("company_profile"),
+  websiteType: z.enum(["company_profile", "catalog_product"]),
   pageKey: z.string().min(1),
   name: z.string().min(1),
   component: z.string().min(1),
@@ -1940,7 +2107,7 @@ const templateImportSchema = z.object({
 
 const templatePackManifestSchema = z.object({
   templatePackKey: z.string().min(1),
-  websiteType: z.literal("company_profile"),
+  websiteType: z.enum(["company_profile", "catalog_product"]),
   name: z.string().min(1),
   theme: z.enum(["formal", "casual", "abstract", "premium"]),
   version: z.string().min(1),
@@ -1951,10 +2118,14 @@ const templatePackManifestSchema = z.object({
 type ValidationItem = { level: "error" | "warning"; file?: string; slotKey?: string; message: string };
 
 const expectedPagesFor = (websiteType: string) =>
-  websiteType === "company_profile" ? [...WEBSITE_TYPE_PAGES.company_profile] : [];
+  websiteType === "company_profile" ? [...WEBSITE_TYPE_PAGES.company_profile]
+    : websiteType === "catalog_product" ? [...WEBSITE_TYPE_PAGES.catalog_product]
+    : [];
 
 const expectedSlotsFor = (websiteType: string) =>
-  websiteType === "company_profile" ? COMPANY_PROFILE_SECTION_SLOTS.map((slot) => slot.slotKey) : [];
+  websiteType === "company_profile" ? COMPANY_PROFILE_SECTION_SLOTS.map((slot) => slot.slotKey)
+    : websiteType === "catalog_product" ? CATALOG_PRODUCT_SECTION_SLOTS.map((slot) => slot.slotKey)
+    : [];
 
 const sameStringSet = (a: string[], b: string[]) =>
   a.length === b.length && a.every((item) => b.includes(item)) && b.every((item) => a.includes(item));
@@ -2004,8 +2175,8 @@ const importTemplatePackZip = async (buffer: Buffer) => {
   if (!WEBSITE_TYPES.some((type) => type.key === manifest.websiteType)) {
     errors.push({ level: "error", file: "manifest.json", message: "websiteType tidak dikenal." });
   }
-  if (manifest.websiteType !== "company_profile") {
-    errors.push({ level: "error", file: "manifest.json", message: "Untuk MVP, websiteType harus company_profile." });
+  if (!["company_profile", "catalog_product"].includes(manifest.websiteType)) {
+    errors.push({ level: "error", file: "manifest.json", message: "Untuk saat ini, websiteType harus company_profile atau catalog_product." });
   }
   if (!Object.keys(THEMES).includes(manifest.theme)) {
     errors.push({ level: "error", file: "manifest.json", message: "theme tidak valid." });
@@ -2257,7 +2428,21 @@ const registerTemplateRoutes = () => {
   });
   app.get("/api/v1/template-sections/by-slot/:slotKey", async (request: Req, reply) => {
     await requireAuth(request);
-    const sections = await prisma.templateSection.findMany({ where: { slotKey: request.params?.slotKey, status: "active", isActive: true }, orderBy: { name: "asc" }, include: { templatePack: true } });
+    // websiteType opsional (query param) supaya backward-compatible untuk caller lama.
+    // Tapi begitu TemplateSection untuk catalog_product mulai dibuat, slotKey yang sama
+    // (mis. "home.hero") bakal ada di 2 websiteType sekaligus — caller baru WAJIB kirim
+    // ?websiteType= biar nggak ketuker.
+    const websiteType = typeof request.query?.websiteType === "string" ? request.query.websiteType : undefined;
+    const sections = await prisma.templateSection.findMany({
+      where: {
+        slotKey: request.params?.slotKey,
+        ...(websiteType ? { websiteType } : {}),
+        status: "active",
+        isActive: true
+      },
+      orderBy: { name: "asc" },
+      include: { templatePack: true }
+    });
     return ok(reply, sections.map(templateContract), "Template sections loaded");
   });
 };
@@ -2286,11 +2471,21 @@ const registerContentRoutes = () => {
 };
 
 const registerCrud = (
-  base: "services" | "portfolios" | "testimonials" | "brand-partners",
+  base: "services" | "portfolios" | "testimonials" | "brand-partners" | "value-propositions" | "banners",
   schema: z.ZodTypeAny
 ) => {
-  const model = base === "services" ? prisma.service : base === "portfolios" ? prisma.portfolio : base === "testimonials" ? prisma.testimonial : prisma.brandPartner;
-  const idParam = base === "services" ? "serviceId" : base === "portfolios" ? "portfolioId" : base === "testimonials" ? "testimonialId" : "brandPartnerId";
+  const model = base === "services" ? prisma.service
+    : base === "portfolios" ? prisma.portfolio
+    : base === "testimonials" ? prisma.testimonial
+    : base === "brand-partners" ? prisma.brandPartner
+    : base === "value-propositions" ? prisma.valueProposition
+    : prisma.banner;
+  const idParam = base === "services" ? "serviceId"
+    : base === "portfolios" ? "portfolioId"
+    : base === "testimonials" ? "testimonialId"
+    : base === "brand-partners" ? "brandPartnerId"
+    : base === "value-propositions" ? "valuePropositionId"
+    : "bannerId";
   const include = base === "portfolios" ? { category: true } : undefined;
   app.get(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
@@ -2376,6 +2571,292 @@ const registerCrud = (
       metadata: { title: existing.title || existing.name || null }
     });
     return ok(reply, true, `${base} deleted`);
+  });
+};
+
+const registerProductRoutes = () => {
+  const productInclude = {
+    category: true,
+    images: { orderBy: { sortOrder: "asc" as const } },
+    variants: { orderBy: { sortOrder: "asc" as const } },
+    reviews: { orderBy: { sortOrder: "asc" as const } }
+  };
+
+  const getOwnedProduct = async (request: Req, websiteId: string) => {
+    const product = await prisma.product.findFirst({ where: { id: request.params?.productId, websiteId } });
+    if (!product) throw new AppError(404, "PRODUCT_NOT_FOUND", "Product not found");
+    return product;
+  };
+
+  app.get("/api/v1/websites/:websiteId/products", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    const { page, pageSize, skip, take } = parsePagination(request.query as Record<string, unknown>);
+    const query = (request.query || {}) as Record<string, unknown>;
+    const where: any = { websiteId: website.id };
+    if (query.categoryId) where.categoryId = query.categoryId;
+    if (query.isFeatured === "true") where.isFeatured = true;
+    if (query.isNewArrival === "true") where.isNewArrival = true;
+    const [rows, total] = await Promise.all([
+      prisma.product.findMany({ where, orderBy: [{ isFeatured: "desc" }, { featuredOrder: "asc" }, { sortOrder: "asc" }], include: productInclude, skip, take }),
+      prisma.product.count({ where })
+    ]);
+    return paginated(reply, rows.map(productContract), buildPaginationMeta(page, pageSize, total), "Products loaded");
+  });
+
+  app.post("/api/v1/websites/:websiteId/products", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const body = productBody.parse(request.body);
+    if (body.categoryId) {
+      const category = await prisma.productCategory.findFirst({ where: { id: body.categoryId, websiteId: website.id } });
+      if (!category) throw new AppError(404, "PRODUCT_CATEGORY_NOT_FOUND", "Product category not found");
+    }
+    const existingSlug = await prisma.product.findFirst({ where: { websiteId: website.id, slug: body.slug } });
+    if (existingSlug) throw new AppError(409, "PRODUCT_SLUG_EXISTS", "Product slug already exists for this website");
+    const row = await prisma.product.create({ data: { ...body, websiteId: website.id }, include: productInclude });
+    await createAuditLog(request, {
+      action: "product.created",
+      actor: user,
+      websiteId: website.id,
+      entityType: "product",
+      entityId: row.id,
+      summary: `Product created: ${row.title}`,
+      metadata: { slug: row.slug }
+    });
+    return created(reply, productContract(row), "Product created");
+  });
+
+  app.get("/api/v1/websites/:websiteId/products/:productId", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    const row = await prisma.product.findFirst({ where: { id: request.params?.productId, websiteId: website.id }, include: productInclude });
+    if (!row) throw new AppError(404, "PRODUCT_NOT_FOUND", "Product not found");
+    return ok(reply, productContract(row), "Product loaded");
+  });
+
+  app.patch("/api/v1/websites/:websiteId/products/:productId", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const body = productBody.partial().parse(request.body);
+    const existing = await getOwnedProduct(request, website.id);
+    if (body.categoryId) {
+      const category = await prisma.productCategory.findFirst({ where: { id: body.categoryId, websiteId: website.id } });
+      if (!category) throw new AppError(404, "PRODUCT_CATEGORY_NOT_FOUND", "Product category not found");
+    }
+    if (body.slug && body.slug !== existing.slug) {
+      const existingSlug = await prisma.product.findFirst({ where: { websiteId: website.id, slug: body.slug, id: { not: existing.id } } });
+      if (existingSlug) throw new AppError(409, "PRODUCT_SLUG_EXISTS", "Product slug already exists for this website");
+    }
+    const row = await prisma.product.update({ where: { id: existing.id }, data: body, include: productInclude });
+    await createAuditLog(request, {
+      action: "product.updated",
+      actor: user,
+      websiteId: website.id,
+      entityType: "product",
+      entityId: row.id,
+      summary: `Product updated: ${row.title}`,
+      metadata: { changedFields: Object.keys(body), oldSlug: existing.slug, newSlug: row.slug }
+    });
+    return ok(reply, productContract(row), "Product updated");
+  });
+
+  app.delete("/api/v1/websites/:websiteId/products/:productId", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const existing = await getOwnedProduct(request, website.id);
+    await prisma.product.delete({ where: { id: existing.id } });
+    await createAuditLog(request, {
+      action: "product.deleted",
+      actor: user,
+      websiteId: website.id,
+      entityType: "product",
+      entityId: existing.id,
+      summary: `Product deleted: ${existing.title}`,
+      metadata: { slug: existing.slug }
+    });
+    return ok(reply, true, "Product deleted");
+  });
+
+  // --- Nested: Product Images ---
+  app.get("/api/v1/websites/:websiteId/products/:productId/images", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    const product = await getOwnedProduct(request, website.id);
+    const rows = await prisma.productImage.findMany({ where: { productId: product.id }, orderBy: { sortOrder: "asc" } });
+    return ok(reply, rows.map(productImageContract), "Product images loaded");
+  });
+
+  app.post("/api/v1/websites/:websiteId/products/:productId/images", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const product = await getOwnedProduct(request, website.id);
+    const body = productImageBody.parse(request.body);
+    const row = await prisma.productImage.create({ data: { ...body, productId: product.id } });
+    await createAuditLog(request, {
+      action: "product_image.created",
+      actor: user,
+      websiteId: website.id,
+      entityType: "product_image",
+      entityId: row.id,
+      summary: `Product image added for ${product.title}`,
+      metadata: { productId: product.id }
+    });
+    return created(reply, productImageContract(row), "Product image created");
+  });
+
+  app.patch("/api/v1/websites/:websiteId/products/:productId/images/:imageId", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const product = await getOwnedProduct(request, website.id);
+    const body = productImageBody.partial().parse(request.body);
+    const existing = await prisma.productImage.findFirst({ where: { id: request.params?.imageId, productId: product.id } });
+    if (!existing) throw new AppError(404, "PRODUCT_IMAGE_NOT_FOUND", "Product image not found");
+    const row = await prisma.productImage.update({ where: { id: existing.id }, data: body });
+    await createAuditLog(request, {
+      action: "product_image.updated",
+      actor: user,
+      websiteId: website.id,
+      entityType: "product_image",
+      entityId: row.id,
+      summary: `Product image updated for ${product.title}`,
+      metadata: { changedFields: Object.keys(body) }
+    });
+    return ok(reply, productImageContract(row), "Product image updated");
+  });
+
+  app.delete("/api/v1/websites/:websiteId/products/:productId/images/:imageId", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const product = await getOwnedProduct(request, website.id);
+    const existing = await prisma.productImage.findFirst({ where: { id: request.params?.imageId, productId: product.id } });
+    if (!existing) throw new AppError(404, "PRODUCT_IMAGE_NOT_FOUND", "Product image not found");
+    await prisma.productImage.delete({ where: { id: existing.id } });
+    await createAuditLog(request, {
+      action: "product_image.deleted",
+      actor: user,
+      websiteId: website.id,
+      entityType: "product_image",
+      entityId: existing.id,
+      summary: `Product image deleted for ${product.title}`,
+      metadata: { productId: product.id }
+    });
+    return ok(reply, true, "Product image deleted");
+  });
+
+  // --- Nested: Product Variants ---
+  app.get("/api/v1/websites/:websiteId/products/:productId/variants", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    const product = await getOwnedProduct(request, website.id);
+    const rows = await prisma.productVariant.findMany({ where: { productId: product.id }, orderBy: { sortOrder: "asc" } });
+    return ok(reply, rows.map(productVariantContract), "Product variants loaded");
+  });
+
+  app.post("/api/v1/websites/:websiteId/products/:productId/variants", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const product = await getOwnedProduct(request, website.id);
+    const body = productVariantBody.parse(request.body);
+    const row = await prisma.productVariant.create({ data: { ...body, productId: product.id } });
+    await createAuditLog(request, {
+      action: "product_variant.created",
+      actor: user,
+      websiteId: website.id,
+      entityType: "product_variant",
+      entityId: row.id,
+      summary: `Product variant added for ${product.title}: ${row.name}`,
+      metadata: { productId: product.id }
+    });
+    return created(reply, productVariantContract(row), "Product variant created");
+  });
+
+  app.patch("/api/v1/websites/:websiteId/products/:productId/variants/:variantId", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const product = await getOwnedProduct(request, website.id);
+    const body = productVariantBody.partial().parse(request.body);
+    const existing = await prisma.productVariant.findFirst({ where: { id: request.params?.variantId, productId: product.id } });
+    if (!existing) throw new AppError(404, "PRODUCT_VARIANT_NOT_FOUND", "Product variant not found");
+    const row = await prisma.productVariant.update({ where: { id: existing.id }, data: body });
+    await createAuditLog(request, {
+      action: "product_variant.updated",
+      actor: user,
+      websiteId: website.id,
+      entityType: "product_variant",
+      entityId: row.id,
+      summary: `Product variant updated for ${product.title}: ${row.name}`,
+      metadata: { changedFields: Object.keys(body) }
+    });
+    return ok(reply, productVariantContract(row), "Product variant updated");
+  });
+
+  app.delete("/api/v1/websites/:websiteId/products/:productId/variants/:variantId", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const product = await getOwnedProduct(request, website.id);
+    const existing = await prisma.productVariant.findFirst({ where: { id: request.params?.variantId, productId: product.id } });
+    if (!existing) throw new AppError(404, "PRODUCT_VARIANT_NOT_FOUND", "Product variant not found");
+    await prisma.productVariant.delete({ where: { id: existing.id } });
+    await createAuditLog(request, {
+      action: "product_variant.deleted",
+      actor: user,
+      websiteId: website.id,
+      entityType: "product_variant",
+      entityId: existing.id,
+      summary: `Product variant deleted for ${product.title}: ${existing.name}`,
+      metadata: { productId: product.id }
+    });
+    return ok(reply, true, "Product variant deleted");
+  });
+
+  // --- Nested: Product Reviews ---
+  app.get("/api/v1/websites/:websiteId/products/:productId/reviews", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    const product = await getOwnedProduct(request, website.id);
+    const rows = await prisma.productReview.findMany({ where: { productId: product.id }, orderBy: { sortOrder: "asc" } });
+    return ok(reply, rows.map(productReviewContract), "Product reviews loaded");
+  });
+
+  app.post("/api/v1/websites/:websiteId/products/:productId/reviews", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const product = await getOwnedProduct(request, website.id);
+    const body = productReviewBody.parse(request.body);
+    const row = await prisma.productReview.create({ data: { ...body, productId: product.id } });
+    await createAuditLog(request, {
+      action: "product_review.created",
+      actor: user,
+      websiteId: website.id,
+      entityType: "product_review",
+      entityId: row.id,
+      summary: `Product review added for ${product.title} by ${row.customerName}`,
+      metadata: { productId: product.id, rating: row.rating }
+    });
+    return created(reply, productReviewContract(row), "Product review created");
+  });
+
+  app.patch("/api/v1/websites/:websiteId/products/:productId/reviews/:reviewId", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const product = await getOwnedProduct(request, website.id);
+    const body = productReviewBody.partial().parse(request.body);
+    const existing = await prisma.productReview.findFirst({ where: { id: request.params?.reviewId, productId: product.id } });
+    if (!existing) throw new AppError(404, "PRODUCT_REVIEW_NOT_FOUND", "Product review not found");
+    const row = await prisma.productReview.update({ where: { id: existing.id }, data: body });
+    await createAuditLog(request, {
+      action: "product_review.updated",
+      actor: user,
+      websiteId: website.id,
+      entityType: "product_review",
+      entityId: row.id,
+      summary: `Product review updated for ${product.title}`,
+      metadata: { changedFields: Object.keys(body) }
+    });
+    return ok(reply, productReviewContract(row), "Product review updated");
+  });
+
+  app.delete("/api/v1/websites/:websiteId/products/:productId/reviews/:reviewId", async (request: Req, reply) => {
+    const { user, website } = await getWebsiteForAccess(request);
+    const product = await getOwnedProduct(request, website.id);
+    const existing = await prisma.productReview.findFirst({ where: { id: request.params?.reviewId, productId: product.id } });
+    if (!existing) throw new AppError(404, "PRODUCT_REVIEW_NOT_FOUND", "Product review not found");
+    await prisma.productReview.delete({ where: { id: existing.id } });
+    await createAuditLog(request, {
+      action: "product_review.deleted",
+      actor: user,
+      websiteId: website.id,
+      entityType: "product_review",
+      entityId: existing.id,
+      summary: `Product review deleted for ${product.title}`,
+      metadata: { productId: product.id }
+    });
+    return ok(reply, true, "Product review deleted");
   });
 };
 
@@ -2498,11 +2979,11 @@ const registerArticleRoutes = () => {
 
 const registerStage9cContentRoutes = () => {
   const categoryRoutes = (
-    base: "article-categories" | "portfolio-categories",
-    model: typeof prisma.articleCategory | typeof prisma.portfolioCategory,
-    entityType: "article_category" | "portfolio_category"
+    base: "article-categories" | "portfolio-categories" | "product-categories",
+    model: typeof prisma.articleCategory | typeof prisma.portfolioCategory | typeof prisma.productCategory,
+    entityType: "article_category" | "portfolio_category" | "product_category"
   ) => {
-    const idParam = base === "article-categories" ? "articleCategoryId" : "portfolioCategoryId";
+    const idParam = base === "article-categories" ? "articleCategoryId" : base === "portfolio-categories" ? "portfolioCategoryId" : "productCategoryId";
 
     app.get(`/api/v1/websites/:websiteId/${base}`, async (request: Req, reply) => {
       const { website } = await getWebsiteForAccess(request);
@@ -2575,6 +3056,7 @@ const registerStage9cContentRoutes = () => {
 
   categoryRoutes("article-categories", prisma.articleCategory, "article_category");
   categoryRoutes("portfolio-categories", prisma.portfolioCategory, "portfolio_category");
+  categoryRoutes("product-categories", prisma.productCategory, "product_category");
 
   app.get("/api/v1/websites/:websiteId/faqs", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
@@ -2585,7 +3067,7 @@ const registerStage9cContentRoutes = () => {
       prisma.faq.findMany({ where, orderBy: { sortOrder: "asc" }, skip, take }),
       prisma.faq.count({ where })
     ]);
-    return paginated(reply, faqs.map(faqContract), buildPaginationMeta(page, pageSize, total), "FAQs loaded");
+    return paginated(reply, faqs.map((f) => faqContract(f, website.websiteType)), buildPaginationMeta(page, pageSize, total), "FAQs loaded");
   });
 
   app.post("/api/v1/websites/:websiteId/faqs", async (request: Req, reply) => {
@@ -2601,7 +3083,7 @@ const registerStage9cContentRoutes = () => {
       summary: `FAQ created: ${faq.question}`,
       metadata: { pageKey: faq.pageKey }
     });
-    return created(reply, faqContract(faq), "FAQ created");
+    return created(reply, faqContract(faq, website.websiteType), "FAQ created");
   });
 
   app.patch("/api/v1/websites/:websiteId/faqs/:faqId", async (request: Req, reply) => {
@@ -2619,7 +3101,7 @@ const registerStage9cContentRoutes = () => {
       summary: `FAQ updated: ${faq.question}`,
       metadata: { changedFields: Object.keys(body) }
     });
-    return ok(reply, faqContract(faq), "FAQ updated");
+    return ok(reply, faqContract(faq, website.websiteType), "FAQ updated");
   });
 
   app.delete("/api/v1/websites/:websiteId/faqs/:faqId", async (request: Req, reply) => {
@@ -2913,7 +3395,7 @@ const registerPublicRoutes = () => {
         description: article.seoDescription || article.excerpt || website.businessProfile?.description || website.name
       },
       trackingKey: website.trackingKey,
-      navigation: await buildNavigationContract(website.id)
+      navigation: await buildNavigationContract(website.id, website.websiteType)
     }, "Public article loaded");
   });
   app.get("/api/v1/public/sites/:slug/portfolios/:portfolioId", async (request: Req, reply) => {
@@ -2962,7 +3444,7 @@ const registerPublicRoutes = () => {
         description: portfolio.description || website.businessProfile?.description || website.name
       },
       trackingKey: website.trackingKey,
-      navigation: await buildNavigationContract(website.id)
+      navigation: await buildNavigationContract(website.id, website.websiteType)
     }, "Public portfolio loaded");
   });
   app.get("/api/v1/websites/:websiteId/preview/pages/:pageKey", async (request: Req, reply) => {
@@ -3010,7 +3492,7 @@ const registerPublicRoutes = () => {
         userAgent: request.headers["user-agent"] || null
       }
     });
-    return created(reply, leadContract(lead), "Lead created");
+    return created(reply, leadContract(lead, website.websiteType), "Lead created");
   });
 };
 
@@ -3092,12 +3574,12 @@ const registerLeadAndInsightRoutes = () => {
   app.get("/api/v1/websites/:websiteId/leads", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
     const leads = await prisma.lead.findMany({ where: { websiteId: website.id }, orderBy: { createdAt: "desc" } });
-    return ok(reply, leads.map(leadContract), "Leads loaded");
+    return ok(reply, leads.map((l) => leadContract(l, website.websiteType)), "Leads loaded");
   });
   app.get("/api/v1/websites/:websiteId/leads/recent", async (request: Req, reply) => {
     const { website } = await getWebsiteForAccess(request);
     const leads = await prisma.lead.findMany({ where: { websiteId: website.id }, orderBy: { createdAt: "desc" }, take: 10 });
-    return ok(reply, leads.map(leadContract), "Recent leads loaded");
+    return ok(reply, leads.map((l) => leadContract(l, website.websiteType)), "Recent leads loaded");
   });
   app.patch("/api/v1/websites/:websiteId/leads/:leadId/status", async (request: Req, reply) => {
     const { user, website } = await getWebsiteForAccess(request);
@@ -3114,7 +3596,7 @@ const registerLeadAndInsightRoutes = () => {
       summary: `Lead status updated to ${body.status}`,
       metadata: { oldStatus: lead.status, newStatus: body.status }
     });
-    return ok(reply, leadContract(updatedLead), "Lead status updated");
+    return ok(reply, leadContract(updatedLead, website.websiteType), "Lead status updated");
   });
 
   const topBy = async (websiteId: string, field: "pageKey" | "slotKey" | "ctaKey" | "objectId", where: Record<string, unknown> = {}) => {
@@ -3128,7 +3610,7 @@ const registerLeadAndInsightRoutes = () => {
     return rows.map((row: any) => ({ [field]: row[field], total: row._count._all }));
   };
 
-  const topPages = async (websiteId: string) => {
+  const topPages = async (websiteId: string, websiteType: string = "company_profile") => {
     const rows = await prisma.trackingEvent.groupBy({
       by: ["pageKey", "pageSlug"],
       where: { websiteId, eventName: "page_view", pageKey: { not: null } },
@@ -3138,13 +3620,13 @@ const registerLeadAndInsightRoutes = () => {
     });
     return rows.map((row) => ({
       pageKey: row.pageKey,
-      pageLabel: row.pageKey ? getPageLabel(row.pageKey) : null,
+      pageLabel: row.pageKey ? getPageLabel(row.pageKey, websiteType) : null,
       pageSlug: row.pageSlug,
       total: row._count._all
     }));
   };
 
-  const topSections = async (websiteId: string) => {
+  const topSections = async (websiteId: string, websiteType: string = "company_profile") => {
     const rows = await prisma.trackingEvent.groupBy({
       by: ["slotKey", "sectionKey"],
       where: { websiteId, eventName: "section_view", slotKey: { not: null } },
@@ -3160,14 +3642,14 @@ const registerLeadAndInsightRoutes = () => {
     const nameByKey = new Map(templates.map((template) => [template.sectionKey, template.name]));
     return rows.map((row) => ({
       slotKey: row.slotKey,
-      slotLabel: row.slotKey ? getSlotLabel(row.slotKey) : null,
+      slotLabel: row.slotKey ? getSlotLabel(row.slotKey, websiteType) : null,
       sectionKey: row.sectionKey,
       sectionName: row.sectionKey ? nameByKey.get(row.sectionKey) || null : null,
       total: row._count._all
     }));
   };
 
-  const topCtas = async (websiteId: string) => {
+  const topCtas = async (websiteId: string, websiteType: string = "company_profile") => {
     const rows = await prisma.trackingEvent.groupBy({
       by: ["ctaKey", "slotKey"],
       where: { websiteId, eventName: { in: ["cta_click", "whatsapp_click"] }, ctaKey: { not: null } },
@@ -3179,7 +3661,7 @@ const registerLeadAndInsightRoutes = () => {
       ctaKey: row.ctaKey,
       ctaLabel: ctaLabel(row.ctaKey),
       slotKey: row.slotKey,
-      slotLabel: row.slotKey ? getSlotLabel(row.slotKey) : null,
+      slotLabel: row.slotKey ? getSlotLabel(row.slotKey, websiteType) : null,
       total: row._count._all
     }));
   };
@@ -3234,7 +3716,7 @@ const registerLeadAndInsightRoutes = () => {
       prisma.trackingEvent.count({ where: { websiteId: website.id, eventName: "cta_click" } }),
       prisma.trackingEvent.count({ where: { websiteId: website.id, eventName: "whatsapp_click" } }),
       prisma.trackingEvent.count({ where: { websiteId: website.id, eventName: "contact_submit" } }),
-      topBy(website.id, "pageKey", { eventName: "page_view" }),
+      topBy(website.id, "pageKey", { eventName: "page_view" }),  // dipakai untuk highlights.topPage di atas
       topBy(website.id, "objectId", { eventName: "service_view", objectType: "service" }),
       topBy(website.id, "objectId", { eventName: "portfolio_view", objectType: "portfolio" }),
       topArticles(website.id)
@@ -3280,7 +3762,7 @@ const registerLeadAndInsightRoutes = () => {
       ],
       highlights: {
         topPage: topPageRows[0]
-          ? { label: "Halaman Paling Sering Dilihat", value: getPageLabel(topPageRows[0].pageKey), total: topPageRows[0].total }
+          ? { label: "Halaman Paling Sering Dilihat", value: getPageLabel(topPageRows[0].pageKey, website.websiteType), total: topPageRows[0].total }
           : null,
         topService: topService
           ? { label: "Layanan Paling Diminati", value: topService.title, total: topServiceRows[0].total }
@@ -3294,9 +3776,18 @@ const registerLeadAndInsightRoutes = () => {
       }
     }, "Insight summary loaded");
   });
-  app.get("/api/v1/websites/:websiteId/insights/top-pages", async (request: Req, reply) => ok(reply, await topPages((await getWebsiteForAccess(request)).website.id), "Top pages loaded"));
-  app.get("/api/v1/websites/:websiteId/insights/top-sections", async (request: Req, reply) => ok(reply, await topSections((await getWebsiteForAccess(request)).website.id), "Top sections loaded"));
-  app.get("/api/v1/websites/:websiteId/insights/top-ctas", async (request: Req, reply) => ok(reply, await topCtas((await getWebsiteForAccess(request)).website.id), "Top CTAs loaded"));
+  app.get("/api/v1/websites/:websiteId/insights/top-pages", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    return ok(reply, await topPages(website.id, website.websiteType), "Top pages loaded");
+  });
+  app.get("/api/v1/websites/:websiteId/insights/top-sections", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    return ok(reply, await topSections(website.id, website.websiteType), "Top sections loaded");
+  });
+  app.get("/api/v1/websites/:websiteId/insights/top-ctas", async (request: Req, reply) => {
+    const { website } = await getWebsiteForAccess(request);
+    return ok(reply, await topCtas(website.id, website.websiteType), "Top CTAs loaded");
+  });
   app.get("/api/v1/websites/:websiteId/insights/top-services", async (request: Req, reply) => ok(reply, await topObjects((await getWebsiteForAccess(request)).website.id, "service"), "Top services loaded"));
   app.get("/api/v1/websites/:websiteId/insights/top-portfolios", async (request: Req, reply) => ok(reply, await topObjects((await getWebsiteForAccess(request)).website.id, "portfolio"), "Top portfolios loaded"));
   app.get("/api/v1/websites/:websiteId/insights/top-articles", async (request: Req, reply) => ok(reply, await topArticles((await getWebsiteForAccess(request)).website.id), "Top articles loaded"));
@@ -3345,6 +3836,9 @@ export const buildApp = async () => {
   registerCrud("portfolios", portfolioBody);
   registerCrud("testimonials", testimonialBody);
   registerCrud("brand-partners", brandBody);
+  registerCrud("value-propositions", valuePropositionBody);
+  registerCrud("banners", bannerBody);
+  registerProductRoutes();
 
   const registerTimelineRoutes = () => {
     const base = "timelines";
