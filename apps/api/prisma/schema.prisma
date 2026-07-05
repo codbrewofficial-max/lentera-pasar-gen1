@@ -65,6 +65,9 @@ model User {
   whatsapp         String?
   phone            String?
   accountStatus    UserAccountStatus @default(active)
+  // Kuota storage media library, dalam MB. Dipakai lintas semua website milik
+  // owner ini (per-akun, bukan per-website) — lihat getOwnerStorageUsageBytes di server.ts.
+  storageQuotaMb   Int       @default(50)
   primaryWebsiteId String?
   primaryWebsite   Website?  @relation("PrimaryWebsite", fields: [primaryWebsiteId], references: [id], onDelete: SetNull)
   websites         Website[] @relation("OwnerWebsites")

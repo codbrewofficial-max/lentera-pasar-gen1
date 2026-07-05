@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { apiCall, apiUpload, getApiBaseUrl } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
-import { AlertCircle, CheckCircle, Copy, FileImage, Image, Info, RefreshCw, Trash2, Upload } from "lucide-react";
+import { AlertCircle, CheckCircle, Copy, FileImage, HardDrive, Image, Info, RefreshCw, Trash2, Upload } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 
 type MediaAsset = {
@@ -16,6 +16,12 @@ type MediaAsset = {
   url: string;
   altText?: string | null;
   createdAt: string;
+};
+
+type StorageUsage = {
+  usedBytes: number;
+  quotaBytes: number;
+  remainingBytes: number;
 };
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
@@ -44,6 +50,7 @@ export default function MediaLibraryPage() {
 
   const [page, setPage] = useState(1);
   const [pageMeta, setPageMeta] = useState({ pageSize: 12, total: 0, totalPages: 1 });
+  const [storageUsage, setStorageUsage] = useState<StorageUsage | null>(null);
 
   const baseUrl = useMemo(() => getApiBaseUrl().replace(/\/$/, ""), []);
   const apiOrigin = useMemo(() => {
@@ -91,9 +98,22 @@ export default function MediaLibraryPage() {
     }
   };
 
+  const fetchStorageUsage = async () => {
+    try {
+      const res = await apiCall<StorageUsage>("GET", "me/storage-usage");
+      if (res.data) setStorageUsage(res.data);
+    } catch {
+      // Non-blocking: kalau gagal load usage, upload tetap jalan (validasi utama tetap di server).
+    }
+  };
+
   useEffect(() => {
     if (websiteId) fetchItems(page);
   }, [websiteId, page]);
+
+  useEffect(() => {
+    fetchStorageUsage();
+  }, [websiteId]);
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
@@ -139,6 +159,7 @@ export default function MediaLibraryPage() {
       setSelectedFile(null);
       setAltText("");
       showSuccess("Media berhasil diupload dan siap dipakai di field gambar/URL.");
+      fetchStorageUsage();
       if (page !== 1) {
         setPage(1);
       } else {
@@ -158,6 +179,7 @@ export default function MediaLibraryPage() {
     try {
       await apiCall("DELETE", `websites/${websiteId}/media/${asset.id}`);
       showSuccess("Media berhasil dihapus.");
+      fetchStorageUsage();
       if (items.length === 1 && page > 1) {
         setPage(page - 1);
       } else {
@@ -190,6 +212,36 @@ export default function MediaLibraryPage() {
           <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-sm flex items-start space-x-3">
             <AlertCircle className="h-5 w-5 shrink-0 text-rose-600 mt-0.5" />
             <span>{errorMsg}</span>
+          </div>
+        )}
+
+        {storageUsage && (
+          <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1.5 font-bold text-slate-700">
+                <HardDrive className="h-4 w-4 text-slate-400" />
+                Kuota Storage Akun
+              </span>
+              <span className="text-slate-500">
+                {formatBytes(storageUsage.usedBytes)} / {formatBytes(storageUsage.quotaBytes)} terpakai
+              </span>
+            </div>
+            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  storageUsage.usedBytes / storageUsage.quotaBytes > 0.9
+                    ? "bg-rose-500"
+                    : storageUsage.usedBytes / storageUsage.quotaBytes > 0.7
+                    ? "bg-amber-500"
+                    : "bg-[#649FF6]"
+                }`}
+                style={{ width: `${Math.min(100, (storageUsage.usedBytes / storageUsage.quotaBytes) * 100)}%` }}
+              />
+            </div>
+            <p className="text-[10px] text-slate-400">
+              Kuota ini dipakai bersama di semua website yang kamu punya, bukan cuma website ini. Sisa:{" "}
+              {formatBytes(storageUsage.remainingBytes)}.
+            </p>
           </div>
         )}
 

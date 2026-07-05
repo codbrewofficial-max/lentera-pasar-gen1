@@ -23,7 +23,8 @@ import {
   Ban,
   Skull,
   Link2,
-  Sparkles
+  Sparkles,
+  HardDrive
 } from "lucide-react";
 
 type AccountStatus = "active" | "non_active" | "suspended" | "banned" | "blacklisted";
@@ -39,6 +40,7 @@ interface OwnerUser {
   role: string;
   accountStatus: AccountStatus;
   accountStatusLabel?: string;
+  storageQuotaMb?: number;
 }
 
 interface WebsiteItem {
@@ -128,6 +130,12 @@ export default function InternalOwnersPage() {
   // Status change state
   const [statusConfirm, setStatusConfirm] = useState<{ owner: OwnerUser; status: AccountStatus } | null>(null);
   const [statusSavingId, setStatusSavingId] = useState<string | number | null>(null);
+
+  // Storage quota inline edit state (kuota berlaku per-akun owner, dipakai
+  // bersama lintas semua website miliknya)
+  const [quotaEditingId, setQuotaEditingId] = useState<string | number | null>(null);
+  const [quotaDraft, setQuotaDraft] = useState<string>("");
+  const [quotaSavingId, setQuotaSavingId] = useState<string | number | null>(null);
 
   const fetchOwners = async () => {
     setLoading(true);
@@ -327,6 +335,36 @@ export default function InternalOwnersPage() {
     }
   };
 
+  const handleOpenQuotaEdit = (owner: OwnerUser) => {
+    setQuotaEditingId(owner.id);
+    setQuotaDraft(String(owner.storageQuotaMb ?? 50));
+  };
+
+  const handleCancelQuotaEdit = () => {
+    setQuotaEditingId(null);
+    setQuotaDraft("");
+  };
+
+  const handleSaveQuota = async (owner: OwnerUser) => {
+    const mb = parseInt(quotaDraft, 10);
+    if (!Number.isFinite(mb) || mb < 1) {
+      setErrorMsg("Kuota storage harus berupa angka lebih dari 0 (dalam MB).");
+      return;
+    }
+    setQuotaSavingId(owner.id);
+    setErrorMsg("");
+    try {
+      await apiCall("PATCH", `internal/owners/${owner.id}/storage-quota`, { storageQuotaMb: mb });
+      showSuccess(`Kuota storage "${owner.name}" berhasil diubah jadi ${mb} MB.`);
+      setQuotaEditingId(null);
+      fetchOwners();
+    } catch (err: any) {
+      setErrorMsg(err.error?.message || err.message || "Gagal mengubah kuota storage.");
+    } finally {
+      setQuotaSavingId(null);
+    }
+  };
+
   const filteredOwners = owners.filter(
     (owner) =>
       owner.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -375,6 +413,9 @@ export default function InternalOwnersPage() {
             <strong>Daftar Hitam</strong> untuk mencegah owner login. Tombol <strong>+ Website</strong> sekarang
             bisa meng-assign website yang sudah dibuat internal tapi belum ada owner-nya (
             {unassignedWebsites.length} tersedia), atau tetap bisa buat website baru langsung.
+            {" "}
+            <strong>Kuota storage</strong> berlaku per-akun (dipakai bersama lintas semua website milik owner
+            tersebut), default 50 MB untuk owner baru — klik badge kuota di tiap owner untuk mengubahnya.
           </p>
         </div>
 
@@ -444,6 +485,52 @@ export default function InternalOwnersPage() {
                           <Globe className="h-3 w-3" /> Website utama: {owner.primaryWebsite.name}
                         </p>
                       )}
+
+                      <div className="flex items-center gap-2 mt-2 flex-wrap">
+                        {quotaEditingId === owner.id ? (
+                          <div className="flex items-center gap-1.5">
+                            <div className="relative">
+                              <HardDrive className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                              <input
+                                type="number"
+                                min={1}
+                                autoFocus
+                                value={quotaDraft}
+                                onChange={(e) => setQuotaDraft(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") handleSaveQuota(owner);
+                                  if (e.key === "Escape") handleCancelQuotaEdit();
+                                }}
+                                className="w-24 pl-7 pr-2 py-1 border border-slate-200 rounded-lg text-[11px] focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                              />
+                            </div>
+                            <span className="text-[10px] text-slate-400">MB</span>
+                            <button
+                              onClick={() => handleSaveQuota(owner)}
+                              disabled={quotaSavingId === owner.id}
+                              className="px-2 py-1 text-[10px] font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-white disabled:opacity-50"
+                            >
+                              {quotaSavingId === owner.id ? "..." : "Simpan"}
+                            </button>
+                            <button
+                              onClick={handleCancelQuotaEdit}
+                              disabled={quotaSavingId === owner.id}
+                              className="px-2 py-1 text-[10px] font-semibold rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
+                            >
+                              Batal
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleOpenQuotaEdit(owner)}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-slate-200 text-[10px] font-semibold text-slate-500 hover:border-slate-400 hover:text-slate-800"
+                            title="Ubah kuota storage media library (berlaku untuk semua website milik owner ini)"
+                          >
+                            <HardDrive className="h-3 w-3" />
+                            Kuota storage: {owner.storageQuotaMb ?? 50} MB
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">

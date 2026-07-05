@@ -161,6 +161,7 @@ const ownerContract = (owner: any) => ({
   whatsapp: owner.whatsapp || null,
   accountStatus: owner.accountStatus,
   accountStatusLabel: USER_ACCOUNT_STATUS_LABELS[owner.accountStatus],
+  storageQuotaMb: owner.storageQuotaMb ?? 50,
   primaryWebsiteId: owner.primaryWebsiteId || null,
   primaryWebsite: owner.primaryWebsite ? websiteSummary(owner.primaryWebsite) : null,
   websitesCount: owner._count?.websites ?? owner.websites?.length ?? 0,
@@ -687,7 +688,8 @@ const createOwnerBody = z.object({
   email: z.string().email(),
   password: z.string().min(8),
   whatsapp: z.string().nullable().optional(),
-  primaryWebsiteId: z.string().nullable().optional()
+  primaryWebsiteId: z.string().nullable().optional(),
+  storageQuotaMb: z.number().int().min(1).max(1024000).optional()
 });
 const patchOwnerBody = z.object({
   name: z.string().min(2).optional(),
@@ -695,6 +697,11 @@ const patchOwnerBody = z.object({
   password: z.string().min(8).optional(),
   whatsapp: z.string().nullable().optional(),
   primaryWebsiteId: z.string().nullable().optional()
+});
+// Kuota storage owner dipisah dari patchOwnerBody biar endpoint-nya independen
+// (internal admin bisa ubah kuota tanpa harus kirim ulang field lain).
+const patchStorageQuotaBody = z.object({
+  storageQuotaMb: z.number().int().min(1).max(1024000)
 });
 const websiteBody = z.object({
   name: z.string().min(2),
@@ -1011,6 +1018,24 @@ const getWebsiteForAccess = async (request: Req, websiteId?: string) => {
   return { user, website };
 };
 
+// Kuota storage berlaku per-akun owner, bukan per-website. MediaAsset sendiri
+// tetap terikat ke websiteId (tidak diubah), jadi pemakaian dihitung dengan
+// menjumlahkan sizeBytes dari semua MediaAsset milik website manapun yang
+// ownerId-nya sama. Kalau owner hapus salah satu website-nya, kuota otomatis
+// "kembali" karena MediaAsset ikut terhapus (onDelete: Cascade di schema).
+const getOwnerStorageUsageBytes = async (ownerId: string) => {
+  const usage = await prisma.mediaAsset.aggregate({
+    _sum: { sizeBytes: true },
+    where: { website: { ownerId } }
+  });
+  return usage._sum.sizeBytes || 0;
+};
+
+const getOwnerStorageQuotaBytes = async (ownerId: string) => {
+  const owner = await prisma.user.findUnique({ where: { id: ownerId }, select: { storageQuotaMb: true } });
+  return (owner?.storageQuotaMb ?? 50) * 1024 * 1024;
+};
+
 const getBusinessProfileForWebsite = async (websiteId: string) =>
   prisma.businessProfile.findUnique({ where: { websiteId } });
 
@@ -1262,6 +1287,19 @@ const registerAuthRoutes = () => {
     if (!user) throw new AppError(404, "USER_NOT_FOUND", "User not found");
     return ok(reply, publicUser(user), "Current user loaded");
   });
+  app.get("/api/v1/me/storage-usage", async (request, reply) => {
+    const auth = await requireAuth(request);
+    const [usedBytes, quotaBytes] = await Promise.all([
+      getOwnerStorageUsageBytes(auth.id),
+      getOwnerStorageQuotaBytes(auth.id)
+    ]);
+    return ok(reply, {
+      usedBytes,
+      quotaBytes,
+      remainingBytes: Math.max(0, quotaBytes - usedBytes)
+    }, "Storage usage loaded");
+  });
+
   app.post("/api/v1/auth/logout", async (_request, reply) => ok(reply, true, "Logged out"));
 
   app.post("/api/v1/auth/verify-email", { config: { rateLimit: apiConfig.rateLimits.auth } }, async (request, reply) => {
@@ -1427,7 +1465,8 @@ const registerInternalRoutes = () => {
         passwordHash: await hashPassword(body.password),
         role: "owner_admin",
         whatsapp: body.whatsapp || null,
-        primaryWebsiteId: body.primaryWebsiteId || null
+        primaryWebsiteId: body.primaryWebsiteId || null,
+        storageQuotaMb: body.storageQuotaMb ?? 50
       },
       include: { primaryWebsite: true, _count: { select: { websites: true } } }
     });
@@ -1529,6 +1568,26 @@ const registerInternalRoutes = () => {
       metadata: { primaryWebsiteId: website.id, websiteSlug: website.slug }
     });
     return ok(reply, ownerContract(updated), "Primary website updated");
+  });
+  app.patch("/api/v1/internal/owners/:ownerId/storage-quota", async (request: Req, reply) => {
+    const actor = await requireRole(request, ["internal_admin"]);
+    const body = patchStorageQuotaBody.parse(request.body);
+    const owner = await prisma.user.findUnique({ where: { id: request.params?.ownerId } });
+    if (!owner || owner.role !== "owner_admin") throw new AppError(404, "OWNER_NOT_FOUND", "Owner not found");
+    const updated = await prisma.user.update({
+      where: { id: owner.id },
+      data: { storageQuotaMb: body.storageQuotaMb },
+      include: { primaryWebsite: true, _count: { select: { websites: true } } }
+    });
+    await createAuditLog(request, {
+      action: "internal.owner_storage_quota_updated",
+      actor,
+      entityType: "user",
+      entityId: owner.id,
+      summary: `Storage quota owner ${owner.email} diubah jadi ${body.storageQuotaMb}MB`,
+      metadata: { previousStorageQuotaMb: owner.storageQuotaMb, storageQuotaMb: body.storageQuotaMb }
+    });
+    return ok(reply, ownerContract(updated), "Storage quota updated");
   });
   app.patch("/api/v1/internal/websites/:websiteId/status", async (request: Req, reply) => {
     const actor = await requireRole(request, ["internal_admin"]);
@@ -3144,6 +3203,22 @@ const registerStage9cContentRoutes = () => {
   app.post("/api/v1/websites/:websiteId/media", { config: { rateLimit: apiConfig.rateLimits.templateUpload } }, async (request, reply) => {
     const { user, website } = await getWebsiteForAccess(request as any);
 
+    // Kuota storage berlaku per-akun owner (akumulasi lintas semua website
+    // milik owner tsb), bukan per-website. Dicek di awal biar gagal cepat
+    // kalau kuota sudah penuh, sebelum sempat baca stream file sama sekali.
+    const [ownerUsedBytes, ownerQuotaBytes] = await Promise.all([
+      getOwnerStorageUsageBytes(website.ownerId),
+      getOwnerStorageQuotaBytes(website.ownerId)
+    ]);
+    const ownerRemainingBytes = ownerQuotaBytes - ownerUsedBytes;
+    if (ownerRemainingBytes <= 0) {
+      throw new AppError(
+        413,
+        "STORAGE_QUOTA_EXCEEDED",
+        `Kuota storage akun sudah penuh (${Math.round(ownerQuotaBytes / 1024 / 1024)} MB terpakai semua). Hapus media lama atau hubungi admin untuk menambah kuota.`
+      );
+    }
+
     const allowed = new Map([
       ["image/jpeg", "jpg"],
       ["image/png", "png"],
@@ -3182,6 +3257,13 @@ const registerStage9cContentRoutes = () => {
           totalBytes += bufferChunk.length;
           if (totalBytes > apiConfig.templateUploadMaxBytes) {
             throw new AppError(413, "MEDIA_TOO_LARGE", `Ukuran gambar maksimal ${Math.round(apiConfig.templateUploadMaxBytes / 1024 / 1024)} MB`);
+          }
+          if (totalBytes > ownerRemainingBytes) {
+            throw new AppError(
+              413,
+              "STORAGE_QUOTA_EXCEEDED",
+              `Sisa kuota storage akun tinggal ${(ownerRemainingBytes / 1024 / 1024).toFixed(1)} MB, file ini melebihi sisa kuota tersebut.`
+            );
           }
           chunks.push(bufferChunk);
         }
