@@ -15,6 +15,12 @@ import { Header as AbstractSiteHeader } from '@/templates/company-profile/abstra
 import { Footer as AbstractSiteFooter } from '@/templates/company-profile/abstract/source/shared/Footer';
 import { FormalCatalogSiteHeader } from '@/templates/catalog-product/formal/layout/FormalCatalogSiteHeader';
 import { FormalCatalogSiteFooter } from '@/templates/catalog-product/formal/layout/FormalCatalogSiteFooter';
+import { CasualCatalogSiteHeader } from '@/templates/catalog-product/casual/layout/CasualCatalogSiteHeader';
+import { CasualCatalogSiteFooter } from '@/templates/catalog-product/casual/layout/CasualCatalogSiteFooter';
+import { PremiumCatalogSiteHeader } from '@/templates/catalog-product/premium/layout/PremiumCatalogSiteHeader';
+import { PremiumCatalogSiteFooter } from '@/templates/catalog-product/premium/layout/PremiumCatalogSiteFooter';
+import { AbstractCatalogSiteHeader } from '@/templates/catalog-product/abstract/layout/AbstractCatalogSiteHeader';
+import { AbstractCatalogSiteFooter } from '@/templates/catalog-product/abstract/layout/AbstractCatalogSiteFooter';
 
 type Props = {
   siteSlug: string;
@@ -101,7 +107,45 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
           />
         );
       }
-      // Tema lain untuk Katalog Produk belum dibangun — jatuh ke header generik di
+      if (navbarTheme === 'casual') {
+        return (
+          <CasualCatalogSiteHeader
+            siteSlug={siteSlug}
+            getHref={getHref}
+            businessName={businessName}
+            logoUrl={logoUrl || undefined}
+            navItems={navbarItems.length > 0 ? navbarItems : undefined}
+            ctaLabel={cta?.label || 'Belanja Sekarang'}
+            ctaPath={cta?.path || '/products'}
+          />
+        );
+      }
+      if (navbarTheme === 'premium') {
+        return (
+          <PremiumCatalogSiteHeader
+            businessName={businessName}
+            logoUrl={logoUrl || undefined}
+            getHref={getHref}
+            navItems={navbarItems.length > 0 ? navbarItems : undefined}
+            ctaLabel={cta?.label || 'LIHAT KOLEKSI'}
+            ctaPath={cta?.path || '/products'}
+          />
+        );
+      }
+      if (navbarTheme === 'abstract') {
+        return (
+          <AbstractCatalogSiteHeader
+            siteSlug={siteSlug}
+            getHref={getHref}
+            businessName={businessName}
+            logoUrl={logoUrl || undefined}
+            navItems={navbarItems.length > 0 ? navbarItems : undefined}
+            ctaLabel={cta?.label || 'mulai belanja'}
+            ctaPath={cta?.path || '/products'}
+          />
+        );
+      }
+      // Tema lain untuk Katalog Produk yang belum dibangun — jatuh ke header generik di
       // bawah (skip semua pengecekan tema Company Profile).
     } else if (navbarTheme === 'formal') {
       return (
@@ -243,6 +287,58 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
           />
         );
       }
+      if (footerTheme === 'casual') {
+        return (
+          <CasualCatalogSiteFooter
+            getHref={getHref}
+            businessName={businessName}
+            logoUrl={logoUrl || undefined}
+            description={description}
+            address={payload.businessProfile?.address || ''}
+            email={email || ''}
+            phone={payload.businessProfile?.phone || ''}
+            workingHours={payload.businessProfile?.workingHours || payload.businessProfile?.operationalHours || ''}
+            instagramUrl={payload.businessProfile?.instagramUrl || undefined}
+            facebookUrl={payload.businessProfile?.facebookUrl || undefined}
+            linkedinUrl={payload.businessProfile?.linkedinUrl || undefined}
+            twitterUrl={payload.businessProfile?.twitterUrl || undefined}
+            websiteUrl={payload.businessProfile?.websiteUrl || undefined}
+            navItems={footerItems.length > 0 ? footerItems : undefined}
+          />
+        );
+      }
+      if (footerTheme === 'premium') {
+        return (
+          <PremiumCatalogSiteFooter
+            getHref={getHref}
+            businessName={businessName}
+            logoUrl={logoUrl || undefined}
+            description={description}
+            address={payload.businessProfile?.address || ''}
+            email={email || ''}
+            phone={payload.businessProfile?.phone || ''}
+            navItems={footerItems.length > 0 ? footerItems : undefined}
+          />
+        );
+      }
+      if (footerTheme === 'abstract') {
+        return (
+          <AbstractCatalogSiteFooter
+            getHref={getHref}
+            businessName={businessName}
+            logoUrl={logoUrl || undefined}
+            description={description}
+            address={payload.businessProfile?.address || ''}
+            email={email || ''}
+            phone={payload.businessProfile?.phone || ''}
+            instagramUrl={payload.businessProfile?.instagramUrl || undefined}
+            facebookUrl={payload.businessProfile?.facebookUrl || undefined}
+            navItems={footerItems.length > 0 ? footerItems : undefined}
+          />
+        );
+      }
+      // Tema lain untuk Katalog Produk yang belum dibangun — jatuh ke footer generik di
+      // bawah (skip semua pengecekan tema Company Profile).
     } else if (footerTheme === 'formal') {
       return (
         <FormalSiteFooter
@@ -382,12 +478,20 @@ export function SiteShell({ siteSlug, payload, children }: Props) {
       ? 'min-h-screen bg-white text-gray-950'
       : 'min-h-screen bg-white text-slate-950';
 
+  // FAB WhatsApp: selalu nyala untuk Formal (Company Profile & Katalog Produk, perilaku lama),
+  // dan untuk Katalog Produk juga nyala di Casual/Premium/Abstract karena keempat tema itu
+  // didesain dengan asumsi ada FAB WhatsApp (beda dengan Company Profile yang FAB-nya baru
+  // ada di tema Formal).
+  const showWhatsappFab =
+    navbarTheme === 'formal' ||
+    (websiteType === 'catalog_product' && (navbarTheme === 'casual' || navbarTheme === 'premium' || navbarTheme === 'abstract'));
+
   return (
     <div className={wrapperClass}>
       {header}
       <main className={navbarTheme === 'formal' ? 'pt-[72px]' : ''}>{children}</main>
       {footer}
-      {navbarTheme === 'formal' && <FloatingWhatsApp whatsappNumber={payload.businessProfile?.whatsapp || undefined} />}
+      {showWhatsappFab && <FloatingWhatsApp whatsappNumber={payload.businessProfile?.whatsapp || undefined} />}
     </div>
   );
 }

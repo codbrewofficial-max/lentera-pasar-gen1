@@ -12,6 +12,9 @@ import { premiumSectionComponents } from '@/templates/company-profile/premium/se
 import { abstractSectionComponents } from '@/templates/company-profile/abstract/sections';
 import { getCatalogProductTemplateDebugLabel, resolveCatalogProductSectionComponentName } from '@/templates/catalog-product/registry';
 import { formalCatalogProductSectionComponents } from '@/templates/catalog-product/formal/sections';
+import { casualCatalogProductSectionComponents } from '@/templates/catalog-product/casual/sections';
+import { premiumCatalogProductSectionComponents } from '@/templates/catalog-product/premium/sections';
+import { abstractCatalogProductSectionComponents } from '@/templates/catalog-product/abstract/sections';
 
 type SectionProps = { siteSlug: string; payload: PublicPagePayload; section: PublicSection };
 type SectionComponent = (props: SectionProps) => ReactNode;
@@ -985,7 +988,10 @@ const registry: Record<string, SectionComponent> = {
   ...premiumSectionComponents,
   ...abstractSectionComponents,
   ...companyProfileCleanComponents,
-  ...(formalCatalogProductSectionComponents as unknown as Record<string, SectionComponent>)
+  ...(formalCatalogProductSectionComponents as unknown as Record<string, SectionComponent>),
+  ...(casualCatalogProductSectionComponents as unknown as Record<string, SectionComponent>),
+  ...(premiumCatalogProductSectionComponents as unknown as Record<string, SectionComponent>),
+  ...(abstractCatalogProductSectionComponents as unknown as Record<string, SectionComponent>)
 };
 
 /** Resolve a component by name for preview rendering. Returns null if not found. */

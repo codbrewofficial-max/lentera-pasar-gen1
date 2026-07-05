@@ -1,6 +1,9 @@
 import type { PublicSection } from "@/lib/types";
 import { cleanCatalogProductTemplate } from "./clean/template";
 import { formalCatalogProductTemplate } from "./formal/template";
+import { casualCatalogProductTemplate } from "./casual/template";
+import { premiumCatalogProductTemplate } from "./premium/template";
+import { abstractCatalogProductTemplate } from "./abstract/template";
 import { CATALOG_PRODUCT_DEFAULT_SLOT_COMPONENTS } from "./slots";
 import type { CatalogProductTemplateDefinition, CatalogProductTemplateKey } from "./types";
 
@@ -11,12 +14,27 @@ const TEMPLATE_KEY_ALIASES: Record<string, CatalogProductTemplateKey> = {
 
   catalog_product_formal: "catalog_product_formal",
   "catalog-product-formal": "catalog_product_formal",
-  formal: "catalog_product_formal"
+  formal: "catalog_product_formal",
+
+  catalog_product_casual: "catalog_product_casual",
+  "catalog-product-casual": "catalog_product_casual",
+  casual: "catalog_product_casual",
+
+  catalog_product_premium: "catalog_product_premium",
+  "catalog-product-premium": "catalog_product_premium",
+  premium: "catalog_product_premium",
+
+  catalog_product_abstract: "catalog_product_abstract",
+  "catalog-product-abstract": "catalog_product_abstract",
+  abstract: "catalog_product_abstract"
 };
 
 export const catalogProductTemplateRegistry: Record<CatalogProductTemplateKey, CatalogProductTemplateDefinition> = {
   catalog_product_clean: cleanCatalogProductTemplate,
-  catalog_product_formal: formalCatalogProductTemplate
+  catalog_product_formal: formalCatalogProductTemplate,
+  catalog_product_casual: casualCatalogProductTemplate,
+  catalog_product_premium: premiumCatalogProductTemplate,
+  catalog_product_abstract: abstractCatalogProductTemplate
 };
 
 // Template Pack ZIP boleh diimpor dengan templatePackKey berversi (mis. "catalog_product_formal_v1"),
