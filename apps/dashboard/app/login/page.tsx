@@ -87,11 +87,11 @@ function LoginContent() {
     }
   };
 
-  const handleDemoLogin = (demoEmail: string) => {
-    setEmail(demoEmail);
-    setPassword("password123");
-    setErrorMsg("");
-  };
+  // const handleDemoLogin = (demoEmail: string) => {
+  //   setEmail(demoEmail);
+  //   setPassword("password123");
+  //   setErrorMsg("");
+  // };
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-slate-50 md:p-8" id="login-container">
@@ -207,7 +207,7 @@ function LoginContent() {
         </p>
 
         {/* Demo Quick Accounts */}
-        <div className="mt-8 pt-6 border-t border-slate-100" id="demo-accounts-container">
+        {/* <div className="mt-8 pt-6 border-t border-slate-100" id="demo-accounts-container">
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 text-center">
             Gunakan Akun Demo
           </p>
@@ -241,7 +241,7 @@ function LoginContent() {
           <p className="mt-3 text-center text-[11px] text-slate-400">
             Kata sandi untuk demo: <strong className="font-mono text-slate-600">password123</strong>
           </p>
-        </div>
+        </div> */}
       </div>
     </main>
   );
