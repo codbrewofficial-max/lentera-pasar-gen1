@@ -93,6 +93,36 @@ function EmptyBlock({ title, description }: { title: string; description: string
   );
 }
 
+// Tombol CTA generik & opsional — HANYA render kalau owner benar-benar mengisi
+// content.ctaLabel di dashboard.
+function OptionalCta({ props, fallbackPath }: { props: PremiumCatalogProductSectionProps; fallbackPath: string }) {
+  const content = contentOf(props.section);
+  const ctaLabel = text(content.ctaLabel);
+  if (!ctaLabel) return null;
+  const ctaHref = sectionHref(props, "cta", fallbackPath);
+  return (
+    <div className="mt-6">
+      <PremiumButton href={ctaHref} label={ctaLabel} />
+    </div>
+  );
+}
+
+// Header ringkas & opsional — HANYA render kalau salah satu field diisi owner.
+function OptionalIntro({ props, center = false }: { props: PremiumCatalogProductSectionProps; center?: boolean }) {
+  const content = contentOf(props.section);
+  const badge = text(content.badge);
+  const title = text(content.title);
+  const subtitle = text(content.subtitle);
+  if (!badge && !title && !subtitle) return null;
+  return (
+    <div className={center ? "mx-auto mb-8 max-w-2xl text-center" : "mb-8 max-w-2xl"}>
+      {badge && <PremiumEyebrow label={badge} />}
+      {title && <h2 className="mt-3 font-serif text-2xl font-light text-white">{title}</h2>}
+      {subtitle && <p className="mt-2 text-sm leading-7 text-stone-400">{subtitle}</p>}
+    </div>
+  );
+}
+
 function PremiumButton({ href, label }: { href: string; label: string }) {
   return (
     <a href={href} className="group relative inline-flex items-center justify-between gap-4 bg-gradient-to-r from-[#649FF6] to-[#B283AF] px-8 py-4 text-xs font-semibold uppercase tracking-[0.25em] text-white shadow-lg shadow-black/40 transition-all hover:opacity-90">
@@ -138,7 +168,7 @@ export function PremiumCatalogHomeHero(props: PremiumCatalogProductSectionProps)
 
   const badge = pick(content.badge, business.tagline, "KOLEKSI PILIHAN TERKURASI");
   const title = pick(content.title, activeBanner?.title, `Belanja Bermakna di ${pick(business.name, props.payload.website.name, "Toko Kami")}`);
-  const description = pick(content.description, activeBanner?.subtitle, business.description, "Produk pilihan dengan kualitas dan detail yang kami jaga untuk Anda.");
+  const description = pick(content.subtitle, activeBanner?.subtitle, business.description, "Produk pilihan dengan kualitas dan detail yang kami jaga untuk Anda.");
   const ctaLabel = pick(content.ctaLabel, activeBanner?.ctaLabel, "Lihat Koleksi");
   const ctaHref = activeBanner?.ctaUrl ? getSiteHref(props.siteSlug, activeBanner.ctaUrl) : sectionHref(props, "cta", "/products");
   const image = contentImage(content, pick(activeBanner?.imageUrl, "https://picsum.photos/seed/premium-catalog-hero/1600/1000"));
@@ -181,7 +211,7 @@ export function PremiumCatalogHomeCategoryShowcase(props: PremiumCatalogProductS
   const categories = (props.section.data?.productCategories || []) as CrudItem[];
   const badge = text(content.badge, "JELAJAHI KATEGORI");
   const title = text(content.title, "Kategori Pilihan");
-  const description = text(content.description, "Temukan produk berdasarkan kategori favorit Anda.");
+  const description = text(content.subtitle, "Temukan produk berdasarkan kategori favorit Anda.");
 
   return (
     <section className="bg-[#0E0E0F] py-20 text-white">
@@ -201,6 +231,7 @@ export function PremiumCatalogHomeCategoryShowcase(props: PremiumCatalogProductS
         ) : (
           <EmptyBlock title="Kategori produk belum ditambahkan" description="Kelola kategori produk lewat menu Kategori Produk di dashboard." />
         )}
+        <OptionalCta props={props} fallbackPath="/products" />
       </div>
     </section>
   );
@@ -213,7 +244,7 @@ export function PremiumCatalogHomeFeaturedProducts(props: PremiumCatalogProductS
   const list = featured.length ? featured : products.slice(0, 8);
   const badge = text(content.badge, "PILIHAN TERBAIK");
   const title = text(content.title, "Produk Unggulan");
-  const description = text(content.description, "Produk yang paling dicari dan disukai pelanggan kami.");
+  const description = text(content.subtitle, "Produk yang paling dicari dan disukai pelanggan kami.");
 
   return (
     <section className="bg-[#09090A] py-20 text-white">
@@ -221,7 +252,7 @@ export function PremiumCatalogHomeFeaturedProducts(props: PremiumCatalogProductS
         <div className="flex flex-wrap items-end justify-between gap-6">
           <SectionHeading badge={badge} title={title} description={description} />
           <a href={sectionHref(props, "cta", "/products")} className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#649FF6] hover:underline">
-            Lihat Semua <ArrowRight className="h-4 w-4" />
+            {text(content.ctaLabel, "Lihat Semua")} <ArrowRight className="h-4 w-4" />
           </a>
         </div>
         {list.length ? (
@@ -245,7 +276,7 @@ export function PremiumCatalogHomeNewArrivals(props: PremiumCatalogProductSectio
   const list = newArrivals.length ? newArrivals : products.slice(0, 8);
   const badge = text(content.badge, "KOLEKSI TERBARU");
   const title = text(content.title, "Produk Terbaru");
-  const description = text(content.description, "Koleksi terbaru yang baru saja hadir di katalog kami.");
+  const description = text(content.subtitle, "Koleksi terbaru yang baru saja hadir di katalog kami.");
 
   return (
     <section className="bg-[#0E0E0F] py-20 text-white">
@@ -253,7 +284,7 @@ export function PremiumCatalogHomeNewArrivals(props: PremiumCatalogProductSectio
         <div className="flex flex-wrap items-end justify-between gap-6">
           <SectionHeading badge={badge} title={title} description={description} />
           <a href={sectionHref(props, "cta", "/products")} className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#649FF6] hover:underline">
-            Lihat Semua <ArrowRight className="h-4 w-4" />
+            {text(content.ctaLabel, "Lihat Semua")} <ArrowRight className="h-4 w-4" />
           </a>
         </div>
         {list.length ? (
@@ -275,7 +306,7 @@ export function PremiumCatalogHomeValueProposition(props: PremiumCatalogProductS
   const items = (props.section.data?.valuePropositions || []) as CrudItem[];
   const badge = text(content.badge, "KEUNGGULAN KAMI");
   const title = text(content.title, "Kenapa Memilih Kami");
-  const description = text(content.description, "");
+  const description = text(content.subtitle, "");
 
   return (
     <section className="bg-[#09090A] py-20 text-white">
@@ -300,6 +331,7 @@ export function PremiumCatalogHomeValueProposition(props: PremiumCatalogProductS
         ) : (
           <div className="mx-auto mt-10 max-w-2xl"><PublicEmptyState title="Keunggulan belum diisi" description="Tambahkan Keunggulan/USP lewat dashboard, contoh: Garansi Resmi, Bisa COD, Pengiriman Cepat." /></div>
         )}
+        <OptionalCta props={props} fallbackPath="/products" />
       </div>
     </section>
   );
@@ -310,10 +342,10 @@ export function PremiumCatalogHomeBrandTrust(props: PremiumCatalogProductSection
   const business = businessOf(props.payload);
   const badge = text(content.badge, "DIPERCAYA PELANGGAN");
   const title = text(content.title, `Kenapa Memilih ${pick(business.name, props.payload.website.name, "Kami")}`);
-  const description = pick(content.description, business.description, "Kami berkomitmen menghadirkan produk berkualitas tinggi dengan pelayanan yang personal.");
-  const metrics = [1, 2, 3]
-    .map((n) => ({ label: text(content[metricKey(n, "Label")]), value: text(content[metricKey(n, "Value")]) }))
-    .filter((metric) => metric.label && metric.value);
+  const description = pick(content.subtitle, business.description, "Kami berkomitmen menghadirkan produk berkualitas tinggi dengan pelayanan yang personal.");
+  const metrics = (Array.isArray(content.metrics) ? content.metrics : [])
+    .map((metric: any) => ({ label: text(metric?.label), value: text(metric?.value) }))
+    .filter((metric: { label: string; value: string }) => metric.label && metric.value);
   const image = contentImage(content, pick(business.aboutImage, "https://picsum.photos/seed/premium-catalog-trust/900/700"));
 
   return (
@@ -328,7 +360,7 @@ export function PremiumCatalogHomeBrandTrust(props: PremiumCatalogProductSection
           <SectionHeading badge={badge} title={title} description={description} />
           {metrics.length > 0 && (
             <div className="mt-8 grid grid-cols-3 gap-4 border-t border-white/10 pt-6">
-              {metrics.map((metric, index) => (
+              {metrics.map((metric: { label: string; value: string }, index: number) => (
                 <div key={index}>
                   <p className="font-serif text-2xl font-light text-[#649FF6]">{metric.value}</p>
                   <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-stone-500">{metric.label}</p>
@@ -336,6 +368,7 @@ export function PremiumCatalogHomeBrandTrust(props: PremiumCatalogProductSection
               ))}
             </div>
           )}
+          <OptionalCta props={props} fallbackPath="/products" />
         </div>
       </div>
     </section>
@@ -351,8 +384,9 @@ export function PremiumCatalogProductsBreadcrumbs(props: PremiumCatalogProductSe
   const categories = (props.section.data?.productCategories || []) as CrudItem[];
   const filters = props.section.data?.filters || {};
   const activeCategory = categories.find((category) => category.id === filters.categoryId);
+  const badge = text(content.badge);
   const title = filters.q ? `Hasil pencarian: "${filters.q}"` : text(content.title, activeCategory ? activeCategory.name : "Semua Produk");
-  const description = text(content.description, "Jelajahi seluruh katalog produk kami.");
+  const description = text(content.subtitle, "Jelajahi seluruh katalog produk kami.");
 
   return (
     <section className="border-b border-white/5 bg-[#09090A] py-8 text-white">
@@ -363,8 +397,10 @@ export function PremiumCatalogProductsBreadcrumbs(props: PremiumCatalogProductSe
           <a href={getSiteHref(props.siteSlug, "/products")} className={activeCategory ? "hover:text-[#649FF6]" : "text-[#649FF6]"}>Produk</a>
           {activeCategory && (<><span>/</span><span className="text-[#649FF6]">{activeCategory.name}</span></>)}
         </nav>
+        {badge && <PremiumEyebrow label={badge} />}
         <h1 className="mt-3 font-serif text-2xl font-light tracking-tight md:text-3xl">{title}</h1>
         {description && <p className="mt-2 max-w-2xl text-sm text-stone-400">{description}</p>}
+        <OptionalCta props={props} fallbackPath="/products" />
       </div>
     </section>
   );
@@ -383,7 +419,9 @@ export function PremiumCatalogProductsFilterSidebar(props: PremiumCatalogProduct
 
   return (
     <section className="border-b border-white/5 bg-[#0E0E0F] py-6 text-white">
-      <div className="lp-container flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+      <div className="lp-container">
+        <OptionalIntro props={props} />
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex flex-wrap gap-2">
           <a href={productsPath} className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider transition ${!filters.categoryId ? "bg-[#649FF6] text-white" : "border border-white/10 text-stone-300 hover:border-white/30"}`}>Semua</a>
           {categories.map((category) => (
@@ -402,6 +440,8 @@ export function PremiumCatalogProductsFilterSidebar(props: PremiumCatalogProduct
           <button type="submit" className="bg-gradient-to-r from-[#649FF6] to-[#B283AF] px-5 py-2 text-xs font-semibold uppercase tracking-wider text-white">Terapkan</button>
         </form>
       </div>
+        <OptionalCta props={props} fallbackPath="/products" />
+      </div>
     </section>
   );
 }
@@ -411,6 +451,7 @@ export function PremiumCatalogProductsGrid(props: PremiumCatalogProductSectionPr
   return (
     <section className="bg-[#09090A] py-16 text-white">
       <div className="lp-container">
+        <OptionalIntro props={props} />
         {products.length ? (
           <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
             {products.map((product) => (<ProductCard key={product.id} siteSlug={props.siteSlug} payload={props.payload} product={product} />))}
@@ -418,6 +459,7 @@ export function PremiumCatalogProductsGrid(props: PremiumCatalogProductSectionPr
         ) : (
           <EmptyBlock title="Produk tidak ditemukan" description="Coba ubah filter kategori atau rentang harga, atau kelola produk lewat menu Produk di dashboard." />
         )}
+        <OptionalCta props={props} fallbackPath="/products" />
       </div>
     </section>
   );
@@ -430,6 +472,7 @@ export function PremiumCatalogProductsPagination(props: PremiumCatalogProductSec
   return (
     <div className="bg-[#09090A] pb-16">
       <div className="lp-container">
+        <OptionalIntro props={props} />
         <PublicPagination
           siteSlug={props.siteSlug}
           basePath="/products"
@@ -459,6 +502,9 @@ export function PremiumCatalogProductDetailCoreInfo(props: PremiumCatalogProduct
 
   return (
     <section className="bg-[#09090A] py-16 text-white">
+      <div className="lp-container">
+        <OptionalIntro props={props} />
+      </div>
       <div className="lp-container grid grid-cols-1 gap-12 lg:grid-cols-12">
         <div className="lg:col-span-6">
           <div className="aspect-square overflow-hidden border border-white/5 bg-[#0E0E0F]">
@@ -504,6 +550,7 @@ export function PremiumCatalogProductDetailCoreInfo(props: PremiumCatalogProduct
               ctaKey="primary"
             />
           </div>
+          <OptionalCta props={props} fallbackPath="/contact" />
         </div>
       </div>
     </section>
@@ -515,6 +562,9 @@ export function PremiumCatalogProductDetailTabs(props: PremiumCatalogProductSect
   if (!product) return null;
   return (
     <section className="bg-[#0E0E0F] py-16 text-white">
+      <div className="lp-container">
+        <OptionalIntro props={props} />
+      </div>
       <div className="lp-container grid grid-cols-1 gap-10 lg:grid-cols-12">
         <div className="lg:col-span-8">
           <h2 className="font-serif text-xl font-light text-white">Deskripsi Produk</h2>
@@ -527,6 +577,7 @@ export function PremiumCatalogProductDetailTabs(props: PremiumCatalogProductSect
             {product.sku && <div className="flex justify-between py-3 text-sm"><dt className="text-stone-500">SKU</dt><dd className="font-semibold text-stone-200">{product.sku}</dd></div>}
             <div className="flex justify-between py-3 text-sm"><dt className="text-stone-500">Status</dt><dd className="font-semibold text-stone-200">{product.isNewArrival ? "Produk Baru" : "Tersedia"}</dd></div>
           </dl>
+          <OptionalCta props={props} fallbackPath="/products" />
         </div>
       </div>
     </section>
@@ -537,14 +588,19 @@ export function PremiumCatalogProductDetailRecommendation(props: PremiumCatalogP
   const content = contentOf(props.section);
   const related = (props.section.data?.relatedProducts || []) as ProductSummary[];
   if (!related.length) return null;
+  const badge = text(content.badge);
   const title = text(content.title, "Produk Terkait");
+  const subtitle = text(content.subtitle);
   return (
     <section className="bg-[#09090A] py-16 text-white">
       <div className="lp-container">
-        <h2 className="font-serif text-2xl font-light tracking-tight">{title}</h2>
+        {badge && <PremiumEyebrow label={badge} />}
+        <h2 className="mt-3 font-serif text-2xl font-light tracking-tight">{title}</h2>
+        {subtitle && <p className="mt-2 text-sm text-stone-400">{subtitle}</p>}
         <div className="mt-8 grid grid-cols-2 gap-5 sm:grid-cols-4">
           {related.map((product) => (<ProductCard key={product.id} siteSlug={props.siteSlug} payload={props.payload} product={product} />))}
         </div>
+        <OptionalCta props={props} fallbackPath="/products" />
       </div>
     </section>
   );
@@ -554,14 +610,20 @@ export function PremiumCatalogProductDetailReviews(props: PremiumCatalogProductS
   const content = contentOf(props.section);
   const product = props.section.data?.product;
   const reviews = (product?.reviews || []).filter((review) => review.isActive !== false);
+  const badge = text(content.badge);
   const title = text(content.title, "Ulasan Pelanggan");
+  const subtitle = text(content.subtitle);
   const averageRating = reviews.length ? reviews.reduce((sum, review) => sum + (review.rating || 0), 0) / reviews.length : 0;
 
   return (
     <section className="bg-[#0E0E0F] py-16 text-white">
       <div className="lp-container">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <h2 className="font-serif text-2xl font-light tracking-tight">{title}</h2>
+        {badge && <PremiumEyebrow label={badge} />}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="font-serif text-2xl font-light tracking-tight">{title}</h2>
+            {subtitle && <p className="mt-2 text-sm text-stone-400">{subtitle}</p>}
+          </div>
           {reviews.length > 0 && (
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-stone-400">
               <span className="text-[#F56B71]">{"★".repeat(Math.round(averageRating))}{"☆".repeat(5 - Math.round(averageRating))}</span>
@@ -589,6 +651,7 @@ export function PremiumCatalogProductDetailReviews(props: PremiumCatalogProductS
         ) : (
           <EmptyBlock title="Belum ada ulasan" description="Ulasan pelanggan untuk produk ini akan tampil di sini." />
         )}
+        <OptionalCta props={props} fallbackPath="/products" />
       </div>
     </section>
   );
@@ -600,12 +663,16 @@ export function PremiumCatalogProductDetailFaq(props: PremiumCatalogProductSecti
   const scoped = allFaqs.filter((faq) => faq.pageKey === "product_detail");
   const faqs = (scoped.length ? scoped : allFaqs).slice(0, 8);
   if (!faqs.length) return null;
+  const badge = text(content.badge);
   const title = text(content.title, "Pertanyaan Seputar Produk Ini");
+  const subtitle = text(content.subtitle);
 
   return (
     <section className="bg-[#09090A] py-16 text-white">
       <div className="lp-container max-w-3xl">
-        <h2 className="font-serif text-2xl font-light tracking-tight">{title}</h2>
+        {badge && <PremiumEyebrow label={badge} />}
+        <h2 className="mt-3 font-serif text-2xl font-light tracking-tight">{title}</h2>
+        {subtitle && <p className="mt-2 text-sm text-stone-400">{subtitle}</p>}
         <div className="mt-8 divide-y divide-white/5 border-t border-b border-white/5">
           {faqs.map((faq) => (
             <details key={faq.id} className="group py-5">
@@ -617,6 +684,7 @@ export function PremiumCatalogProductDetailFaq(props: PremiumCatalogProductSecti
             </details>
           ))}
         </div>
+        <OptionalCta props={props} fallbackPath="/contact" />
       </div>
     </section>
   );
@@ -630,11 +698,18 @@ export function PremiumCatalogFaqHeroSearch(props: PremiumCatalogProductSectionP
   const content = contentOf(props.section);
   const badge = text(content.badge, "PUSAT BANTUAN");
   const title = text(content.title, "Ada yang Bisa Kami Bantu?");
-  const description = text(content.description, "Temukan jawaban cepat seputar cara pesan, pembayaran, dan pengiriman.");
+  const description = text(content.subtitle, "Temukan jawaban cepat seputar cara pesan, pembayaran, dan pengiriman.");
+  const backgroundImage = contentImage(content);
 
   return (
-    <section className="bg-[#09090A] py-16 text-white md:py-20">
-      <div className="lp-container text-center">
+    <section className="relative overflow-hidden bg-[#09090A] py-16 text-white md:py-20">
+      {backgroundImage && (
+        <>
+          <img src={backgroundImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-25" referrerPolicy="no-referrer" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#09090A]/70 to-[#09090A]" />
+        </>
+      )}
+      <div className="relative lp-container text-center">
         <div className="mx-auto w-fit"><PremiumEyebrow label={badge} /></div>
         <h1 className="mx-auto mt-4 max-w-2xl font-serif text-3xl font-light tracking-tight md:text-4xl">{title}</h1>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-stone-400">{description}</p>
@@ -642,6 +717,7 @@ export function PremiumCatalogFaqHeroSearch(props: PremiumCatalogProductSectionP
           <Search className="ml-4 h-4 w-4 text-stone-500" />
           <input type="search" placeholder="Cari pertanyaan..." aria-label="Cari pertanyaan" className="w-full bg-transparent px-4 py-3.5 text-sm text-white placeholder:text-stone-500 focus:outline-none" />
         </div>
+        <OptionalCta props={props} fallbackPath="/contact" />
       </div>
     </section>
   );
@@ -652,12 +728,16 @@ export function PremiumCatalogFaqAccordion(props: PremiumCatalogProductSectionPr
   const allFaqs = (props.section.data?.faqs || []) as CrudItem[];
   const scoped = allFaqs.filter((faq) => faq.pageKey === "faq");
   const faqs = scoped.length ? scoped : allFaqs;
+  const badge = text(content.badge);
   const title = text(content.title, "Pertanyaan yang Sering Diajukan");
+  const subtitle = text(content.subtitle);
 
   return (
     <section className="bg-[#0E0E0F] py-16 text-white">
       <div className="lp-container max-w-3xl">
-        <h2 className="font-serif text-2xl font-light tracking-tight">{title}</h2>
+        {badge && <PremiumEyebrow label={badge} />}
+        <h2 className="mt-3 font-serif text-2xl font-light tracking-tight">{title}</h2>
+        {subtitle && <p className="mt-2 text-sm text-stone-400">{subtitle}</p>}
         {faqs.length ? (
           <div className="mt-8 divide-y divide-white/5 border-t border-b border-white/5">
             {faqs.map((faq) => (
@@ -673,6 +753,7 @@ export function PremiumCatalogFaqAccordion(props: PremiumCatalogProductSectionPr
         ) : (
           <EmptyBlock title="FAQ belum ditambahkan" description="Tambahkan pertanyaan & jawaban lewat menu FAQ di dashboard." />
         )}
+        <OptionalCta props={props} fallbackPath="/contact" />
       </div>
     </section>
   );
@@ -680,15 +761,24 @@ export function PremiumCatalogFaqAccordion(props: PremiumCatalogProductSectionPr
 
 export function PremiumCatalogFaqContactCta(props: PremiumCatalogProductSectionProps) {
   const content = contentOf(props.section);
+  const badge = text(content.badge);
   const title = text(content.title, "Masih Ada Pertanyaan?");
-  const description = text(content.description, "Tim kami siap membantu menjawab pertanyaan Anda.");
+  const description = text(content.subtitle, "Tim kami siap membantu menjawab pertanyaan Anda.");
   const ctaLabel = text(content.ctaLabel, "Hubungi via WhatsApp");
   const ctaHref = whatsappHref(props.payload) || sectionHref(props, "cta", "/contact");
+  const backgroundImage = contentImage(content);
 
   return (
-    <section className="border-t border-white/5 bg-[#09090A] py-16 text-white">
-      <div className="lp-container text-center">
-        <h2 className="font-serif text-2xl font-light tracking-tight md:text-3xl">{title}</h2>
+    <section className="relative overflow-hidden border-t border-white/5 bg-[#09090A] py-16 text-white">
+      {backgroundImage && (
+        <>
+          <img src={backgroundImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-15" referrerPolicy="no-referrer" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#09090A]/60 to-[#09090A]" />
+        </>
+      )}
+      <div className="relative lp-container text-center">
+        {badge && <PremiumEyebrow label={badge} />}
+        <h2 className="mt-3 font-serif text-2xl font-light tracking-tight md:text-3xl">{title}</h2>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-stone-400">{description}</p>
         <div className="mt-8 flex justify-center"><PremiumButton href={ctaHref} label={ctaLabel} /></div>
       </div>
@@ -704,14 +794,22 @@ export function PremiumCatalogArticlesBlogHero(props: PremiumCatalogProductSecti
   const content = contentOf(props.section);
   const badge = text(content.badge, "JURNAL & WAWASAN");
   const title = text(content.title, "Jurnal & Wawasan Terbaru");
-  const description = text(content.description, "Kumpulan artikel seputar produk, tips, dan info terbaru dari kami.");
+  const description = text(content.subtitle, "Kumpulan artikel seputar produk, tips, dan info terbaru dari kami.");
+  const backgroundImage = contentImage(content);
 
   return (
-    <section className="bg-[#09090A] py-16 text-white md:py-20">
-      <div className="lp-container text-center">
+    <section className="relative overflow-hidden bg-[#09090A] py-16 text-white md:py-20">
+      {backgroundImage && (
+        <>
+          <img src={backgroundImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-25" referrerPolicy="no-referrer" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#09090A]/70 to-[#09090A]" />
+        </>
+      )}
+      <div className="relative lp-container text-center">
         <div className="mx-auto w-fit"><PremiumEyebrow label={badge} /></div>
         <h1 className="mx-auto mt-4 max-w-2xl font-serif text-3xl font-light tracking-tight md:text-4xl">{title}</h1>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-stone-400">{description}</p>
+        <OptionalCta props={props} fallbackPath="/articles" />
       </div>
     </section>
   );
@@ -728,6 +826,7 @@ export function PremiumCatalogArticlesFeaturedPost(props: PremiumCatalogProductS
   return (
     <section className="bg-[#0E0E0F] py-16 text-white">
       <div className="lp-container">
+        <OptionalIntro props={props} />
         <a href={href} className="group grid grid-cols-1 gap-8 overflow-hidden border border-white/5 lg:grid-cols-2">
           <div className="aspect-[16/10] overflow-hidden bg-[#09090A] lg:aspect-auto">
             <img src={image} alt={featured.title} className="h-full w-full object-cover opacity-90 transition duration-300 group-hover:scale-105" referrerPolicy="no-referrer" />
@@ -742,6 +841,7 @@ export function PremiumCatalogArticlesFeaturedPost(props: PremiumCatalogProductS
             </div>
           </div>
         </a>
+        <OptionalCta props={props} fallbackPath="/articles" />
       </div>
     </section>
   );
@@ -752,9 +852,13 @@ export function PremiumCatalogArticlesCategoryFilter(props: PremiumCatalogProduc
   if (!categories.length) return null;
   return (
     <section className="border-b border-white/5 bg-[#09090A] py-6">
-      <div className="lp-container flex flex-wrap justify-center gap-2">
-        <span className="bg-[#649FF6] px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white">Semua</span>
-        {categories.map((category) => (<span key={category.id} className="border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-stone-300">{category.name}</span>))}
+      <div className="lp-container">
+        <OptionalIntro props={props} center />
+        <div className="flex flex-wrap justify-center gap-2">
+          <span className="bg-[#649FF6] px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white">Semua</span>
+          {categories.map((category) => (<span key={category.id} className="border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-stone-300">{category.name}</span>))}
+        </div>
+        <OptionalCta props={props} fallbackPath="/articles" />
       </div>
     </section>
   );
@@ -765,6 +869,7 @@ export function PremiumCatalogArticlesGrid(props: PremiumCatalogProductSectionPr
   return (
     <section className="bg-[#0E0E0F] py-16 text-white">
       <div className="lp-container">
+        <OptionalIntro props={props} />
         {articles.length ? (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {articles.map((article) => {
@@ -791,6 +896,7 @@ export function PremiumCatalogArticlesGrid(props: PremiumCatalogProductSectionPr
         ) : (
           <EmptyBlock title="Artikel belum tersedia" description="Tambahkan artikel lewat menu Artikel di dashboard." />
         )}
+        <OptionalCta props={props} fallbackPath="/articles" />
       </div>
     </section>
   );
@@ -802,6 +908,7 @@ export function PremiumCatalogArticlesPagination(props: PremiumCatalogProductSec
   return (
     <div className="bg-[#0E0E0F] pb-16">
       <div className="lp-container">
+        <OptionalIntro props={props} />
         <PublicPagination siteSlug={props.siteSlug} basePath="/articles" pagination={pagination} />
       </div>
     </div>
@@ -813,18 +920,31 @@ export function PremiumCatalogArticlesPagination(props: PremiumCatalogProductSec
 // ---------------------------------------------------------------------------
 
 export function PremiumCatalogArticleDetailHeaderMeta(props: PremiumCatalogProductSectionProps) {
+  const content = contentOf(props.section);
   const article = props.section.data?.article as CrudItem | undefined;
   if (!article) return null;
   const date = formatArticleDate(article.publishedAt);
+  const badge = text(content.badge);
+  const subtitle = text(content.subtitle);
+  const backgroundImage = contentImage(content);
+
   return (
-    <section className="border-b border-white/5 bg-[#09090A] py-12 text-white">
-      <div className="lp-container max-w-3xl">
-        {article.category?.name && <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#649FF6]">{article.category.name}</p>}
+    <section className="relative overflow-hidden border-b border-white/5 bg-[#09090A] py-12 text-white">
+      {backgroundImage && (
+        <>
+          <img src={backgroundImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-15" referrerPolicy="no-referrer" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#09090A]/60 to-[#09090A]" />
+        </>
+      )}
+      <div className="relative lp-container max-w-3xl">
+        {badge ? <PremiumEyebrow label={badge} /> : article.category?.name && <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#649FF6]">{article.category.name}</p>}
         <h1 className="mt-3 font-serif text-3xl font-light tracking-tight md:text-4xl">{article.title}</h1>
+        {subtitle && <p className="mt-2 text-sm text-stone-400">{subtitle}</p>}
         <div className="mt-4 flex flex-wrap items-center gap-4 text-[10px] font-semibold uppercase tracking-wider text-stone-500">
           {date && <span>{date}</span>}
           <a href={`https://api.whatsapp.com/send?text=${encodeURIComponent(text(article.title))}`} target="_blank" rel="noopener noreferrer" className="text-[#649FF6] hover:underline">Bagikan</a>
         </div>
+        <OptionalCta props={props} fallbackPath="/articles" />
       </div>
     </section>
   );
@@ -839,8 +959,10 @@ export function PremiumCatalogArticleDetailMainContent(props: PremiumCatalogProd
     <section className="bg-[#0E0E0F] py-16 text-white">
       <div className="lp-container grid grid-cols-1 gap-12 lg:grid-cols-12">
         <div className="lg:col-span-8">
+          <OptionalIntro props={props} />
           {article.coverImageUrl && (<div className="mb-8 aspect-[16/9] overflow-hidden border border-white/5"><img src={article.coverImageUrl} alt={article.title} className="h-full w-full object-cover opacity-90" referrerPolicy="no-referrer" /></div>)}
           <RichHtml html={article.content} className="prose prose-invert max-w-none prose-headings:font-serif prose-headings:font-light prose-a:text-[#649FF6]" emptyFallback={<p className="text-sm text-stone-500">Isi artikel belum ditambahkan.</p>} />
+          <OptionalCta props={props} fallbackPath="/articles" />
         </div>
         <aside className="lg:col-span-4">
           <div className="border border-white/5 bg-[#121214]/60 p-6">
@@ -864,14 +986,19 @@ export function PremiumCatalogArticleDetailProductCta(props: PremiumCatalogProdu
   const products = ((props.section.data?.products || []) as ProductSummary[]).filter((product) => product.isFeatured).slice(0, 3);
   const list = products.length ? products : ((props.section.data?.products || []) as ProductSummary[]).slice(0, 3);
   if (!list.length) return null;
+  const badge = text(content.badge);
   const title = text(content.title, "Rekomendasi Produk Terkait Artikel Ini");
+  const subtitle = text(content.subtitle);
   return (
     <section className="bg-[#09090A] py-16 text-white">
       <div className="lp-container">
-        <h2 className="font-serif text-xl font-light">{title}</h2>
+        {badge && <PremiumEyebrow label={badge} />}
+        <h2 className="mt-3 font-serif text-xl font-light">{title}</h2>
+        {subtitle && <p className="mt-2 text-sm text-stone-400">{subtitle}</p>}
         <div className="mt-6 grid grid-cols-2 gap-5 sm:grid-cols-3">
           {list.map((product) => (<ProductCard key={product.id} siteSlug={props.siteSlug} payload={props.payload} product={product} />))}
         </div>
+        <OptionalCta props={props} fallbackPath="/products" />
       </div>
     </section>
   );
@@ -881,11 +1008,15 @@ export function PremiumCatalogArticleDetailRelatedArticles(props: PremiumCatalog
   const content = contentOf(props.section);
   const relatedArticles = (props.section.data?.relatedArticles || []) as CrudItem[];
   if (!relatedArticles.length) return null;
+  const badge = text(content.badge);
   const title = text(content.title, "Artikel Terkait");
+  const subtitle = text(content.subtitle);
   return (
     <section className="bg-[#0E0E0F] py-16 text-white">
       <div className="lp-container">
-        <h2 className="font-serif text-2xl font-light tracking-tight">{title}</h2>
+        {badge && <PremiumEyebrow label={badge} />}
+        <h2 className="mt-3 font-serif text-2xl font-light tracking-tight">{title}</h2>
+        {subtitle && <p className="mt-2 text-sm text-stone-400">{subtitle}</p>}
         <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
           {relatedArticles.slice(0, 3).map((related) => {
             const href = getArticleDetailHref(props.siteSlug, props.payload.navigation, related.slug);
@@ -898,16 +1029,19 @@ export function PremiumCatalogArticleDetailRelatedArticles(props: PremiumCatalog
             );
           })}
         </div>
+        <OptionalCta props={props} fallbackPath="/articles" />
       </div>
     </section>
   );
 }
 
-export function PremiumCatalogArticleDetailComments() {
+export function PremiumCatalogArticleDetailComments(props: PremiumCatalogProductSectionProps) {
   return (
     <section className="border-t border-white/5 bg-[#09090A] py-12 text-white">
       <div className="lp-container max-w-3xl">
+        <OptionalIntro props={props} />
         <PublicEmptyState title="Kolom komentar belum diaktifkan" description="Fitur komentar untuk artikel ini belum diaktifkan oleh pemilik website." />
+        <OptionalCta props={props} fallbackPath="/contact" />
       </div>
     </section>
   );
@@ -922,7 +1056,7 @@ export function PremiumCatalogContactInfoCards(props: PremiumCatalogProductSecti
   const business = businessOf(props.payload);
   const badge = text(content.badge, "HUBUNGI KAMI");
   const title = text(content.title, "Info Kontak & Studio");
-  const description = text(content.description, "Kunjungi atau hubungi kami lewat kanal berikut.");
+  const description = text(content.subtitle, "Kunjungi atau hubungi kami lewat kanal berikut.");
   const cards = [
     { label: "Alamat", value: text(business.address) },
     { label: "Telepon / WhatsApp", value: text(business.whatsapp, text(business.phone)) },
@@ -946,6 +1080,7 @@ export function PremiumCatalogContactInfoCards(props: PremiumCatalogProductSecti
         ) : (
           <EmptyBlock title="Info kontak belum dilengkapi" description="Lengkapi alamat, telepon, email, dan jam operasional lewat Profil Bisnis di dashboard." />
         )}
+        <OptionalCta props={props} fallbackPath="/contact" />
       </div>
     </section>
   );
@@ -955,7 +1090,7 @@ export function PremiumCatalogContactInquiryForm(props: PremiumCatalogProductSec
   const content = contentOf(props.section);
   const badge = text(content.badge, "REQUEST A QUOTE");
   const title = text(content.title, "Minta Penawaran Harga");
-  const description = text(content.description, "Isi formulir berikut, tim kami akan menghubungi Anda dengan penawaran terbaik.");
+  const description = text(content.subtitle, "Isi formulir berikut, tim kami akan menghubungi Anda dengan penawaran terbaik.");
 
   return (
     <section className="bg-[#0E0E0F] py-20 text-white">
@@ -964,6 +1099,7 @@ export function PremiumCatalogContactInquiryForm(props: PremiumCatalogProductSec
         <div className="mt-10 bg-white p-1 text-slate-950">
           <ContactForm siteSlug={props.siteSlug} pageKey={props.payload.page.pageKey} slotKey={props.section.slotKey} />
         </div>
+        <OptionalCta props={props} fallbackPath="/contact" />
       </div>
     </section>
   );
@@ -974,12 +1110,13 @@ export function PremiumCatalogContactMapsLocation(props: PremiumCatalogProductSe
   const business = businessOf(props.payload);
   const badge = text(content.badge, "LOKASI");
   const title = text(content.title, "Lokasi Studio Kami");
+  const subtitle = text(content.subtitle);
   const mapEmbedUrl = text(content.mapEmbedUrl, text(business.mapEmbedUrl));
 
   return (
     <section className="bg-[#09090A] py-20 text-white">
       <div className="lp-container">
-        <SectionHeading badge={badge} title={title} center />
+        <SectionHeading badge={badge} title={title} description={subtitle} center />
         <div className="mx-auto mt-8 aspect-[16/7] max-w-5xl overflow-hidden border border-white/5">
           {mapEmbedUrl ? (
             <iframe src={mapEmbedUrl} loading="lazy" referrerPolicy="no-referrer-when-downgrade" className="h-full w-full border-0" title="Lokasi" />
@@ -987,6 +1124,7 @@ export function PremiumCatalogContactMapsLocation(props: PremiumCatalogProductSe
             <div className="flex h-full items-center justify-center bg-[#121214]"><PublicEmptyState title="Peta belum ditautkan" description="Tambahkan link Google Maps embed lewat Profil Bisnis di dashboard." /></div>
           )}
         </div>
+        <OptionalCta props={props} fallbackPath="/contact" />
       </div>
     </section>
   );

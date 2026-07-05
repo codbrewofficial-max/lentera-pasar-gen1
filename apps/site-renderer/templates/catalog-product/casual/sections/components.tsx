@@ -92,6 +92,37 @@ function EmptyBlock({ title, description }: { title: string; description: string
   );
 }
 
+// Tombol CTA generik & opsional — HANYA render kalau owner benar-benar mengisi
+// content.ctaLabel di dashboard, supaya section utilitas tidak tiba-tiba muncul tombol
+// kosong secara default.
+function OptionalCta({ props, fallbackPath }: { props: CasualCatalogProductSectionProps; fallbackPath: string }) {
+  const content = contentOf(props.section);
+  const ctaLabel = text(content.ctaLabel);
+  if (!ctaLabel) return null;
+  const ctaHref = sectionHref(props, "cta", fallbackPath);
+  return (
+    <div className="mt-6">
+      <PrimaryButton href={ctaHref} label={ctaLabel} />
+    </div>
+  );
+}
+
+// Header ringkas & opsional — HANYA render kalau salah satu field diisi owner.
+function OptionalIntro({ props, center = false }: { props: CasualCatalogProductSectionProps; center?: boolean }) {
+  const content = contentOf(props.section);
+  const badge = text(content.badge);
+  const title = text(content.title);
+  const subtitle = text(content.subtitle);
+  if (!badge && !title && !subtitle) return null;
+  return (
+    <div className={center ? "mx-auto mb-8 max-w-2xl text-center" : "mb-8 max-w-2xl"}>
+      {badge && <CasualBadge label={badge} />}
+      {title && <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-gray-950">{title}</h2>}
+      {subtitle && <p className="mt-2 text-sm leading-7 text-gray-600">{subtitle}</p>}
+    </div>
+  );
+}
+
 function PrimaryButton({ href, label, className = "" }: { href: string; label: string; className?: string }) {
   return (
     <a href={href} className={`inline-flex items-center justify-center gap-2 rounded-full bg-[#F56B71] px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#F56B71]/20 transition-all hover:scale-[1.02] hover:bg-[#F56B71]/90 ${className}`}>
@@ -140,7 +171,7 @@ export function CasualCatalogHomeHero(props: CasualCatalogProductSectionProps) {
 
   const badge = pick(content.badge, business.tagline, "✨ Belanja Ceria & Terpercaya");
   const title = pick(content.title, activeBanner?.title, `Belanja Kebutuhan Kamu di ${pick(business.name, props.payload.website.name, "Toko Kami")}!`);
-  const description = pick(content.description, activeBanner?.subtitle, business.description, "Produk pilihan, kualitas terjamin, dan harga bersahabat buat kamu.");
+  const description = pick(content.subtitle, activeBanner?.subtitle, business.description, "Produk pilihan, kualitas terjamin, dan harga bersahabat buat kamu.");
   const ctaLabel = pick(content.ctaLabel, activeBanner?.ctaLabel, "Belanja Sekarang");
   const ctaHref = activeBanner?.ctaUrl ? getSiteHref(props.siteSlug, activeBanner.ctaUrl) : sectionHref(props, "cta", "/products");
   const image = contentImage(content, pick(activeBanner?.imageUrl, "https://picsum.photos/seed/casual-catalog-hero/800/600"));
@@ -187,7 +218,7 @@ export function CasualCatalogHomeCategoryShowcase(props: CasualCatalogProductSec
   const categories = (props.section.data?.productCategories || []) as CrudItem[];
   const badge = text(content.badge, "Jelajahi Kategori");
   const title = text(content.title, "Kategori Favorit");
-  const description = text(content.description, "Yuk temukan produk berdasarkan kategori kesukaanmu.");
+  const description = text(content.subtitle, "Yuk temukan produk berdasarkan kategori kesukaanmu.");
 
   return (
     <section className="lp-section bg-white">
@@ -211,6 +242,7 @@ export function CasualCatalogHomeCategoryShowcase(props: CasualCatalogProductSec
         ) : (
           <EmptyBlock title="Kategori produk belum ditambahkan" description="Kelola kategori produk lewat menu Kategori Produk di dashboard." />
         )}
+        <OptionalCta props={props} fallbackPath="/products" />
       </div>
     </section>
   );
@@ -223,7 +255,7 @@ export function CasualCatalogHomeFeaturedProducts(props: CasualCatalogProductSec
   const list = featured.length ? featured : products.slice(0, 8);
   const badge = text(content.badge, "Paling Laris");
   const title = text(content.title, "Produk Unggulan");
-  const description = text(content.description, "Favorit pelanggan yang paling sering dibeli.");
+  const description = text(content.subtitle, "Favorit pelanggan yang paling sering dibeli.");
 
   return (
     <section className="lp-section bg-gray-50">
@@ -231,7 +263,7 @@ export function CasualCatalogHomeFeaturedProducts(props: CasualCatalogProductSec
         <div className="flex flex-wrap items-end justify-between gap-6">
           <SectionHeading badge={badge} title={title} description={description} />
           <a href={sectionHref(props, "cta", "/products")} className="inline-flex items-center gap-2 text-sm font-bold text-[#649FF6] hover:underline">
-            Lihat Semua <ArrowRight className="h-4 w-4" />
+            {text(content.ctaLabel, "Lihat Semua")} <ArrowRight className="h-4 w-4" />
           </a>
         </div>
         {list.length ? (
@@ -255,7 +287,7 @@ export function CasualCatalogHomeNewArrivals(props: CasualCatalogProductSectionP
   const list = newArrivals.length ? newArrivals : products.slice(0, 8);
   const badge = text(content.badge, "Baru Datang");
   const title = text(content.title, "Produk Terbaru");
-  const description = text(content.description, "Koleksi segar yang baru saja kami tambahkan.");
+  const description = text(content.subtitle, "Koleksi segar yang baru saja kami tambahkan.");
 
   return (
     <section className="lp-section bg-white">
@@ -263,7 +295,7 @@ export function CasualCatalogHomeNewArrivals(props: CasualCatalogProductSectionP
         <div className="flex flex-wrap items-end justify-between gap-6">
           <SectionHeading badge={badge} title={title} description={description} />
           <a href={sectionHref(props, "cta", "/products")} className="inline-flex items-center gap-2 text-sm font-bold text-[#649FF6] hover:underline">
-            Lihat Semua <ArrowRight className="h-4 w-4" />
+            {text(content.ctaLabel, "Lihat Semua")} <ArrowRight className="h-4 w-4" />
           </a>
         </div>
         {list.length ? (
@@ -285,7 +317,7 @@ export function CasualCatalogHomeValueProposition(props: CasualCatalogProductSec
   const items = (props.section.data?.valuePropositions || []) as CrudItem[];
   const badge = text(content.badge, "Kenapa Pilih Kami");
   const title = text(content.title, "Belanja Makin Tenang");
-  const description = text(content.description, "");
+  const description = text(content.subtitle, "");
 
   return (
     <section className="lp-section bg-gradient-to-b from-[#649FF6]/10 via-white to-white">
@@ -311,6 +343,7 @@ export function CasualCatalogHomeValueProposition(props: CasualCatalogProductSec
             <PublicEmptyState title="Keunggulan belum diisi" description="Tambahkan Keunggulan/USP lewat dashboard, contoh: Garansi Resmi, Bisa COD, Pengiriman Cepat." />
           </div>
         )}
+        <OptionalCta props={props} fallbackPath="/products" />
       </div>
     </section>
   );
@@ -321,10 +354,10 @@ export function CasualCatalogHomeBrandTrust(props: CasualCatalogProductSectionPr
   const business = businessOf(props.payload);
   const badge = text(content.badge, "Dipercaya Banyak Orang");
   const title = text(content.title, `Kenapa Pelanggan Suka ${pick(business.name, props.payload.website.name, "Kami")}?`);
-  const description = pick(content.description, business.description, "Kami senang bisa bantu kebutuhan belanja kamu dengan produk berkualitas dan pelayanan ramah.");
-  const metrics = [1, 2, 3]
-    .map((n) => ({ label: text(content[metricKey(n, "Label")]), value: text(content[metricKey(n, "Value")]) }))
-    .filter((metric) => metric.label && metric.value);
+  const description = pick(content.subtitle, business.description, "Kami senang bisa bantu kebutuhan belanja kamu dengan produk berkualitas dan pelayanan ramah.");
+  const metrics = (Array.isArray(content.metrics) ? content.metrics : [])
+    .map((metric: any) => ({ label: text(metric?.label), value: text(metric?.value) }))
+    .filter((metric: { label: string; value: string }) => metric.label && metric.value);
   const image = contentImage(content, pick(business.aboutImage, "https://picsum.photos/seed/casual-catalog-trust/800/600"));
 
   return (
@@ -339,7 +372,7 @@ export function CasualCatalogHomeBrandTrust(props: CasualCatalogProductSectionPr
           <SectionHeading badge={badge} title={title} description={description} />
           {metrics.length > 0 && (
             <div className="mt-8 grid grid-cols-3 gap-4 border-t border-gray-100 pt-6">
-              {metrics.map((metric, index) => (
+              {metrics.map((metric: { label: string; value: string }, index: number) => (
                 <div key={index}>
                   <p className="text-2xl font-extrabold text-[#649FF6]">{metric.value}</p>
                   <p className="mt-1 text-xs font-bold uppercase tracking-wide text-gray-500">{metric.label}</p>
@@ -347,6 +380,7 @@ export function CasualCatalogHomeBrandTrust(props: CasualCatalogProductSectionPr
               ))}
             </div>
           )}
+          <OptionalCta props={props} fallbackPath="/products" />
         </div>
       </div>
     </section>
@@ -362,8 +396,9 @@ export function CasualCatalogProductsBreadcrumbs(props: CasualCatalogProductSect
   const categories = (props.section.data?.productCategories || []) as CrudItem[];
   const filters = props.section.data?.filters || {};
   const activeCategory = categories.find((category) => category.id === filters.categoryId);
+  const badge = text(content.badge);
   const title = filters.q ? `Hasil pencarian: "${filters.q}"` : text(content.title, activeCategory ? activeCategory.name : "Semua Produk");
-  const description = text(content.description, "Jelajahi seluruh katalog produk kami.");
+  const description = text(content.subtitle, "Jelajahi seluruh katalog produk kami.");
 
   return (
     <section className="border-b border-gray-100 bg-gray-50 py-8">
@@ -379,8 +414,10 @@ export function CasualCatalogProductsBreadcrumbs(props: CasualCatalogProductSect
             </>
           )}
         </nav>
+        {badge && <CasualBadge label={badge} />}
         <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-gray-950 md:text-3xl">{title}</h1>
         {description && <p className="mt-2 max-w-2xl text-sm text-gray-600">{description}</p>}
+        <OptionalCta props={props} fallbackPath="/products" />
       </div>
     </section>
   );
@@ -400,7 +437,9 @@ export function CasualCatalogProductsFilterSidebar(props: CasualCatalogProductSe
 
   return (
     <section className="border-b border-gray-100 bg-white py-6">
-      <div className="lp-container flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+      <div className="lp-container">
+        <OptionalIntro props={props} />
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex flex-wrap gap-2">
           <a href={productsPath} className={`rounded-full px-4 py-2 text-sm font-bold transition ${!filters.categoryId ? "bg-[#649FF6] text-white" : "border border-gray-200 text-gray-600 hover:border-gray-300"}`}>
             Semua Kategori
@@ -432,6 +471,8 @@ export function CasualCatalogProductsFilterSidebar(props: CasualCatalogProductSe
           </button>
         </form>
       </div>
+        <OptionalCta props={props} fallbackPath="/products" />
+      </div>
     </section>
   );
 }
@@ -442,6 +483,7 @@ export function CasualCatalogProductsGrid(props: CasualCatalogProductSectionProp
   return (
     <section className="lp-section bg-white !pt-10">
       <div className="lp-container">
+        <OptionalIntro props={props} />
         {products.length ? (
           <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
             {products.map((product) => (
@@ -451,6 +493,7 @@ export function CasualCatalogProductsGrid(props: CasualCatalogProductSectionProp
         ) : (
           <EmptyBlock title="Produk tidak ditemukan" description="Coba ubah filter kategori atau rentang harga, atau kelola produk lewat menu Produk di dashboard." />
         )}
+        <OptionalCta props={props} fallbackPath="/products" />
       </div>
     </section>
   );
@@ -463,6 +506,7 @@ export function CasualCatalogProductsPagination(props: CasualCatalogProductSecti
 
   return (
     <div className="lp-container pb-4">
+      <OptionalIntro props={props} />
       <PublicPagination
         siteSlug={props.siteSlug}
         basePath="/products"
@@ -497,6 +541,9 @@ export function CasualCatalogProductDetailCoreInfo(props: CasualCatalogProductSe
 
   return (
     <section className="lp-section bg-white">
+      <div className="lp-container">
+        <OptionalIntro props={props} />
+      </div>
       <div className="lp-container grid grid-cols-1 gap-12 lg:grid-cols-12">
         <div className="lg:col-span-6">
           <div className="aspect-square overflow-hidden rounded-[28px] border border-gray-100 bg-gray-50 shadow-sm">
@@ -554,6 +601,7 @@ export function CasualCatalogProductDetailCoreInfo(props: CasualCatalogProductSe
               ctaKey="primary"
             />
           </div>
+          <OptionalCta props={props} fallbackPath="/contact" />
         </div>
       </div>
     </section>
@@ -566,6 +614,9 @@ export function CasualCatalogProductDetailTabs(props: CasualCatalogProductSectio
 
   return (
     <section className="lp-section bg-gray-50">
+      <div className="lp-container">
+        <OptionalIntro props={props} />
+      </div>
       <div className="lp-container grid grid-cols-1 gap-10 lg:grid-cols-12">
         <div className="lg:col-span-8">
           <h2 className="text-xl font-extrabold text-gray-950">Deskripsi Produk</h2>
@@ -591,6 +642,7 @@ export function CasualCatalogProductDetailTabs(props: CasualCatalogProductSectio
               <dd className="font-bold text-gray-800">{product.isNewArrival ? "Produk Baru" : "Tersedia"}</dd>
             </div>
           </dl>
+          <OptionalCta props={props} fallbackPath="/products" />
         </div>
       </div>
     </section>
@@ -600,18 +652,23 @@ export function CasualCatalogProductDetailTabs(props: CasualCatalogProductSectio
 export function CasualCatalogProductDetailRecommendation(props: CasualCatalogProductSectionProps) {
   const content = contentOf(props.section);
   const related = (props.section.data?.relatedProducts || []) as ProductSummary[];
+  const badge = text(content.badge);
   const title = text(content.title, "Produk Terkait");
+  const subtitle = text(content.subtitle);
   if (!related.length) return null;
 
   return (
     <section className="lp-section bg-white">
       <div className="lp-container">
-        <h2 className="text-2xl font-extrabold tracking-tight text-gray-950">{title}</h2>
+        {badge && <CasualBadge label={badge} />}
+        <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-gray-950">{title}</h2>
+        {subtitle && <p className="mt-2 text-sm text-gray-600">{subtitle}</p>}
         <div className="mt-8 grid grid-cols-2 gap-5 sm:grid-cols-4">
           {related.map((product) => (
             <ProductCard key={product.id} siteSlug={props.siteSlug} payload={props.payload} product={product} />
           ))}
         </div>
+        <OptionalCta props={props} fallbackPath="/products" />
       </div>
     </section>
   );
@@ -621,14 +678,20 @@ export function CasualCatalogProductDetailReviews(props: CasualCatalogProductSec
   const content = contentOf(props.section);
   const product = props.section.data?.product;
   const reviews = (product?.reviews || []).filter((review) => review.isActive !== false);
+  const badge = text(content.badge);
   const title = text(content.title, "Ulasan Pelanggan");
+  const subtitle = text(content.subtitle);
   const averageRating = reviews.length ? reviews.reduce((sum, review) => sum + (review.rating || 0), 0) / reviews.length : 0;
 
   return (
     <section className="lp-section bg-gray-50">
       <div className="lp-container">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <h2 className="text-2xl font-extrabold tracking-tight text-gray-950">{title}</h2>
+        {badge && <CasualBadge label={badge} />}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-extrabold tracking-tight text-gray-950">{title}</h2>
+            {subtitle && <p className="mt-2 text-sm text-gray-600">{subtitle}</p>}
+          </div>
           {reviews.length > 0 && (
             <div className="flex items-center gap-2 text-sm font-bold text-gray-600">
               <span className="text-[#F56B71]">{"★".repeat(Math.round(averageRating))}{"☆".repeat(5 - Math.round(averageRating))}</span>
@@ -660,6 +723,7 @@ export function CasualCatalogProductDetailReviews(props: CasualCatalogProductSec
         ) : (
           <EmptyBlock title="Belum ada ulasan" description="Ulasan pelanggan untuk produk ini akan tampil di sini." />
         )}
+        <OptionalCta props={props} fallbackPath="/products" />
       </div>
     </section>
   );
@@ -670,13 +734,17 @@ export function CasualCatalogProductDetailFaq(props: CasualCatalogProductSection
   const allFaqs = (props.section.data?.faqs || []) as CrudItem[];
   const scoped = allFaqs.filter((faq) => faq.pageKey === "product_detail");
   const faqs = (scoped.length ? scoped : allFaqs).slice(0, 8);
+  const badge = text(content.badge);
   const title = text(content.title, "Pertanyaan Seputar Produk Ini");
+  const subtitle = text(content.subtitle);
   if (!faqs.length) return null;
 
   return (
     <section className="lp-section bg-white">
       <div className="lp-container max-w-3xl">
-        <h2 className="text-2xl font-extrabold tracking-tight text-gray-950">{title}</h2>
+        {badge && <CasualBadge label={badge} />}
+        <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-gray-950">{title}</h2>
+        {subtitle && <p className="mt-2 text-sm text-gray-600">{subtitle}</p>}
         <div className="mt-8 space-y-3">
           {faqs.map((faq) => (
             <details key={faq.id} className="group rounded-[24px] border border-gray-100 bg-gray-50 p-5">
@@ -688,6 +756,7 @@ export function CasualCatalogProductDetailFaq(props: CasualCatalogProductSection
             </details>
           ))}
         </div>
+        <OptionalCta props={props} fallbackPath="/contact" />
       </div>
     </section>
   );
@@ -701,11 +770,18 @@ export function CasualCatalogFaqHeroSearch(props: CasualCatalogProductSectionPro
   const content = contentOf(props.section);
   const badge = text(content.badge, "Pusat Bantuan");
   const title = text(content.title, "Ada yang Bisa Kami Bantu?");
-  const description = text(content.description, "Temukan jawaban cepat seputar cara pesan, pembayaran, dan pengiriman.");
+  const description = text(content.subtitle, "Temukan jawaban cepat seputar cara pesan, pembayaran, dan pengiriman.");
+  const backgroundImage = contentImage(content);
 
   return (
-    <section className="bg-gradient-to-b from-[#649FF6]/10 to-white py-16 md:py-20">
-      <div className="lp-container text-center">
+    <section className="relative overflow-hidden bg-gradient-to-b from-[#649FF6]/10 to-white py-16 md:py-20">
+      {backgroundImage && (
+        <>
+          <img src={backgroundImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-15" referrerPolicy="no-referrer" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-white" />
+        </>
+      )}
+      <div className="relative lp-container text-center">
         <CasualBadge label={badge} />
         <h1 className="mx-auto mt-4 max-w-2xl text-3xl font-extrabold tracking-tight text-gray-950 md:text-4xl">{title}</h1>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-gray-600">{description}</p>
@@ -713,6 +789,7 @@ export function CasualCatalogFaqHeroSearch(props: CasualCatalogProductSectionPro
           <Search className="ml-3 h-4 w-4 text-gray-400" />
           <input type="search" placeholder="Cari pertanyaan..." aria-label="Cari pertanyaan" className="w-full bg-transparent px-2 py-2 text-sm text-gray-700 focus:outline-none" />
         </div>
+        <OptionalCta props={props} fallbackPath="/contact" />
       </div>
     </section>
   );
@@ -723,12 +800,16 @@ export function CasualCatalogFaqAccordion(props: CasualCatalogProductSectionProp
   const allFaqs = (props.section.data?.faqs || []) as CrudItem[];
   const scoped = allFaqs.filter((faq) => faq.pageKey === "faq");
   const faqs = scoped.length ? scoped : allFaqs;
+  const badge = text(content.badge);
   const title = text(content.title, "Pertanyaan yang Sering Diajukan");
+  const subtitle = text(content.subtitle);
 
   return (
     <section className="lp-section bg-white">
       <div className="lp-container max-w-3xl">
-        <h2 className="text-2xl font-extrabold tracking-tight text-gray-950">{title}</h2>
+        {badge && <CasualBadge label={badge} />}
+        <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-gray-950">{title}</h2>
+        {subtitle && <p className="mt-2 text-sm text-gray-600">{subtitle}</p>}
         {faqs.length ? (
           <div className="mt-8 space-y-3">
             {faqs.map((faq) => (
@@ -744,6 +825,7 @@ export function CasualCatalogFaqAccordion(props: CasualCatalogProductSectionProp
         ) : (
           <EmptyBlock title="FAQ belum ditambahkan" description="Tambahkan pertanyaan & jawaban lewat menu FAQ di dashboard." />
         )}
+        <OptionalCta props={props} fallbackPath="/contact" />
       </div>
     </section>
   );
@@ -751,15 +833,24 @@ export function CasualCatalogFaqAccordion(props: CasualCatalogProductSectionProp
 
 export function CasualCatalogFaqContactCta(props: CasualCatalogProductSectionProps) {
   const content = contentOf(props.section);
+  const badge = text(content.badge);
   const title = text(content.title, "Masih Bingung?");
-  const description = text(content.description, "Tim kami siap bantu jawab pertanyaan kamu.");
+  const description = text(content.subtitle, "Tim kami siap bantu jawab pertanyaan kamu.");
   const ctaLabel = text(content.ctaLabel, "Chat via WhatsApp");
   const ctaHref = whatsappHref(props.payload) || sectionHref(props, "cta", "/contact");
+  const backgroundImage = contentImage(content);
 
   return (
-    <section className="border-t border-gray-100 bg-gray-50 py-16">
-      <div className="lp-container text-center">
-        <h2 className="text-2xl font-extrabold tracking-tight text-gray-950 md:text-3xl">{title}</h2>
+    <section className="relative overflow-hidden border-t border-gray-100 bg-gray-50 py-16">
+      {backgroundImage && (
+        <>
+          <img src={backgroundImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-10" referrerPolicy="no-referrer" />
+          <div className="absolute inset-0 bg-gradient-to-b from-gray-50/60 to-gray-50" />
+        </>
+      )}
+      <div className="relative lp-container text-center">
+        {badge && <CasualBadge label={badge} />}
+        <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-gray-950 md:text-3xl">{title}</h2>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-gray-600">{description}</p>
         <div className="mt-8 flex justify-center">
           <PrimaryButton href={ctaHref} label={ctaLabel} />
@@ -777,14 +868,22 @@ export function CasualCatalogArticlesBlogHero(props: CasualCatalogProductSection
   const content = contentOf(props.section);
   const badge = text(content.badge, "Jurnal & Tips");
   const title = text(content.title, "Jurnal & Tips Terbaru");
-  const description = text(content.description, "Kumpulan artikel seputar produk, tips, dan info terbaru dari kami.");
+  const description = text(content.subtitle, "Kumpulan artikel seputar produk, tips, dan info terbaru dari kami.");
+  const backgroundImage = contentImage(content);
 
   return (
-    <section className="bg-gradient-to-b from-[#649FF6]/10 to-white py-16 md:py-20">
-      <div className="lp-container text-center">
+    <section className="relative overflow-hidden bg-gradient-to-b from-[#649FF6]/10 to-white py-16 md:py-20">
+      {backgroundImage && (
+        <>
+          <img src={backgroundImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-15" referrerPolicy="no-referrer" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-white" />
+        </>
+      )}
+      <div className="relative lp-container text-center">
         <CasualBadge label={badge} />
         <h1 className="mx-auto mt-4 max-w-2xl text-3xl font-extrabold tracking-tight text-gray-950 md:text-4xl">{title}</h1>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-gray-600">{description}</p>
+        <OptionalCta props={props} fallbackPath="/articles" />
       </div>
     </section>
   );
@@ -802,6 +901,7 @@ export function CasualCatalogArticlesFeaturedPost(props: CasualCatalogProductSec
   return (
     <section className="lp-section bg-white">
       <div className="lp-container">
+        <OptionalIntro props={props} />
         <a href={href} className="group grid grid-cols-1 gap-8 overflow-hidden rounded-[32px] border border-gray-100 shadow-sm lg:grid-cols-2">
           <div className="aspect-[16/10] overflow-hidden bg-gray-50 lg:aspect-auto">
             <img src={image} alt={featured.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" referrerPolicy="no-referrer" />
@@ -816,6 +916,7 @@ export function CasualCatalogArticlesFeaturedPost(props: CasualCatalogProductSec
             </div>
           </div>
         </a>
+        <OptionalCta props={props} fallbackPath="/articles" />
       </div>
     </section>
   );
@@ -827,13 +928,17 @@ export function CasualCatalogArticlesCategoryFilter(props: CasualCatalogProductS
 
   return (
     <section className="border-b border-gray-100 bg-gray-50 py-6">
-      <div className="lp-container flex flex-wrap justify-center gap-2">
-        <span className="rounded-full bg-[#649FF6] px-4 py-2 text-sm font-bold text-white">Semua</span>
-        {categories.map((category) => (
-          <span key={category.id} className="rounded-full border border-gray-200 px-4 py-2 text-sm font-bold text-gray-600">
-            {category.name}
-          </span>
-        ))}
+      <div className="lp-container">
+        <OptionalIntro props={props} center />
+        <div className="flex flex-wrap justify-center gap-2">
+          <span className="rounded-full bg-[#649FF6] px-4 py-2 text-sm font-bold text-white">Semua</span>
+          {categories.map((category) => (
+            <span key={category.id} className="rounded-full border border-gray-200 px-4 py-2 text-sm font-bold text-gray-600">
+              {category.name}
+            </span>
+          ))}
+        </div>
+        <OptionalCta props={props} fallbackPath="/articles" />
       </div>
     </section>
   );
@@ -845,6 +950,7 @@ export function CasualCatalogArticlesGrid(props: CasualCatalogProductSectionProp
   return (
     <section className="lp-section bg-white">
       <div className="lp-container">
+        <OptionalIntro props={props} />
         {articles.length ? (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {articles.map((article) => {
@@ -871,6 +977,7 @@ export function CasualCatalogArticlesGrid(props: CasualCatalogProductSectionProp
         ) : (
           <EmptyBlock title="Artikel belum tersedia" description="Tambahkan artikel lewat menu Artikel di dashboard." />
         )}
+        <OptionalCta props={props} fallbackPath="/articles" />
       </div>
     </section>
   );
@@ -881,6 +988,7 @@ export function CasualCatalogArticlesPagination(props: CasualCatalogProductSecti
   if (!pagination || pagination.totalPages <= 1) return null;
   return (
     <div className="lp-container pb-16">
+      <OptionalIntro props={props} />
       <PublicPagination siteSlug={props.siteSlug} basePath="/articles" pagination={pagination} />
     </div>
   );
@@ -891,21 +999,33 @@ export function CasualCatalogArticlesPagination(props: CasualCatalogProductSecti
 // ---------------------------------------------------------------------------
 
 export function CasualCatalogArticleDetailHeaderMeta(props: CasualCatalogProductSectionProps) {
+  const content = contentOf(props.section);
   const article = props.section.data?.article as CrudItem | undefined;
   if (!article) return null;
   const date = formatArticleDate(article.publishedAt);
+  const badge = text(content.badge);
+  const subtitle = text(content.subtitle);
+  const backgroundImage = contentImage(content);
 
   return (
-    <section className="border-b border-gray-100 bg-gray-50 py-12">
-      <div className="lp-container max-w-3xl">
-        {article.category?.name && <p className="text-xs font-bold uppercase tracking-wide text-[#649FF6]">{article.category.name}</p>}
+    <section className="relative overflow-hidden border-b border-gray-100 bg-gray-50 py-12">
+      {backgroundImage && (
+        <>
+          <img src={backgroundImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-10" referrerPolicy="no-referrer" />
+          <div className="absolute inset-0 bg-gradient-to-b from-gray-50/60 to-gray-50" />
+        </>
+      )}
+      <div className="relative lp-container max-w-3xl">
+        {badge ? <CasualBadge label={badge} /> : article.category?.name && <p className="text-xs font-bold uppercase tracking-wide text-[#649FF6]">{article.category.name}</p>}
         <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-gray-950 md:text-4xl">{article.title}</h1>
+        {subtitle && <p className="mt-2 text-sm text-gray-600">{subtitle}</p>}
         <div className="mt-4 flex flex-wrap items-center gap-4 text-xs font-bold uppercase tracking-wide text-gray-400">
           {date && <span>{date}</span>}
           <a href={`https://api.whatsapp.com/send?text=${encodeURIComponent(text(article.title))}`} target="_blank" rel="noopener noreferrer" className="text-[#649FF6] hover:underline">
             Bagikan
           </a>
         </div>
+        <OptionalCta props={props} fallbackPath="/articles" />
       </div>
     </section>
   );
@@ -920,12 +1040,14 @@ export function CasualCatalogArticleDetailMainContent(props: CasualCatalogProduc
     <section className="lp-section bg-white">
       <div className="lp-container grid grid-cols-1 gap-12 lg:grid-cols-12">
         <div className="lg:col-span-8">
+          <OptionalIntro props={props} />
           {article.coverImageUrl && (
             <div className="mb-8 aspect-[16/9] overflow-hidden rounded-[28px] bg-gray-50">
               <img src={article.coverImageUrl} alt={article.title} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
             </div>
           )}
           <RichHtml html={article.content} className="prose prose-slate max-w-none prose-headings:font-extrabold prose-a:text-[#649FF6]" emptyFallback={<p className="text-sm text-gray-500">Isi artikel belum ditambahkan.</p>} />
+          <OptionalCta props={props} fallbackPath="/articles" />
         </div>
         <aside className="lg:col-span-4">
           <div className="rounded-[28px] border border-gray-100 bg-gray-50 p-6">
@@ -953,17 +1075,22 @@ export function CasualCatalogArticleDetailProductCta(props: CasualCatalogProduct
   const products = ((props.section.data?.products || []) as ProductSummary[]).filter((product) => product.isFeatured).slice(0, 3);
   const list = products.length ? products : ((props.section.data?.products || []) as ProductSummary[]).slice(0, 3);
   if (!list.length) return null;
+  const badge = text(content.badge);
   const title = text(content.title, "Rekomendasi Produk Terkait Artikel Ini");
+  const subtitle = text(content.subtitle);
 
   return (
     <section className="lp-section bg-gray-50">
       <div className="lp-container">
-        <h2 className="text-xl font-extrabold text-gray-950">{title}</h2>
+        {badge && <CasualBadge label={badge} />}
+        <h2 className="mt-3 text-xl font-extrabold text-gray-950">{title}</h2>
+        {subtitle && <p className="mt-2 text-sm text-gray-600">{subtitle}</p>}
         <div className="mt-6 grid grid-cols-2 gap-5 sm:grid-cols-3">
           {list.map((product) => (
             <ProductCard key={product.id} siteSlug={props.siteSlug} payload={props.payload} product={product} />
           ))}
         </div>
+        <OptionalCta props={props} fallbackPath="/products" />
       </div>
     </section>
   );
@@ -973,12 +1100,16 @@ export function CasualCatalogArticleDetailRelatedArticles(props: CasualCatalogPr
   const content = contentOf(props.section);
   const relatedArticles = (props.section.data?.relatedArticles || []) as CrudItem[];
   if (!relatedArticles.length) return null;
+  const badge = text(content.badge);
   const title = text(content.title, "Artikel Terkait");
+  const subtitle = text(content.subtitle);
 
   return (
     <section className="lp-section bg-white">
       <div className="lp-container">
-        <h2 className="text-2xl font-extrabold tracking-tight text-gray-950">{title}</h2>
+        {badge && <CasualBadge label={badge} />}
+        <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-gray-950">{title}</h2>
+        {subtitle && <p className="mt-2 text-sm text-gray-600">{subtitle}</p>}
         <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
           {relatedArticles.slice(0, 3).map((related) => {
             const href = getArticleDetailHref(props.siteSlug, props.payload.navigation, related.slug);
@@ -995,16 +1126,19 @@ export function CasualCatalogArticleDetailRelatedArticles(props: CasualCatalogPr
             );
           })}
         </div>
+        <OptionalCta props={props} fallbackPath="/articles" />
       </div>
     </section>
   );
 }
 
-export function CasualCatalogArticleDetailComments() {
+export function CasualCatalogArticleDetailComments(props: CasualCatalogProductSectionProps) {
   return (
     <section className="border-t border-gray-100 bg-gray-50 py-12">
       <div className="lp-container max-w-3xl">
+        <OptionalIntro props={props} />
         <PublicEmptyState title="Kolom komentar belum diaktifkan" description="Fitur komentar untuk artikel ini belum diaktifkan oleh pemilik website." />
+        <OptionalCta props={props} fallbackPath="/contact" />
       </div>
     </section>
   );
@@ -1019,7 +1153,7 @@ export function CasualCatalogContactInfoCards(props: CasualCatalogProductSection
   const business = businessOf(props.payload);
   const badge = text(content.badge, "Hubungi Kami");
   const title = text(content.title, "Info Kontak & Toko");
-  const description = text(content.description, "Kunjungi atau hubungi kami lewat kanal berikut.");
+  const description = text(content.subtitle, "Kunjungi atau hubungi kami lewat kanal berikut.");
 
   const cards = [
     { label: "Alamat", value: text(business.address) },
@@ -1044,6 +1178,7 @@ export function CasualCatalogContactInfoCards(props: CasualCatalogProductSection
         ) : (
           <EmptyBlock title="Info kontak belum dilengkapi" description="Lengkapi alamat, telepon, email, dan jam operasional lewat Profil Bisnis di dashboard." />
         )}
+        <OptionalCta props={props} fallbackPath="/contact" />
       </div>
     </section>
   );
@@ -1053,7 +1188,7 @@ export function CasualCatalogContactInquiryForm(props: CasualCatalogProductSecti
   const content = contentOf(props.section);
   const badge = text(content.badge, "Request a Quote");
   const title = text(content.title, "Minta Penawaran Harga");
-  const description = text(content.description, "Isi formulir berikut, tim kami akan menghubungi kamu dengan penawaran terbaik.");
+  const description = text(content.subtitle, "Isi formulir berikut, tim kami akan menghubungi kamu dengan penawaran terbaik.");
 
   return (
     <section className="lp-section bg-gray-50">
@@ -1062,6 +1197,7 @@ export function CasualCatalogContactInquiryForm(props: CasualCatalogProductSecti
         <div className="mt-10">
           <ContactForm siteSlug={props.siteSlug} pageKey={props.payload.page.pageKey} slotKey={props.section.slotKey} />
         </div>
+        <OptionalCta props={props} fallbackPath="/contact" />
       </div>
     </section>
   );
@@ -1072,12 +1208,13 @@ export function CasualCatalogContactMapsLocation(props: CasualCatalogProductSect
   const business = businessOf(props.payload);
   const badge = text(content.badge, "Lokasi");
   const title = text(content.title, "Lokasi Toko Kami");
+  const subtitle = text(content.subtitle);
   const mapEmbedUrl = text(content.mapEmbedUrl, text(business.mapEmbedUrl));
 
   return (
     <section className="lp-section bg-white">
       <div className="lp-container">
-        <SectionHeading badge={badge} title={title} center />
+        <SectionHeading badge={badge} title={title} description={subtitle} center />
         <div className="mx-auto mt-8 aspect-[16/7] max-w-5xl overflow-hidden rounded-[28px] border border-gray-100 bg-gray-50">
           {mapEmbedUrl ? (
             <iframe src={mapEmbedUrl} loading="lazy" referrerPolicy="no-referrer-when-downgrade" className="h-full w-full border-0" title="Lokasi" />
@@ -1087,6 +1224,7 @@ export function CasualCatalogContactMapsLocation(props: CasualCatalogProductSect
             </div>
           )}
         </div>
+        <OptionalCta props={props} fallbackPath="/contact" />
       </div>
     </section>
   );
