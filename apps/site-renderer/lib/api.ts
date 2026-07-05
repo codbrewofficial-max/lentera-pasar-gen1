@@ -1,4 +1,4 @@
-import type { ApiResponse, ArticleDetailPayload, ArticleSummary, PortfolioDetailPayload, PortfolioSummary, PublicPagePayload, RedirectPayload } from './types';
+import type { ApiResponse, ArticleDetailPayload, ArticleSummary, PortfolioDetailPayload, PortfolioSummary, ProductDetailPayload, ProductSummary, PublicPagePayload, RedirectPayload } from './types';
 
 export type PaginationMeta = { page: number; pageSize: number; total: number; totalPages: number };
 export type PaginatedResult<T> = { items: T[]; pagination: PaginationMeta };
@@ -99,6 +99,27 @@ export function getPublicArticleDetail(siteSlug: string, articleSlug: string) {
 
 export function getPublicPortfolioDetail(siteSlug: string, portfolioId: string) {
   return apiGet<PortfolioDetailPayload>(`/public/sites/${siteSlug}/portfolios/${portfolioId}`);
+}
+
+// Product Grid di halaman "products" (Katalog Produk) — dipaginasi + bisa difilter
+// kategori/rentang harga dan diurutkan. Dipakai oleh halaman generic [pageSlug]/page.tsx
+// khusus untuk pageKey "products", niru pola getPublicPortfolios di atas.
+export function getPublicProducts(
+  siteSlug: string,
+  options: { page?: number; pageSize?: number; categoryId?: string; minPrice?: number; maxPrice?: number; sort?: string; q?: string } = {}
+) {
+  const { page = 1, pageSize = 12, categoryId, minPrice, maxPrice, sort, q } = options;
+  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+  if (categoryId) params.set('categoryId', categoryId);
+  if (Number.isFinite(minPrice)) params.set('minPrice', String(minPrice));
+  if (Number.isFinite(maxPrice)) params.set('maxPrice', String(maxPrice));
+  if (sort) params.set('sort', sort);
+  if (q) params.set('q', q);
+  return apiGetPaginated<ProductSummary>(`/public/sites/${siteSlug}/products?${params.toString()}`);
+}
+
+export function getPublicProductDetail(siteSlug: string, productSlug: string) {
+  return apiGet<ProductDetailPayload>(`/public/sites/${siteSlug}/products/${productSlug}`);
 }
 
 export function submitContact(siteSlug: string, payload: Record<string, any>) {

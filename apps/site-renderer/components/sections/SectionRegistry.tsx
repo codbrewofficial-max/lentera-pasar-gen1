@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { ArticleDetailPayload, CrudItem, PortfolioDetailPayload, PortfolioSummary, PublicPagePayload, PublicSection } from '@/lib/types';
+import type { ArticleDetailPayload, CrudItem, PortfolioDetailPayload, PortfolioSummary, ProductDetailPayload, PublicPagePayload, PublicSection } from '@/lib/types';
 import { resolveTargetHref, getSiteHref, getArticleDetailHref, getPortfolioDetailHref } from "@/lib/links";
 import { RichHtml, stripHtmlToText } from '@/components/content/RichHtml';
 import { CtaLink } from '@/components/tracking/CtaLink';
@@ -10,6 +10,11 @@ import { formalSectionComponents } from '@/templates/company-profile/formal/sect
 import { casualSectionComponents } from '@/templates/company-profile/casual/sections';
 import { premiumSectionComponents } from '@/templates/company-profile/premium/sections';
 import { abstractSectionComponents } from '@/templates/company-profile/abstract/sections';
+import { getCatalogProductTemplateDebugLabel, resolveCatalogProductSectionComponentName } from '@/templates/catalog-product/registry';
+import { formalCatalogProductSectionComponents } from '@/templates/catalog-product/formal/sections';
+import { casualCatalogProductSectionComponents } from '@/templates/catalog-product/casual/sections';
+import { premiumCatalogProductSectionComponents } from '@/templates/catalog-product/premium/sections';
+import { abstractCatalogProductSectionComponents } from '@/templates/catalog-product/abstract/sections';
 
 type SectionProps = { siteSlug: string; payload: PublicPagePayload; section: PublicSection };
 type SectionComponent = (props: SectionProps) => ReactNode;
@@ -164,17 +169,30 @@ function CtaButtons({ siteSlug, payload, section, secondary = true }: SectionPro
   );
 }
 
-function EmptySection({ section }: { section: PublicSection }) {
+function EmptySection({ section, websiteType }: { section: PublicSection; websiteType?: string }) {
+  const debugLabel = websiteType === 'catalog_product'
+    ? getCatalogProductTemplateDebugLabel(section)
+    : getCompanyProfileTemplateDebugLabel(section);
   return (
     <section className="lp-section">
       <div className="lp-container">
         <PublicEmptyState
           title="Template section belum tersedia"
-          description={`Component "${section.component || section.slotKey}" belum ada di registry renderer untuk ${getCompanyProfileTemplateDebugLabel(section)}. Section tetap aman ditampilkan sebagai fallback agar halaman tidak blank.`}
+          description={`Component "${section.component || section.slotKey}" belum ada di registry renderer untuk ${debugLabel}. Section tetap aman ditampilkan sebagai fallback agar halaman tidak blank.`}
         />
       </div>
     </section>
   );
+}
+
+// Resolve nama komponen section secara generik lintas Website Type. company_profile tetap
+// pakai resolver lama (banyak dipakai & sudah battle-tested), catalog_product pakai registry
+// barunya sendiri di @/templates/catalog-product/registry.
+function resolveSectionComponentName(section: PublicSection, websiteType?: string) {
+  if (websiteType === 'catalog_product') {
+    return resolveCatalogProductSectionComponentName(section);
+  }
+  return resolveCompanyProfileSectionComponentName(section);
 }
 
 function PreviewCards({
@@ -969,7 +987,11 @@ const registry: Record<string, SectionComponent> = {
   ...casualSectionComponents,
   ...premiumSectionComponents,
   ...abstractSectionComponents,
-  ...companyProfileCleanComponents
+  ...companyProfileCleanComponents,
+  ...(formalCatalogProductSectionComponents as unknown as Record<string, SectionComponent>),
+  ...(casualCatalogProductSectionComponents as unknown as Record<string, SectionComponent>),
+  ...(premiumCatalogProductSectionComponents as unknown as Record<string, SectionComponent>),
+  ...(abstractCatalogProductSectionComponents as unknown as Record<string, SectionComponent>)
 };
 
 /** Resolve a component by name for preview rendering. Returns null if not found. */
@@ -993,15 +1015,17 @@ export function RenderSections({ siteSlug, payload }: { siteSlug: string; payloa
     );
   }
 
+  const websiteType = payload.website?.websiteType;
+
   return (
     <>
       {sections.map((section) => {
-        const componentName = resolveCompanyProfileSectionComponentName(section);
+        const componentName = resolveSectionComponentName(section, websiteType);
         const Component = componentName ? registry[componentName] : null;
         return Component ? (
           <Component key={section.id || section.slotKey} siteSlug={siteSlug} payload={payload} section={section} />
         ) : (
-          <EmptySection key={section.id || section.slotKey} section={section} />
+          <EmptySection key={section.id || section.slotKey} section={section} websiteType={websiteType} />
         );
       })}
     </>
@@ -1174,5 +1198,53 @@ export function RenderPortfolioDetail({ siteSlug, detail }: { siteSlug: string; 
       <RelatedPortfoliosSection siteSlug={siteSlug} payload={payload} section={relatedSection} />
       <PortfolioDetailCtaSection siteSlug={siteSlug} payload={payload} section={ctaSection} />
     </>
+  );
+}
+
+// Renderer untuk halaman Product Detail (Katalog Produk), sama polanya dengan
+// RenderPortfolioDetail di atas. Dipakai oleh
+// apps/site-renderer/app/[siteSlug]/products/[productSlug]/page.tsx. Berbeda dengan
+// portfolio/article, catalog_product BELUM punya tema visual sendiri (komponen dibangun
+// bertahap per round), jadi kalau assignedSections kosong ATAU componentName-nya belum
+// terdaftar di registry, section otomatis jatuh ke EmptySection lewat RenderSections —
+// tidak ada fallback hardcoded seperti heroSection/contentSection di RenderPortfolioDetail,
+// supaya begitu komponen Formal dipasang ke TemplateSection lewat dashboard, halaman ini
+// langsung ikut terupdate tanpa perlu sentuh kode renderer lagi.
+export function RenderProductDetail({ siteSlug, detail }: { siteSlug: string; detail: ProductDetailPayload }) {
+  const assignedSections = (detail.productDetailSections || []).map((section) => ({
+    ...section,
+    data: {
+      ...(section.data || {}),
+      product: detail.product,
+      relatedProducts: detail.relatedProducts
+    }
+  }));
+
+  const payload: PublicPagePayload = {
+    website: detail.website,
+    seo: detail.seo,
+    businessProfile: detail.businessProfile,
+    navigation: detail.navigation,
+    page: {
+      pageKey: 'product_detail',
+      title: detail.product.title,
+      slug: detail.product.slug,
+      sections: assignedSections
+    }
+  };
+
+  if (assignedSections.length) {
+    return <RenderSections siteSlug={siteSlug} payload={payload} />;
+  }
+
+  return (
+    <section className="lp-section">
+      <div className="lp-container">
+        <PublicEmptyState
+          title="Template halaman produk belum dipilih"
+          description="Pilih template section untuk halaman Product Detail dari dashboard agar halaman ini tampil lengkap."
+        />
+      </div>
+    </section>
   );
 }

@@ -1,4 +1,4 @@
-import type { ArticleDetailPayload, PortfolioDetailPayload, PublicPagePayload } from './types';
+import type { ArticleDetailPayload, PortfolioDetailPayload, ProductDetailPayload, PublicPagePayload } from './types';
 
 const DEFAULT_DESCRIPTION =
   'Website company profile yang menampilkan profil, layanan, portofolio, artikel, dan kontak bisnis.';
@@ -51,6 +51,20 @@ export function getPortfolioSeoDescription(detail: PortfolioDetailPayload) {
   return (
     compact(detail.seo?.description) ||
     compact(detail.portfolio.description) ||
+    compact(detail.businessProfile?.tagline) ||
+    DEFAULT_DESCRIPTION
+  );
+}
+
+export function getProductSeoTitle(detail: ProductDetailPayload) {
+  return compact(detail.seo?.title) || compact(detail.product.title) || 'Produk';
+}
+
+export function getProductSeoDescription(detail: ProductDetailPayload) {
+  return (
+    compact(detail.seo?.description) ||
+    compact(detail.product.shortDescription) ||
+    compact(detail.product.description) ||
     compact(detail.businessProfile?.tagline) ||
     DEFAULT_DESCRIPTION
   );

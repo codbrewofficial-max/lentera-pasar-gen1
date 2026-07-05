@@ -49,18 +49,26 @@ export default async function ArticlesPage({ params, searchParams }: Props) {
       ...pagePayload.page,
       sections: pagePayload.page.sections.map((section) => ({
         ...section,
-        data: { ...section.data, articles }
+        data: { ...section.data, articles, pagination }
       }))
     }
   };
+
+  // Katalog Produk punya slot "articles.article_pagination" sendiri yang render
+  // paginasinya inline lewat data.pagination di atas — beda dengan Company Profile yang
+  // belum punya slot pagination khusus dan masih pakai <PublicPagination> generik di luar
+  // RenderSections. Kalau dua-duanya dirender bareng, paginasinya jadi dobel.
+  const isCatalogProduct = payload.website.websiteType === 'catalog_product';
 
   return (
     <SiteShell siteSlug={siteSlug} payload={payload}>
       <PageTracking payload={payload} />
       <RenderSections siteSlug={siteSlug} payload={payload} />
-      <div className="lp-container pb-16">
-        <PublicPagination siteSlug={siteSlug} basePath="/articles" pagination={pagination} />
-      </div>
+      {!isCatalogProduct && (
+        <div className="lp-container pb-16">
+          <PublicPagination siteSlug={siteSlug} basePath="/articles" pagination={pagination} />
+        </div>
+      )}
     </SiteShell>
   );
 }

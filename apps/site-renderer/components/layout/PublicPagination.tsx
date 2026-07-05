@@ -12,17 +12,24 @@ import type { PaginationMeta } from '@/lib/api';
 export function PublicPagination({
   siteSlug,
   basePath,
-  pagination
+  pagination,
+  extraQuery
 }: {
   siteSlug: string;
   basePath: string;
   pagination: PaginationMeta;
+  extraQuery?: Record<string, string | undefined>;
 }) {
   const { page, totalPages } = pagination;
   if (totalPages <= 1) return null;
 
   const hrefForPage = (targetPage: number) => {
-    const suffix = targetPage > 1 ? `?page=${targetPage}` : '';
+    const params = new URLSearchParams();
+    Object.entries(extraQuery || {}).forEach(([key, value]) => {
+      if (value) params.set(key, value);
+    });
+    if (targetPage > 1) params.set('page', String(targetPage));
+    const suffix = params.toString() ? `?${params.toString()}` : '';
     return `${getSiteHref(siteSlug, basePath)}${suffix}`;
   };
 
