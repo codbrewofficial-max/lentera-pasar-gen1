@@ -30,8 +30,7 @@ import {
   ChevronDown,
   ShoppingBag,
   Sparkles,
-  LayoutTemplate,
-  Archive
+  LayoutTemplate
 } from "lucide-react";
 import BrandMark from "@/components/brand/BrandMark";
 import BrandSignature from "@/components/brand/BrandSignature";
@@ -543,13 +542,6 @@ export default function DashboardLayout({
                 icon: Globe,
                 href: "/internal/websites",
                 active: pathname === "/internal/websites"
-              },
-              {
-                label: "Backup & Restore",
-                description: "Unduh backup atau pulihkan data per website.",
-                icon: Archive,
-                href: "/internal/backup-restore",
-                active: pathname === "/internal/backup-restore"
               },
               {
                 label: "Template Section",

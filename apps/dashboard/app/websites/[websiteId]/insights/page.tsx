@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { apiCall } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
 import { 
@@ -12,7 +12,9 @@ import {
   Share2, 
   HelpCircle,
   FileText,
-  BarChart3
+  BarChart3,
+  Lock,
+  Mail
 } from "lucide-react";
 
 interface InsightCard {
@@ -67,8 +69,12 @@ interface TrafficStat {
 }
 
 export default function InsightsPage() {
+  const router = useRouter();
   const params = useParams();
   const websiteId = params?.websiteId as string;
+
+  const [checkingAccess, setCheckingAccess] = useState(true);
+  const [selfServiceOpen, setSelfServiceOpen] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
@@ -120,6 +126,21 @@ export default function InsightsPage() {
   };
 
   useEffect(() => {
+    const checkAccess = async () => {
+      try {
+        const res = await apiCall<{ enabled: boolean }>("GET", "settings/public-activation");
+        setSelfServiceOpen(!!res.data?.enabled);
+      } catch (err) {
+        console.error("Check public activation error:", err);
+        setSelfServiceOpen(false);
+      } finally {
+        setCheckingAccess(false);
+      }
+    };
+    checkAccess();
+  }, []);
+
+  useEffect(() => {
     if (websiteId) {
       Promise.resolve().then(() => {
         fetchAllInsights();
@@ -156,193 +177,223 @@ export default function InsightsPage() {
       showBackButton={true}
       backUrl={`/websites/${websiteId}/overview`}
     >
-      <div className="space-y-6" id="insights-container">
+      {!selfServiceOpen ? (
+        <div className="bg-white rounded-3xl border border-slate-200 p-8 md:p-10 max-w-2xl mx-auto text-center space-y-5">
+          <div className="h-14 w-14 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mx-auto">
+            <Lock className="h-7 w-7" /> 
+          </div>
+          
+          <div>
+            <h3 className="text-lg font-bold text-slate-800">Akses Halaman Insight Dibatasi</h3>
+            <p className="text-sm text-slate-500 mt-2 leading-relaxed">
+              Fitur analitik untuk memantau aktivitas pengunjung dan performa konten saat ini terkunci. Anda membutuhkan persetujuan dari Owner Platform untuk mengakses halaman ini.
+            </p>
+          </div>
+          
+          <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-500 flex items-start gap-3 text-left">
+            <Mail className="h-4 w-4 shrink-0 mt-0.5" />
+            <span>
+              Jika Anda membutuhkan akses ke data statistik dan laporan insight website ini, silakan hubungi Owner Platform agar izin akses dapat segera dibuka.
+            </span>
+          </div>
+          
+          <button
+            onClick={() => router.push("/websites")}
+            className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition"
+          >
+            Kembali ke Website Saya
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-6" id="insights-container">
         
-        {errorMsg && (
-          <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-start space-x-3 text-rose-800 text-sm">
-            <AlertCircle className="h-5 w-5 shrink-0 text-rose-600 mt-0.5" />
-            <span>{errorMsg}</span>
-          </div>
-        )}
-
-        {/* Metric Cards Grid */}
-        {summary && summary.cards && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="metric-cards">
-            {summary.cards.map((card) => (
-              <div 
-                key={card.key} 
-                className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between"
-              >
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{card.label}</span>
-                <div className="my-2.5">
-                  <span className="text-2xl font-black text-slate-900 tracking-tight font-mono">
-                    {card.value.toLocaleString()}
-                  </span>
-                </div>
-                {card.helpText && (
-                  <div className="text-[11px] text-slate-500 italic mt-1 leading-normal flex items-start gap-1">
-                    <BarChart3 className="h-3.5 w-3.5 shrink-0 mt-0.5 text-slate-400" />
-                    <span>{card.helpText}</span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Smart Highlights */}
-        {highlightList.length > 0 && (
-          <div className="bg-emerald-950 text-white rounded-3xl p-6 md:p-8 shadow-sm space-y-4" id="ai-insights-box">
-            <div className="flex items-center space-x-2 text-emerald-300">
-              <Sparkles className="h-5 w-5" />
-              <span className="font-bold text-xs uppercase tracking-wide">Temuan & Rekomendasi Pintar</span>
+          {errorMsg && (
+            <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-start space-x-3 text-rose-800 text-sm">
+              <AlertCircle className="h-5 w-5 shrink-0 text-rose-600 mt-0.5" />
+              <span>{errorMsg}</span>
             </div>
-            
-            <div className="space-y-3.5">
-              {highlightList.map((h, hIdx) => (
-                <div key={hIdx} className="flex items-start space-x-3 text-xs leading-relaxed text-emerald-100">
-                  <span className="h-5 w-5 rounded-lg bg-emerald-800 text-emerald-300 font-bold font-mono flex items-center justify-center shrink-0 mt-0.5 text-[10px]">
-                    {hIdx + 1}
-                  </span>
-                  <span>
-                    <strong>{h.label}</strong>: {h.value || "N/A"} <span className="text-emerald-300">({h.total.toLocaleString()} interaksi)</span>
-                  </span>
+          )}
+
+          {/* Metric Cards Grid */}
+          {summary && summary.cards && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="metric-cards">
+              {summary.cards.map((card) => (
+                <div 
+                  key={card.key} 
+                  className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between"
+                >
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{card.label}</span>
+                  <div className="my-2.5">
+                    <span className="text-2xl font-black text-slate-900 tracking-tight font-mono">
+                      {card.value.toLocaleString()}
+                    </span>
+                  </div>
+                  {card.helpText && (
+                    <div className="text-[11px] text-slate-500 italic mt-1 leading-normal flex items-start gap-1">
+                      <BarChart3 className="h-3.5 w-3.5 shrink-0 mt-0.5 text-slate-400" />
+                      <span>{card.helpText}</span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Split Grid for charts lists */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6" id="insights-analytics-lists">
-          
-          {/* 1. Halaman Terpopuler */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
-            <div className="flex items-center space-x-2 text-slate-800 border-b border-slate-100 pb-3">
-              <FileText className="h-5 w-5 text-emerald-600" />
-              <h3 className="font-bold text-sm uppercase tracking-wide">Halaman Terpopuler</h3>
+          {/* Smart Highlights */}
+          {highlightList.length > 0 && (
+            <div className="bg-emerald-950 text-white rounded-3xl p-6 md:p-8 shadow-sm space-y-4" id="ai-insights-box">
+              <div className="flex items-center space-x-2 text-emerald-300">
+                <Sparkles className="h-5 w-5" />
+                <span className="font-bold text-xs uppercase tracking-wide">Temuan & Rekomendasi Pintar</span>
+              </div>
+              
+              <div className="space-y-3.5">
+                {highlightList.map((h, hIdx) => (
+                  <div key={hIdx} className="flex items-start space-x-3 text-xs leading-relaxed text-emerald-100">
+                    <span className="h-5 w-5 rounded-lg bg-emerald-800 text-emerald-300 font-bold font-mono flex items-center justify-center shrink-0 mt-0.5 text-[10px]">
+                      {hIdx + 1}
+                    </span>
+                    <span>
+                      <strong>{h.label}</strong>: {h.value || "N/A"} <span className="text-emerald-300">({h.total.toLocaleString()} interaksi)</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Split Grid for charts lists */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6" id="insights-analytics-lists">
+            
+            {/* 1. Halaman Terpopuler */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
+              <div className="flex items-center space-x-2 text-slate-800 border-b border-slate-100 pb-3">
+                <FileText className="h-5 w-5 text-emerald-600" />
+                <h3 className="font-bold text-sm uppercase tracking-wide">Halaman Terpopuler</h3>
+              </div>
+
+              {topPages.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center py-6">Data halaman belum terekam.</p>
+              ) : (
+                <div className="space-y-4">
+                  {topPages.map((p, idx) => {
+                    const pct = maxViews > 0 ? (p.total / maxViews) * 100 : 0;
+                    return (
+                      <div key={idx} className="space-y-1 text-xs">
+                        <div className="flex justify-between font-semibold">
+                          <span className="text-slate-800">{p.pageLabel} <span className="text-[10px] text-slate-400 font-mono">({p.pageSlug})</span></span>
+                          <span className="text-slate-900 font-mono">{p.total.toLocaleString()} views</span>
+                        </div>
+                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                          <div className="bg-emerald-600 h-full rounded-full" style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
-            {topPages.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-6">Data halaman belum terekam.</p>
-            ) : (
-              <div className="space-y-4">
-                {topPages.map((p, idx) => {
-                  const pct = maxViews > 0 ? (p.total / maxViews) * 100 : 0;
-                  return (
-                    <div key={idx} className="space-y-1 text-xs">
-                      <div className="flex justify-between font-semibold">
-                        <span className="text-slate-800">{p.pageLabel} <span className="text-[10px] text-slate-400 font-mono">({p.pageSlug})</span></span>
-                        <span className="text-slate-900 font-mono">{p.total.toLocaleString()} views</span>
-                      </div>
-                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                        <div className="bg-emerald-600 h-full rounded-full" style={{ width: `${pct}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
+            {/* 2. Sumber Trafik */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
+              <div className="flex items-center space-x-2 text-slate-800 border-b border-slate-100 pb-3">
+                <Share2 className="h-5 w-5 text-emerald-600" />
+                <h3 className="font-bold text-sm uppercase tracking-wide">Sumber Trafik Terbesar</h3>
               </div>
-            )}
-          </div>
 
-          {/* 2. Sumber Trafik */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
-            <div className="flex items-center space-x-2 text-slate-800 border-b border-slate-100 pb-3">
-              <Share2 className="h-5 w-5 text-emerald-600" />
-              <h3 className="font-bold text-sm uppercase tracking-wide">Sumber Trafik Terbesar</h3>
+              {trafficSources.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center py-6">Data sumber trafik belum terekam.</p>
+              ) : (
+                <div className="space-y-4">
+                  {trafficSources.map((t, idx) => {
+                    const pct = maxReferrals > 0 ? (t.total / maxReferrals) * 100 : 0;
+                    return (
+                      <div key={idx} className="space-y-1 text-xs">
+                        <div className="flex justify-between font-semibold">
+                          <span className="text-slate-800">{t.label || t.source}</span>
+                          <span className="text-slate-900 font-mono">{t.total.toLocaleString()} rujukan</span>
+                        </div>
+                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                          <div className="bg-indigo-600 h-full rounded-full" style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
-            {trafficSources.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-6">Data sumber trafik belum terekam.</p>
-            ) : (
-              <div className="space-y-4">
-                {trafficSources.map((t, idx) => {
-                  const pct = maxReferrals > 0 ? (t.total / maxReferrals) * 100 : 0;
-                  return (
-                    <div key={idx} className="space-y-1 text-xs">
-                      <div className="flex justify-between font-semibold">
-                        <span className="text-slate-800">{t.label || t.source}</span>
-                        <span className="text-slate-900 font-mono">{t.total.toLocaleString()} rujukan</span>
-                      </div>
-                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                        <div className="bg-indigo-600 h-full rounded-full" style={{ width: `${pct}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
+            {/* 3. Bagian Paling Menarik */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
+              <div className="flex items-center space-x-2 text-slate-800 border-b border-slate-100 pb-3">
+                <Layers className="h-5 w-5 text-emerald-600" />
+                <h3 className="font-bold text-sm uppercase tracking-wide">Bagian (Section) Terpopuler</h3>
               </div>
-            )}
-          </div>
 
-          {/* 3. Bagian Paling Menarik */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
-            <div className="flex items-center space-x-2 text-slate-800 border-b border-slate-100 pb-3">
-              <Layers className="h-5 w-5 text-emerald-600" />
-              <h3 className="font-bold text-sm uppercase tracking-wide">Bagian (Section) Terpopuler</h3>
+              {topSections.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center py-6">Data interaksi bagian belum terekam.</p>
+              ) : (
+                <div className="space-y-4">
+                  {topSections.map((s, idx) => {
+                    const pct = maxSectionClicks > 0 ? (s.total / maxSectionClicks) * 100 : 0;
+                    return (
+                      <div key={idx} className="space-y-1 text-xs">
+                        <div className="flex justify-between font-semibold">
+                          <span className="text-slate-800">{s.slotLabel} <span className="text-[10px] text-slate-400 font-mono">({s.sectionName})</span></span>
+                          <span className="text-slate-900 font-mono">{s.total.toLocaleString()} interaksi</span>
+                        </div>
+                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                          <div className="bg-sky-600 h-full rounded-full" style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
-            {topSections.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-6">Data interaksi bagian belum terekam.</p>
-            ) : (
-              <div className="space-y-4">
-                {topSections.map((s, idx) => {
-                  const pct = maxSectionClicks > 0 ? (s.total / maxSectionClicks) * 100 : 0;
-                  return (
-                    <div key={idx} className="space-y-1 text-xs">
-                      <div className="flex justify-between font-semibold">
-                        <span className="text-slate-800">{s.slotLabel} <span className="text-[10px] text-slate-400 font-mono">({s.sectionName})</span></span>
-                        <span className="text-slate-900 font-mono">{s.total.toLocaleString()} interaksi</span>
-                      </div>
-                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                        <div className="bg-sky-600 h-full rounded-full" style={{ width: `${pct}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
+            {/* 4. Tombol Aksi Tersukses */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
+              <div className="flex items-center space-x-2 text-slate-800 border-b border-slate-100 pb-3">
+                <MousePointer className="h-5 w-5 text-emerald-600" />
+                <h3 className="font-bold text-sm uppercase tracking-wide">Tombol Aksi (CTA) Tersukses</h3>
               </div>
-            )}
-          </div>
 
-          {/* 4. Tombol Aksi Tersukses */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
-            <div className="flex items-center space-x-2 text-slate-800 border-b border-slate-100 pb-3">
-              <MousePointer className="h-5 w-5 text-emerald-600" />
-              <h3 className="font-bold text-sm uppercase tracking-wide">Tombol Aksi (CTA) Tersukses</h3>
+              {topCtas.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center py-6">Data klik CTA belum terekam.</p>
+              ) : (
+                <div className="space-y-4">
+                  {topCtas.map((c, idx) => {
+                    const pct = maxCtaClicks > 0 ? (c.total / maxCtaClicks) * 100 : 0;
+                    return (
+                      <div key={idx} className="space-y-1 text-xs">
+                        <div className="flex justify-between font-semibold">
+                          <span className="text-slate-800">{c.ctaLabel} <span className="text-[10px] text-slate-400 font-mono">({c.slotLabel})</span></span>
+                          <span className="text-slate-900 font-mono">{c.total.toLocaleString()} klik</span>
+                        </div>
+                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                          <div className="bg-amber-600 h-full rounded-full" style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
-            {topCtas.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-6">Data klik CTA belum terekam.</p>
-            ) : (
-              <div className="space-y-4">
-                {topCtas.map((c, idx) => {
-                  const pct = maxCtaClicks > 0 ? (c.total / maxCtaClicks) * 100 : 0;
-                  return (
-                    <div key={idx} className="space-y-1 text-xs">
-                      <div className="flex justify-between font-semibold">
-                        <span className="text-slate-800">{c.ctaLabel} <span className="text-[10px] text-slate-400 font-mono">({c.slotLabel})</span></span>
-                        <span className="text-slate-900 font-mono">{c.total.toLocaleString()} klik</span>
-                      </div>
-                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                        <div className="bg-amber-600 h-full rounded-full" style={{ width: `${pct}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+          </div>
+
+          {/* Small Notice */}
+          <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-start space-x-2.5 text-xs text-slate-500">
+            <HelpCircle className="h-4 w-4 shrink-0 mt-0.5 text-slate-400" />
+            <span>
+              Data insight diperbarui dari aktivitas pengunjung yang berhasil terekam.
+            </span>
           </div>
 
         </div>
-
-        {/* Small Notice */}
-        <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-start space-x-2.5 text-xs text-slate-500">
-          <HelpCircle className="h-4 w-4 shrink-0 mt-0.5 text-slate-400" />
-          <span>
-            Data insight diperbarui dari aktivitas pengunjung yang berhasil terekam.
-          </span>
-        </div>
-
-      </div>
+      )}
+      
     </DashboardLayout>
   );
 }

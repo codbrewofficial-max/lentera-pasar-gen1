@@ -67,6 +67,22 @@ export default function BusinessProfilePage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
+  // Default "company_profile" biar sidebar lama tetap tampil normal sementara
+  // fetch belum selesai / kalau fetch gagal — tidak ada perubahan perilaku.
+  const [websiteType, setWebsiteType] = useState<string>("company_profile");
+
+  useEffect(() => {
+      if (!websiteId) return;
+      apiCall<{ websiteType: string }>("GET", `websites/${websiteId}`)
+        .then((res) => {
+          if (res.data?.websiteType) setWebsiteType(res.data.websiteType);
+        })
+        .catch(() => {
+          // Diamkan saja — sidebar fallback ke company_profile, halaman lain
+          // yang butuh data website tetap fetch sendiri-sendiri seperti biasa.
+        });
+    }, [websiteId]);
+
   const fetchProfile = async () => {
     setLoading(true);
     setErrorMsg("");
@@ -147,6 +163,8 @@ export default function BusinessProfilePage() {
       </DashboardLayout>
     );
   }
+
+  const isCatalogProduct = websiteType === "catalog_product";
 
   return (
     <DashboardLayout 
@@ -265,56 +283,58 @@ export default function BusinessProfilePage() {
             </div>
           </div>
 
-          {/* Card 2: Visi, Misi & Sejarah */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 md:p-8 shadow-sm space-y-6">
-            <div className="flex items-center space-x-2 text-slate-800 border-b border-slate-100 pb-3">
-              <Compass className="h-5 w-5 text-[#649FF6]" />
-              <span className="font-bold text-sm uppercase tracking-wide text-slate-400">Visi, Misi & Sejarah</span>
-            </div>
-
-            <div className="grid grid-cols-1 gap-6">
-              <div className="space-y-1.5">
-                <label htmlFor="prof-vision" className="block text-sm font-semibold text-slate-700">Visi Perusahaan</label>
-                <RichTextEditor
-                  id="prof-vision"
-                  minHeight={100}
-                  placeholder="Contoh: Menjadi produsen roti keluarga nomor satu di wilayah Jabodetabek"
-                  value={vision}
-                  onChange={setVision}
-                  helperText="Tulis visi perusahaan secara ringkas dan jelas."
-                />
+          {!isCatalogProduct ? (
+            // {/* Card 2: Visi, Misi & Sejarah */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 md:p-8 shadow-sm space-y-6">
+              <div className="flex items-center space-x-2 text-slate-800 border-b border-slate-100 pb-3">
+                <Compass className="h-5 w-5 text-[#649FF6]" />
+                <span className="font-bold text-sm uppercase tracking-wide text-slate-400">Visi, Misi & Sejarah</span>
               </div>
 
-              <div className="space-y-1.5">
-                <label htmlFor="prof-mission" className="block text-sm font-semibold text-slate-700">Misi Perusahaan</label>
-                <RichTextEditor
-                  id="prof-mission"
-                  minHeight={120}
-                  placeholder="Contoh: Menggunakan bahan lokal berkualitas, menjaga sanitasi pabrik, melayani pesanan tepat waktu..."
-                  value={mission}
-                  onChange={setMission}
-                  helperText="Gunakan daftar poin agar misi mudah dibaca di website publik."
-                />
-              </div>
-
-              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 flex items-center justify-between gap-4">
-                <div className="space-y-0.5">
-                  <p className="text-sm font-semibold text-slate-700">Sejarah Singkat / Milestones</p>
-                  <p className="text-xs text-slate-500 leading-relaxed">
-                    Kelola timeline sejarah dan milestone bisnis Anda (per tahun) di halaman khusus Timeline.
-                  </p>
+              <div className="grid grid-cols-1 gap-6">
+                <div className="space-y-1.5">
+                  <label htmlFor="prof-vision" className="block text-sm font-semibold text-slate-700">Visi Perusahaan</label>
+                  <RichTextEditor
+                    id="prof-vision"
+                    minHeight={100}
+                    placeholder="Contoh: Menjadi produsen roti keluarga nomor satu di wilayah Jabodetabek"
+                    value={vision}
+                    onChange={setVision}
+                    helperText="Tulis visi perusahaan secara ringkas dan jelas."
+                  />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => router.push(`/websites/${websiteId}/content/timeline`)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 hover:border-[#649FF6] hover:text-[#649FF6] text-slate-600 text-xs font-bold rounded-xl shadow-sm transition shrink-0"
-                >
-                  Kelola Timeline
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </button>
+
+                <div className="space-y-1.5">
+                  <label htmlFor="prof-mission" className="block text-sm font-semibold text-slate-700">Misi Perusahaan</label>
+                  <RichTextEditor
+                    id="prof-mission"
+                    minHeight={120}
+                    placeholder="Contoh: Menggunakan bahan lokal berkualitas, menjaga sanitasi pabrik, melayani pesanan tepat waktu..."
+                    value={mission}
+                    onChange={setMission}
+                    helperText="Gunakan daftar poin agar misi mudah dibaca di website publik."
+                  />
+                </div>
+
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 flex items-center justify-between gap-4">
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-semibold text-slate-700">Sejarah Singkat / Milestones</p>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      Kelola timeline sejarah dan milestone bisnis Anda (per tahun) di halaman khusus Timeline.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/websites/${websiteId}/content/timeline`)}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 hover:border-[#649FF6] hover:text-[#649FF6] text-slate-600 text-xs font-bold rounded-xl shadow-sm transition shrink-0"
+                  >
+                    Kelola Timeline
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          ) : null}
 
           {/* Card 3: Kontak & Lokasi */}
           <div className="bg-white rounded-3xl border border-slate-200 p-6 md:p-8 shadow-sm space-y-6">

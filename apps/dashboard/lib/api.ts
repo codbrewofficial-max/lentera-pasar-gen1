@@ -177,6 +177,58 @@ export async function apiDelete<T>(path: string): Promise<ApiResponse<T>> {
 }
 
 
+export async function apiDownload(path: string, suggestedFilename?: string): Promise<void> {
+  const baseUrl = getApiBaseUrl();
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  const url = `${baseUrl}${cleanPath}`;
+  const headers: Record<string, string> = {};
+  const token = getAuthToken();
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  let res: Response;
+  try {
+    res = await fetch(url, { method: "GET", headers });
+  } catch {
+    throw {
+      error: {
+        code: "BACKEND_UNREACHABLE",
+        message: "Backend Lentera Pasar belum bisa dijangkau. Pastikan API berjalan."
+      }
+    } as ApiErrorResponse;
+  }
+
+  if (res.status === 401) {
+    clearAuth();
+    if (typeof window !== "undefined") window.location.href = "/login?unauthorized=true";
+    throw { error: { code: "UNAUTHORIZED", message: "Sesi Anda telah berakhir, silakan masuk kembali." } } as ApiErrorResponse;
+  }
+
+  if (!res.ok) {
+    let message = `Gagal mengunduh file (Status: ${res.status}).`;
+    try {
+      const json = await res.json();
+      if (json?.error?.message) message = json.error.message;
+    } catch {
+      // respons bukan JSON (mis. error dari proxy), pakai pesan default di atas
+    }
+    throw { error: { code: "DOWNLOAD_FAILED", message } } as ApiErrorResponse;
+  }
+
+  const blob = await res.blob();
+  const disposition = res.headers.get("Content-Disposition") || "";
+  const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
+  const filename = filenameMatch?.[1] || suggestedFilename || "download";
+
+  const objectUrl = window.URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = objectUrl;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.URL.revokeObjectURL(objectUrl);
+}
+
 export async function apiUpload<T>(path: string, formData: FormData): Promise<ApiResponse<T>> {
   const baseUrl = getApiBaseUrl();
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
