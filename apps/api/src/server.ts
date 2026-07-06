@@ -1445,6 +1445,514 @@ const registerCoreRoutes = () => {
   });
 };
 
+// ==========================================================================
+// BACKUP & RESTORE PER WEBSITE
+// Backup = 1 file ZIP berisi seluruh CRUD + BusinessProfile + isi section
+// (contentJson per slotKey) + file media asli, supaya bisa dipulihkan utuh.
+// Kategori (Portfolio/Article/Product) disimpan by NAME (bukan id) supaya bisa
+// direlink ulang saat restore walau id lama sudah tidak ada. Referensi media
+// (URL /api/v1/public/media/{id}) di-remap otomatis ke id media yang baru
+// lewat text-replace sebelum data di-parse, jadi gambar yang dipakai di
+// deskripsi/section tetap nyambung setelah restore.
+// ==========================================================================
+const BACKUP_FORMAT_VERSION = 1;
+
+const backupManifestSchema = z.object({
+  backupFormatVersion: z.number(),
+  websiteId: z.string().optional(),
+  websiteName: z.string().optional(),
+  websiteSlug: z.string().optional(),
+  websiteType: z.string()
+});
+
+const websiteMediaStorageDir = (websiteId: string) => path.join(process.cwd(), "storage", "uploads", "sites", websiteId);
+
+const buildWebsiteBackupZip = async (websiteId: string): Promise<Buffer> => {
+  const website = await prisma.website.findUnique({ where: { id: websiteId }, include: { businessProfile: true } });
+  if (!website) throw new AppError(404, "WEBSITE_NOT_FOUND", "Website not found");
+
+  const [
+    pages,
+    services,
+    portfolios,
+    portfolioCategories,
+    testimonials,
+    brandPartners,
+    articles,
+    articleCategories,
+    faqs,
+    businessTimelines,
+    teamMembers,
+    products,
+    productCategories,
+    valuePropositions,
+    banners,
+    leads,
+    mediaAssets
+  ] = await Promise.all([
+    prisma.websitePage.findMany({
+      where: { websiteId },
+      orderBy: { sortOrder: "asc" },
+      include: { sections: { include: { templateSection: true }, orderBy: { sortOrder: "asc" } } }
+    }),
+    prisma.service.findMany({ where: { websiteId }, orderBy: { sortOrder: "asc" } }),
+    prisma.portfolio.findMany({ where: { websiteId }, orderBy: { sortOrder: "asc" }, include: { category: true } }),
+    prisma.portfolioCategory.findMany({ where: { websiteId }, orderBy: { sortOrder: "asc" } }),
+    prisma.testimonial.findMany({ where: { websiteId }, orderBy: { sortOrder: "asc" } }),
+    prisma.brandPartner.findMany({ where: { websiteId }, orderBy: { sortOrder: "asc" } }),
+    prisma.article.findMany({ where: { websiteId }, orderBy: { sortOrder: "asc" }, include: { category: true } }),
+    prisma.articleCategory.findMany({ where: { websiteId }, orderBy: { sortOrder: "asc" } }),
+    prisma.faq.findMany({ where: { websiteId }, orderBy: { sortOrder: "asc" } }),
+    prisma.businessTimeline.findMany({ where: { websiteId }, orderBy: { sortOrder: "asc" } }),
+    prisma.teamMember.findMany({ where: { websiteId }, orderBy: { sortOrder: "asc" } }),
+    prisma.product.findMany({
+      where: { websiteId },
+      orderBy: { sortOrder: "asc" },
+      include: {
+        category: true,
+        images: { orderBy: { sortOrder: "asc" } },
+        variants: { orderBy: { sortOrder: "asc" } },
+        reviews: { orderBy: { sortOrder: "asc" } }
+      }
+    }),
+    prisma.productCategory.findMany({ where: { websiteId }, orderBy: { sortOrder: "asc" } }),
+    prisma.valueProposition.findMany({ where: { websiteId }, orderBy: { sortOrder: "asc" } }),
+    prisma.banner.findMany({ where: { websiteId }, orderBy: { sortOrder: "asc" } }),
+    prisma.lead.findMany({ where: { websiteId }, orderBy: { createdAt: "asc" } }),
+    prisma.mediaAsset.findMany({ where: { websiteId }, orderBy: { createdAt: "asc" } })
+  ]);
+
+  const zip = new AdmZip();
+  const json = (value: unknown) => Buffer.from(JSON.stringify(value, null, 2), "utf8");
+  const dataFile = (name: string, value: unknown) => zip.addFile(`data/${name}.json`, json(value));
+
+  zip.addFile(
+    "manifest.json",
+    json({
+      backupFormatVersion: BACKUP_FORMAT_VERSION,
+      exportedAt: new Date().toISOString(),
+      websiteId: website.id,
+      websiteName: website.name,
+      websiteSlug: website.slug,
+      websiteType: website.websiteType,
+      counts: {
+        services: services.length,
+        portfolios: portfolios.length,
+        testimonials: testimonials.length,
+        brandPartners: brandPartners.length,
+        articles: articles.length,
+        faqs: faqs.length,
+        products: products.length,
+        banners: banners.length,
+        valuePropositions: valuePropositions.length,
+        mediaAssets: mediaAssets.length,
+        leads: leads.length
+      }
+    })
+  );
+
+  zip.addFile(
+    "website.json",
+    json({ name: website.name, websiteType: website.websiteType, businessProfile: website.businessProfile || null })
+  );
+
+  zip.addFile(
+    "pages.json",
+    json(
+      pages.map((page: any) => ({
+        pageKey: page.pageKey,
+        title: page.title,
+        navLabel: page.navLabel,
+        footerLabel: page.footerLabel,
+        purpose: page.purpose,
+        isPublished: page.isPublished,
+        isVisibleInNavbar: page.isVisibleInNavbar,
+        isVisibleInFooter: page.isVisibleInFooter,
+        seoTitle: page.seoTitle,
+        seoDescription: page.seoDescription,
+        sections: page.sections.map((section: any) => ({
+          slotKey: section.slotKey,
+          isVisible: section.isVisible,
+          contentJson: section.contentJson
+        }))
+      }))
+    )
+  );
+
+  dataFile("services", services);
+  dataFile(
+    "portfolioCategories",
+    portfolioCategories.map((c: any) => ({ name: c.name, slug: c.slug, description: c.description, sortOrder: c.sortOrder, isActive: c.isActive }))
+  );
+  dataFile(
+    "portfolios",
+    portfolios.map((p: any) => ({ ...p, categoryName: p.category?.name || null, category: undefined, categoryId: undefined }))
+  );
+  dataFile("testimonials", testimonials);
+  dataFile("brandPartners", brandPartners);
+  dataFile(
+    "articleCategories",
+    articleCategories.map((c: any) => ({ name: c.name, slug: c.slug, description: c.description, sortOrder: c.sortOrder, isActive: c.isActive }))
+  );
+  dataFile(
+    "articles",
+    articles.map((a: any) => ({ ...a, categoryName: a.category?.name || null, category: undefined, categoryId: undefined }))
+  );
+  dataFile("faqs", faqs);
+  dataFile("businessTimelines", businessTimelines);
+  dataFile("teamMembers", teamMembers);
+  dataFile(
+    "productCategories",
+    productCategories.map((c: any) => ({ name: c.name, slug: c.slug, description: c.description, sortOrder: c.sortOrder, isActive: c.isActive }))
+  );
+  dataFile(
+    "products",
+    products.map((p: any) => ({
+      ...p,
+      categoryName: p.category?.name || null,
+      category: undefined,
+      categoryId: undefined,
+      images: p.images.map((img: any) => ({ url: img.url, altText: img.altText, isPrimary: img.isPrimary, sortOrder: img.sortOrder })),
+      variants: p.variants.map((v: any) => ({ name: v.name, sku: v.sku, priceOverride: v.priceOverride, stock: v.stock, sortOrder: v.sortOrder, isActive: v.isActive })),
+      reviews: p.reviews.map((r: any) => ({ customerName: r.customerName, rating: r.rating, comment: r.comment, avatarUrl: r.avatarUrl, isActive: r.isActive, sortOrder: r.sortOrder }))
+    }))
+  );
+  dataFile("valuePropositions", valuePropositions);
+  dataFile("banners", banners);
+  dataFile("leads", leads);
+
+  const mediaManifest = mediaAssets.map((m: any) => ({
+    id: m.id,
+    filename: m.filename,
+    originalName: m.originalName,
+    mimeType: m.mimeType,
+    sizeBytes: m.sizeBytes,
+    altText: m.altText,
+    url: m.url
+  }));
+  zip.addFile("media/manifest.json", json(mediaManifest));
+
+  for (const m of mediaAssets) {
+    try {
+      const fileBuffer = await readFile(m.storagePath);
+      zip.addFile(`media/files/${m.filename}`, fileBuffer);
+    } catch {
+      // File fisik sudah tidak ada di disk (mis. volume upload belum dipasang) —
+      // metadata tetap ikut di manifest, cuma file binernya dilewati.
+    }
+  }
+
+  return zip.toBuffer();
+};
+
+const restoreWebsiteFromBackupZip = async (websiteId: string, buffer: Buffer) => {
+  if (buffer.byteLength > apiConfig.backupMaxBytes) {
+    throw new AppError(413, "BACKUP_TOO_LARGE", "File backup ZIP terlalu besar");
+  }
+
+  const website = await prisma.website.findUnique({ where: { id: websiteId } });
+  if (!website) throw new AppError(404, "WEBSITE_NOT_FOUND", "Website not found");
+
+  const zip = new AdmZip(buffer);
+  const allEntries = zip.getEntries();
+  for (const entry of allEntries) {
+    if (!isSafeZipEntryName(entry.entryName)) {
+      throw new AppError(400, "UNSAFE_ZIP_ENTRY", `Unsafe ZIP entry path: ${entry.entryName}`);
+    }
+  }
+
+  const manifestEntry = zip.getEntry("manifest.json");
+  if (!manifestEntry) throw new AppError(400, "MANIFEST_REQUIRED", "File backup tidak valid: manifest.json tidak ditemukan");
+  let manifestRaw: unknown;
+  try {
+    manifestRaw = JSON.parse(manifestEntry.getData().toString("utf8"));
+  } catch {
+    throw new AppError(400, "INVALID_MANIFEST_JSON", "manifest.json pada file backup tidak valid");
+  }
+  const manifestResult = backupManifestSchema.safeParse(manifestRaw);
+  if (!manifestResult.success) {
+    throw new AppError(422, "INVALID_BACKUP_MANIFEST", "Format manifest backup tidak dikenali", manifestResult.error.flatten());
+  }
+  const manifest = manifestResult.data;
+  if (manifest.websiteType !== website.websiteType) {
+    throw new AppError(
+      422,
+      "WEBSITE_TYPE_MISMATCH",
+      `File backup ini untuk website type "${manifest.websiteType}", tapi website tujuan bertipe "${website.websiteType}". Restore dibatalkan.`
+    );
+  }
+
+  const readJsonEntry = <T,>(entryName: string, fallback: T): T => {
+    const entry = zip.getEntry(entryName);
+    if (!entry) return fallback;
+    try {
+      return JSON.parse(entry.getData().toString("utf8")) as T;
+    } catch {
+      throw new AppError(400, "INVALID_BACKUP_JSON", `File ${entryName} pada backup bukan JSON valid`);
+    }
+  };
+
+  // ---- 1) Import media dulu supaya dapat mapping oldMediaId -> newMediaId ----
+  const mediaManifest = readJsonEntry<Array<{ id: string; filename: string; originalName: string; mimeType: string; sizeBytes: number; altText: string | null; url: string }>>("media/manifest.json", []);
+  const oldMediaUrlToNew = new Map<string, string>();
+  const newMediaRows: Array<{ id: string; filename: string; originalName: string; mimeType: string; sizeBytes: number; altText: string | null; url: string; storagePath: string }> = [];
+
+  if (mediaManifest.length) {
+    const storageDir = websiteMediaStorageDir(websiteId);
+    await mkdir(storageDir, { recursive: true });
+    for (const old of mediaManifest) {
+      const fileEntry = zip.getEntry(`media/files/${old.filename}`);
+      if (!fileEntry) continue; // file fisik memang tidak ikut ter-backup, skip
+      const newId = randomToken("media");
+      const ext = path.extname(old.filename) || "";
+      const newFilename = `${newId}${ext}`;
+      const newStoragePath = path.join(storageDir, newFilename);
+      await writeFile(newStoragePath, fileEntry.getData());
+      const newUrl = `/api/v1/public/media/${newId}`;
+      oldMediaUrlToNew.set(`/api/v1/public/media/${old.id}`, newUrl);
+      newMediaRows.push({
+        id: newId,
+        filename: newFilename,
+        originalName: old.originalName,
+        mimeType: old.mimeType,
+        sizeBytes: old.sizeBytes,
+        altText: old.altText,
+        url: newUrl,
+        storagePath: newStoragePath
+      });
+    }
+  }
+
+  // Text-replace pass: ganti semua referensi URL media lama -> baru di SELURUH
+  // file data sebelum di-parse, supaya field manapun yang menyimpan URL gambar
+  // (imageUrl, contentJson, description, dst) otomatis ikut ter-remap tanpa
+  // perlu tahu persis nama field-nya satu-satu.
+  const remapMediaUrls = (raw: string) => {
+    let result = raw;
+    for (const [oldUrl, newUrl] of oldMediaUrlToNew) {
+      result = result.split(oldUrl).join(newUrl);
+    }
+    return result;
+  };
+
+  const readJsonEntryRemapped = <T,>(entryName: string, fallback: T): T => {
+    const entry = zip.getEntry(entryName);
+    if (!entry) return fallback;
+    try {
+      return JSON.parse(remapMediaUrls(entry.getData().toString("utf8"))) as T;
+    } catch {
+      throw new AppError(400, "INVALID_BACKUP_JSON", `File ${entryName} pada backup bukan JSON valid`);
+    }
+  };
+
+  const websiteJson = readJsonEntryRemapped<any>("website.json", {});
+  const pagesJson = readJsonEntryRemapped<any[]>("pages.json", []);
+  const servicesJson = readJsonEntryRemapped<any[]>("data/services.json", []);
+  const portfolioCategoriesJson = readJsonEntryRemapped<any[]>("data/portfolioCategories.json", []);
+  const portfoliosJson = readJsonEntryRemapped<any[]>("data/portfolios.json", []);
+  const testimonialsJson = readJsonEntryRemapped<any[]>("data/testimonials.json", []);
+  const brandPartnersJson = readJsonEntryRemapped<any[]>("data/brandPartners.json", []);
+  const articleCategoriesJson = readJsonEntryRemapped<any[]>("data/articleCategories.json", []);
+  const articlesJson = readJsonEntryRemapped<any[]>("data/articles.json", []);
+  const faqsJson = readJsonEntryRemapped<any[]>("data/faqs.json", []);
+  const businessTimelinesJson = readJsonEntryRemapped<any[]>("data/businessTimelines.json", []);
+  const teamMembersJson = readJsonEntryRemapped<any[]>("data/teamMembers.json", []);
+  const productCategoriesJson = readJsonEntryRemapped<any[]>("data/productCategories.json", []);
+  const productsJson = readJsonEntryRemapped<any[]>("data/products.json", []);
+  const valuePropositionsJson = readJsonEntryRemapped<any[]>("data/valuePropositions.json", []);
+  const bannersJson = readJsonEntryRemapped<any[]>("data/banners.json", []);
+  const leadsJson = readJsonEntryRemapped<any[]>("data/leads.json", []);
+
+  // ---- 2) Hapus media lama (file fisik + row) supaya restore bersih, ganti dengan yang baru ----
+  const oldMediaAssets = await prisma.mediaAsset.findMany({ where: { websiteId } });
+  for (const old of oldMediaAssets) {
+    try {
+      await unlink(old.storagePath);
+    } catch {
+      // Sudah tidak ada di disk, tidak masalah.
+    }
+  }
+  await prisma.mediaAsset.deleteMany({ where: { websiteId } });
+  if (newMediaRows.length) {
+    await prisma.mediaAsset.createMany({
+      data: newMediaRows.map((m) => ({
+        id: m.id,
+        websiteId,
+        filename: m.filename,
+        originalName: m.originalName,
+        mimeType: m.mimeType,
+        sizeBytes: m.sizeBytes,
+        url: m.url,
+        altText: m.altText,
+        storagePath: m.storagePath
+      }))
+    });
+  }
+
+  // ---- 3) Replace seluruh CRUD + kategori + BusinessProfile dalam satu transaksi ----
+  const summary = await prisma.$transaction(async (tx: any) => {
+    await tx.service.deleteMany({ where: { websiteId } });
+    await tx.testimonial.deleteMany({ where: { websiteId } });
+    await tx.brandPartner.deleteMany({ where: { websiteId } });
+    await tx.faq.deleteMany({ where: { websiteId } });
+    await tx.businessTimeline.deleteMany({ where: { websiteId } });
+    await tx.teamMember.deleteMany({ where: { websiteId } });
+    await tx.valueProposition.deleteMany({ where: { websiteId } });
+    await tx.banner.deleteMany({ where: { websiteId } });
+    await tx.lead.deleteMany({ where: { websiteId } });
+    // Portfolio/Article/Product dihapus dulu sebelum kategorinya (categoryId SetNull,
+    // tapi lebih aman & jelas urutannya dihapus manual dari yang bergantung dulu).
+    await tx.portfolio.deleteMany({ where: { websiteId } });
+    await tx.portfolioCategory.deleteMany({ where: { websiteId } });
+    await tx.article.deleteMany({ where: { websiteId } });
+    await tx.articleCategory.deleteMany({ where: { websiteId } });
+    await tx.product.deleteMany({ where: { websiteId } }); // cascade ke ProductImage/Variant/Review
+    await tx.productCategory.deleteMany({ where: { websiteId } });
+
+    if (websiteJson?.businessProfile) {
+      const bp = websiteJson.businessProfile;
+      await tx.businessProfile.upsert({
+        where: { websiteId },
+        update: {
+          name: bp.name, tagline: bp.tagline, description: bp.description, logoUrl: bp.logoUrl, logoAlt: bp.logoAlt,
+          vision: bp.vision, mission: bp.mission, timelineJson: bp.timelineJson ?? undefined,
+          contactEmail: bp.contactEmail, phone: bp.phone, whatsapp: bp.whatsapp, address: bp.address, mapEmbedUrl: bp.mapEmbedUrl,
+          instagramUrl: bp.instagramUrl, facebookUrl: bp.facebookUrl, linkedinUrl: bp.linkedinUrl, twitterUrl: bp.twitterUrl, websiteUrl: bp.websiteUrl
+        },
+        create: {
+          websiteId, name: bp.name || website.name, tagline: bp.tagline, description: bp.description, logoUrl: bp.logoUrl, logoAlt: bp.logoAlt,
+          vision: bp.vision, mission: bp.mission, timelineJson: bp.timelineJson ?? undefined,
+          contactEmail: bp.contactEmail, phone: bp.phone, whatsapp: bp.whatsapp, address: bp.address, mapEmbedUrl: bp.mapEmbedUrl,
+          instagramUrl: bp.instagramUrl, facebookUrl: bp.facebookUrl, linkedinUrl: bp.linkedinUrl, twitterUrl: bp.twitterUrl, websiteUrl: bp.websiteUrl
+        }
+      });
+    }
+
+    const portfolioCategoryIdByName = new Map<string, string>();
+    for (const c of portfolioCategoriesJson) {
+      const created = await tx.portfolioCategory.create({ data: { websiteId, name: c.name, slug: c.slug, description: c.description ?? null, sortOrder: c.sortOrder ?? 0, isActive: c.isActive ?? true } });
+      portfolioCategoryIdByName.set(c.name, created.id);
+    }
+    const articleCategoryIdByName = new Map<string, string>();
+    for (const c of articleCategoriesJson) {
+      const created = await tx.articleCategory.create({ data: { websiteId, name: c.name, slug: c.slug, description: c.description ?? null, sortOrder: c.sortOrder ?? 0, isActive: c.isActive ?? true } });
+      articleCategoryIdByName.set(c.name, created.id);
+    }
+    const productCategoryIdByName = new Map<string, string>();
+    for (const c of productCategoriesJson) {
+      const created = await tx.productCategory.create({ data: { websiteId, name: c.name, slug: c.slug, description: c.description ?? null, sortOrder: c.sortOrder ?? 0, isActive: c.isActive ?? true } });
+      productCategoryIdByName.set(c.name, created.id);
+    }
+
+    for (const s of servicesJson) {
+      await tx.service.create({ data: { websiteId, title: s.title, description: s.description ?? null, imageUrl: s.imageUrl ?? null, sortOrder: s.sortOrder ?? 0, isFeatured: s.isFeatured ?? false, featuredOrder: s.featuredOrder ?? 0, isActive: s.isActive ?? true } });
+    }
+    for (const p of portfoliosJson) {
+      await tx.portfolio.create({
+        data: {
+          websiteId, categoryId: p.categoryName ? portfolioCategoryIdByName.get(p.categoryName) || null : null,
+          title: p.title, description: p.description ?? null, imageUrl: p.imageUrl ?? null, slug: p.slug,
+          sortOrder: p.sortOrder ?? 0, isFeatured: p.isFeatured ?? false, featuredOrder: p.featuredOrder ?? 0, isActive: p.isActive ?? true
+        }
+      });
+    }
+    for (const t of testimonialsJson) {
+      await tx.testimonial.create({ data: { websiteId, name: t.name, role: t.role ?? null, company: t.company ?? null, quote: t.quote, avatarUrl: t.avatarUrl ?? null, sortOrder: t.sortOrder ?? 0, isActive: t.isActive ?? true } });
+    }
+    for (const b of brandPartnersJson) {
+      await tx.brandPartner.create({ data: { websiteId, name: b.name, logoUrl: b.logoUrl ?? null, url: b.url ?? null, sortOrder: b.sortOrder ?? 0, isActive: b.isActive ?? true } });
+    }
+    for (const a of articlesJson) {
+      await tx.article.create({
+        data: {
+          websiteId, categoryId: a.categoryName ? articleCategoryIdByName.get(a.categoryName) || null : null,
+          title: a.title, slug: a.slug, excerpt: a.excerpt ?? null, content: a.content, coverImageUrl: a.coverImageUrl ?? null,
+          seoTitle: a.seoTitle ?? null, seoDescription: a.seoDescription ?? null, status: a.status || "draft",
+          sortOrder: a.sortOrder ?? 0, isFeatured: a.isFeatured ?? false, featuredOrder: a.featuredOrder ?? 0,
+          publishedAt: a.publishedAt ? new Date(a.publishedAt) : null
+        }
+      });
+    }
+    for (const f of faqsJson) {
+      await tx.faq.create({ data: { websiteId, question: f.question, answer: f.answer, pageKey: f.pageKey ?? null, sortOrder: f.sortOrder ?? 0, isActive: f.isActive ?? true } });
+    }
+    for (const t of businessTimelinesJson) {
+      await tx.businessTimeline.create({ data: { websiteId, year: t.year, title: t.title, description: t.description ?? null, sortOrder: t.sortOrder ?? 0, isActive: t.isActive ?? true } });
+    }
+    for (const m of teamMembersJson) {
+      await tx.teamMember.create({ data: { websiteId, name: m.name, role: m.role ?? null, bio: m.bio ?? null, imageUrl: m.imageUrl ?? null, sortOrder: m.sortOrder ?? 0, isActive: m.isActive ?? true } });
+    }
+    for (const p of productsJson) {
+      const product = await tx.product.create({
+        data: {
+          websiteId, categoryId: p.categoryName ? productCategoryIdByName.get(p.categoryName) || null : null,
+          title: p.title, slug: p.slug, sku: p.sku ?? null, shortDescription: p.shortDescription ?? null, description: p.description ?? null,
+          price: p.price, compareAtPrice: p.compareAtPrice ?? null, ctaLabel: p.ctaLabel ?? null, ctaUrl: p.ctaUrl ?? null,
+          isFeatured: p.isFeatured ?? false, featuredOrder: p.featuredOrder ?? 0, isNewArrival: p.isNewArrival ?? false,
+          isActive: p.isActive ?? true, sortOrder: p.sortOrder ?? 0
+        }
+      });
+      for (const img of p.images || []) {
+        await tx.productImage.create({ data: { productId: product.id, url: img.url, altText: img.altText ?? null, isPrimary: img.isPrimary ?? false, sortOrder: img.sortOrder ?? 0 } });
+      }
+      for (const v of p.variants || []) {
+        await tx.productVariant.create({ data: { productId: product.id, name: v.name, sku: v.sku ?? null, priceOverride: v.priceOverride ?? null, stock: v.stock ?? 0, sortOrder: v.sortOrder ?? 0, isActive: v.isActive ?? true } });
+      }
+      for (const r of p.reviews || []) {
+        await tx.productReview.create({ data: { productId: product.id, customerName: r.customerName, rating: r.rating ?? 5, comment: r.comment, avatarUrl: r.avatarUrl ?? null, isActive: r.isActive ?? true, sortOrder: r.sortOrder ?? 0 } });
+      }
+    }
+    for (const v of valuePropositionsJson) {
+      await tx.valueProposition.create({ data: { websiteId, icon: v.icon ?? null, title: v.title, description: v.description ?? null, sortOrder: v.sortOrder ?? 0, isActive: v.isActive ?? true } });
+    }
+    for (const b of bannersJson) {
+      await tx.banner.create({ data: { websiteId, imageUrl: b.imageUrl, title: b.title ?? null, subtitle: b.subtitle ?? null, ctaLabel: b.ctaLabel ?? null, ctaUrl: b.ctaUrl ?? null, sortOrder: b.sortOrder ?? 0, isActive: b.isActive ?? true } });
+    }
+    for (const l of leadsJson) {
+      await tx.lead.create({
+        data: {
+          websiteId, name: l.name, email: l.email ?? null, phone: l.phone ?? null, message: l.message ?? null, interest: l.interest ?? null,
+          sourcePage: l.sourcePage ?? null, sourceSection: l.sourceSection ?? null, status: l.status || "new", metadataJson: l.metadataJson ?? undefined,
+          createdAt: l.createdAt ? new Date(l.createdAt) : undefined
+        }
+      });
+    }
+
+    // ---- 4) Isi ulang contentJson section yang cocok slotKey-nya dengan struktur
+    //          halaman website TUJUAN saat ini. Struktur (templateSectionId, sortOrder,
+    //          slot yang ada/tidak) TIDAK diubah — restore ini murni memulihkan isi. ----
+    let sectionsRestored = 0;
+    for (const pageBackup of pagesJson) {
+      for (const sectionBackup of pageBackup.sections || []) {
+        const existing = await tx.pageSection.findUnique({ where: { websiteId_slotKey: { websiteId, slotKey: sectionBackup.slotKey } } });
+        if (!existing) continue; // slot ini sudah tidak ada di struktur saat ini, lewati
+        await tx.pageSection.update({
+          where: { id: existing.id },
+          data: { contentJson: sectionBackup.contentJson ?? {}, isVisible: sectionBackup.isVisible ?? true }
+        });
+        sectionsRestored += 1;
+      }
+    }
+
+    return {
+      servicesRestored: servicesJson.length,
+      portfoliosRestored: portfoliosJson.length,
+      testimonialsRestored: testimonialsJson.length,
+      brandPartnersRestored: brandPartnersJson.length,
+      articlesRestored: articlesJson.length,
+      faqsRestored: faqsJson.length,
+      productsRestored: productsJson.length,
+      bannersRestored: bannersJson.length,
+      valuePropositionsRestored: valuePropositionsJson.length,
+      leadsRestored: leadsJson.length,
+      mediaAssetsRestored: newMediaRows.length,
+      sectionsRestored
+    };
+  });
+
+  return summary;
+};
+
 const registerInternalRoutes = () => {
   app.get("/api/v1/internal/owners", async (request, reply) => {
     await requireRole(request, ["internal_admin"]);
@@ -1808,6 +2316,83 @@ const registerInternalRoutes = () => {
 
     return ok(reply, { enabled: updated.publicActivationEnabled }, "Public activation setting updated");
   });
+
+  // ==========================================================================
+  // BACKUP & RESTORE PER WEBSITE (internal admin saja)
+  // ==========================================================================
+  app.get("/api/v1/internal/websites/:websiteId/backup", async (request: Req, reply) => {
+    const actor = await requireRole(request, ["internal_admin"]);
+    const website = await prisma.website.findUnique({ where: { id: request.params?.websiteId } });
+    if (!website) throw new AppError(404, "WEBSITE_NOT_FOUND", "Website not found");
+
+    const buffer = await buildWebsiteBackupZip(website.id);
+    const filename = `backup-${website.slug}-${new Date().toISOString().slice(0, 10)}.zip`;
+
+    await createAuditLog(request, {
+      action: "internal.website_backup_downloaded",
+      actor,
+      websiteId: website.id,
+      entityType: "website",
+      entityId: website.id,
+      summary: `Backup website ${website.slug} diunduh oleh ${actor.email}`,
+      metadata: { sizeBytes: buffer.byteLength }
+    });
+
+    reply.header("Content-Disposition", `attachment; filename="${filename}"`);
+    reply.type("application/zip");
+    return reply.send(buffer);
+  });
+
+  app.post(
+    "/api/v1/internal/websites/:websiteId/restore",
+    { config: { rateLimit: apiConfig.rateLimits.backup } },
+    async (request, reply) => {
+      const actor = await requireRole(request, ["internal_admin"]);
+      const website = await prisma.website.findUnique({ where: { id: (request as Req).params?.websiteId } });
+      if (!website) throw new AppError(404, "WEBSITE_NOT_FOUND", "Website not found");
+
+      let uploadedBuffer: Buffer | null = null;
+      try {
+        for await (const part of (request as any).parts({ limits: { fileSize: apiConfig.backupMaxBytes } })) {
+          if (part.type !== "file" || part.fieldname !== "file") continue;
+          if (uploadedBuffer) throw new AppError(400, "BACKUP_ONLY_ONE_FILE", "Upload satu file backup ZIP saja dalam satu waktu");
+          const chunks: Buffer[] = [];
+          let totalBytes = 0;
+          for await (const chunk of part.file) {
+            const bufferChunk = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+            totalBytes += bufferChunk.length;
+            if (totalBytes > apiConfig.backupMaxBytes) {
+              throw new AppError(413, "BACKUP_TOO_LARGE", `Ukuran file backup maksimal ${Math.round(apiConfig.backupMaxBytes / 1024 / 1024)} MB`);
+            }
+            chunks.push(bufferChunk);
+          }
+          uploadedBuffer = Buffer.concat(chunks);
+        }
+      } catch (error: any) {
+        if (error instanceof AppError) throw error;
+        if (error?.code === "FST_REQ_FILE_TOO_LARGE" || error?.message?.toLowerCase?.().includes("request file too large")) {
+          throw new AppError(413, "BACKUP_TOO_LARGE", `Ukuran file backup maksimal ${Math.round(apiConfig.backupMaxBytes / 1024 / 1024)} MB`);
+        }
+        throw error;
+      }
+
+      if (!uploadedBuffer) throw new AppError(400, "BACKUP_FILE_REQUIRED", "Pilih file backup ZIP terlebih dahulu");
+
+      const summary = await restoreWebsiteFromBackupZip(website.id, uploadedBuffer);
+
+      await createAuditLog(request, {
+        action: "internal.website_restored",
+        actor,
+        websiteId: website.id,
+        entityType: "website",
+        entityId: website.id,
+        summary: `Website ${website.slug} dipulihkan dari file backup oleh ${actor.email}`,
+        metadata: summary
+      });
+
+      return ok(reply, summary, "Website berhasil dipulihkan dari backup");
+    }
+  );
 };
 
 const registerWebsiteRoutes = () => {

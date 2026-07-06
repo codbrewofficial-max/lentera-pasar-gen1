@@ -30,7 +30,8 @@ import {
   ChevronDown,
   ShoppingBag,
   Sparkles,
-  LayoutTemplate
+  LayoutTemplate,
+  Archive
 } from "lucide-react";
 import BrandMark from "@/components/brand/BrandMark";
 import BrandSignature from "@/components/brand/BrandSignature";
@@ -244,6 +245,10 @@ export default function DashboardLayout({
     }
   ];
 
+  // Group "Isi Konten Utama" & "Lengkapi Pendukung" beda tergantung Website Type.
+  // Company Profile: Layanan, Portfolio, Testimoni, Timeline, Anggota Tim.
+  // Katalog Produk: Produk (+ Kategori Produk), Keunggulan/USP, Banner.
+  // Item yang dipakai bersama (Artikel, Media Library, Brand/Partner, FAQ) tetap sama.
   const isCatalogProduct = websiteType === "catalog_product";
 
   const mainContentGroup: NavGroup = isCatalogProduct
@@ -307,11 +312,13 @@ export default function DashboardLayout({
             description: "Hasil kerja, kegiatan, project, atau studi kasus.",
             icon: FolderKanban,
             href: `/websites/${websiteId}/content/portfolio`,
+            // Menggunakan penanda utama kelompok portfolio
             active: pathname?.includes(`/websites/${websiteId}/content/portfolio`) || false,
             children: [
               {
                 label: "Semua Portfolio",
                 href: `/websites/${websiteId}/content/portfolio`,
+                // Aktif jika berada di halaman list, create, maupun edit portfolio, tapi BUKAN halaman kategori
                 active: (pathname?.includes(`/websites/${websiteId}/content/portfolio`) && !pathname?.includes(`portfolio-categories`)) || false
               },
               {
@@ -331,6 +338,7 @@ export default function DashboardLayout({
               {
                 label: "Semua Artikel",
                 href: `/websites/${websiteId}/content/articles`,
+                // Aktif jika berada di halaman list, create, maupun edit artikel, tapi BUKAN halaman kategori
                 active: (pathname?.includes(`/websites/${websiteId}/content/articles`) && !pathname?.includes(`article-categories`)) || false
               },
               {
@@ -434,33 +442,8 @@ export default function DashboardLayout({
         ]
       };
 
-  // 1. TAMBAHKAN `| null` PADA BARIS DI BAWAH INI
-  const leadAndAnalysisGroup: NavGroup | null = userRole === "internal_admin"
-      ? {
-          title: "5. Pantau Hasil",
-          description: "Lihat minat pengunjung dan tindak lanjuti prospek.",
-          items: [
-            {
-              label: "Insight",
-              description: "Aktivitas pengunjung dan konten yang menarik perhatian.",
-              icon: TrendingUp,
-              href: `/websites/${websiteId}/insights`,
-              active: pathname?.includes(`/websites/${websiteId}/insights`) || false
-            },
-            {
-              label: "Lead",
-              description: "Pesan masuk dari form kontak calon pelanggan.",
-              icon: Users,
-              href: `/websites/${websiteId}/leads`,
-              active: pathname?.includes(`/websites/${websiteId}/leads`) || false
-            }
-          ]
-        }
-      : null;
-
-  // 2. FILTER NILAI NULL PADA ARRAY DI BAWAH INI
   const websiteGroups: NavGroup[] = websiteId
-    ? ([
+    ? [
         {
           title: "1. Mulai dari Dasar",
           description: "Identitas dan ringkasan kondisi website.",
@@ -503,8 +486,27 @@ export default function DashboardLayout({
         },
         mainContentGroup,
         supportingContentGroup,
-        leadAndAnalysisGroup
-      ].filter(Boolean) as NavGroup[]) // <-- Penambahan `.filter(Boolean) as NavGroup[]` untuk membuang null
+        {
+          title: "5. Pantau Hasil",
+          description: "Lihat minat pengunjung dan tindak lanjuti prospek.",
+          items: [
+            {
+              label: "Insight",
+              description: "Aktivitas pengunjung dan konten yang menarik perhatian.",
+              icon: TrendingUp,
+              href: `/websites/${websiteId}/insights`,
+              active: pathname?.includes(`/websites/${websiteId}/insights`) || false
+            },
+            {
+              label: "Lead",
+              description: "Pesan masuk dari form kontak calon pelanggan.",
+              icon: Users,
+              href: `/websites/${websiteId}/leads`,
+              active: pathname?.includes(`/websites/${websiteId}/leads`) || false
+            }
+          ]
+        }
+      ]
     : [];
 
   const internalGroups: NavGroup[] =
@@ -541,6 +543,13 @@ export default function DashboardLayout({
                 icon: Globe,
                 href: "/internal/websites",
                 active: pathname === "/internal/websites"
+              },
+              {
+                label: "Backup & Restore",
+                description: "Unduh backup atau pulihkan data per website.",
+                icon: Archive,
+                href: "/internal/backup-restore",
+                active: pathname === "/internal/backup-restore"
               },
               {
                 label: "Template Section",

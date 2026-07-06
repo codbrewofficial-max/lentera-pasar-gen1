@@ -48,11 +48,13 @@ const envSchema = z.object({
   LOG_PRETTY: z.string().optional(),
   REQUEST_BODY_LIMIT_BYTES: z.string().optional(),
   TEMPLATE_UPLOAD_MAX_BYTES: z.string().optional(),
+  BACKUP_MAX_BYTES: z.string().optional(),
   RATE_LIMIT_GLOBAL_MAX: z.string().optional(),
   RATE_LIMIT_AUTH_MAX: z.string().optional(),
   RATE_LIMIT_CONTACT_MAX: z.string().optional(),
   RATE_LIMIT_TRACKING_MAX: z.string().optional(),
   RATE_LIMIT_TEMPLATE_UPLOAD_MAX: z.string().optional(),
+  RATE_LIMIT_BACKUP_MAX: z.string().optional(),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.string().optional(),
   SMTP_SECURE: z.string().optional(),
@@ -88,6 +90,10 @@ export const apiConfig = {
   logPretty: toBoolean(rawEnv.LOG_PRETTY, !productionLike),
   requestBodyLimitBytes: toNumber(rawEnv.REQUEST_BODY_LIMIT_BYTES, 1024 * 1024),
   templateUploadMaxBytes: toNumber(rawEnv.TEMPLATE_UPLOAD_MAX_BYTES, 5 * 1024 * 1024),
+  // Backup website berisi seluruh CRUD + file media, jadi limit-nya jauh lebih besar
+  // dari upload media biasa. Default 100MB, bisa dinaikkan lewat env kalau media
+  // website-nya banyak.
+  backupMaxBytes: toNumber(rawEnv.BACKUP_MAX_BYTES, 100 * 1024 * 1024),
   maxParamLength: 500,
   dashboardAppUrl: (rawEnv.DASHBOARD_APP_URL || "http://localhost:3000").replace(/\/+$/, ""),
   smtp: {
@@ -107,7 +113,11 @@ export const apiConfig = {
     auth: { max: toNumber(rawEnv.RATE_LIMIT_AUTH_MAX, productionLike ? 10 : 60), timeWindow: "10 minutes" },
     contact: { max: toNumber(rawEnv.RATE_LIMIT_CONTACT_MAX, 8), timeWindow: "10 minutes" },
     tracking: { max: toNumber(rawEnv.RATE_LIMIT_TRACKING_MAX, 120), timeWindow: "1 minute" },
-    templateUpload: { max: toNumber(rawEnv.RATE_LIMIT_TEMPLATE_UPLOAD_MAX, 10), timeWindow: "1 hour" }
+    templateUpload: { max: toNumber(rawEnv.RATE_LIMIT_TEMPLATE_UPLOAD_MAX, 10), timeWindow: "1 hour" },
+    // Backup/restore hanya bisa dipakai internal_admin dan operasinya berat (baca/tulis
+    // banyak baris + file media), jadi dibatasi longgar tapi tetap ada supaya tidak
+    // dipanggil berulang-ulang tanpa sengaja dari script/loop.
+    backup: { max: toNumber(rawEnv.RATE_LIMIT_BACKUP_MAX, 20), timeWindow: "1 hour" }
   }
 };
 
